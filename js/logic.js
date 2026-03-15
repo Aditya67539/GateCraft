@@ -1,5 +1,8 @@
 class Input {
+  static nextId = 1;
   constructor(value) {
+    this.id = Input.nextId++;
+    this.type = "input";
     this.output = value;
   }
 
@@ -105,4 +108,4 @@ gate1.connect(new Input(false));
 gate1.connect(new Input(false));
 
 gate1.evaluate();
-console.log(gate1.output);
+// console.log(gate1.output);
