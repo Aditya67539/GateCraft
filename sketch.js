@@ -34,8 +34,10 @@ class RenderPoint {
   }
 }
 
-let gate = new Gate("or", []);
-let input1 = new Input(false);
+let mode = "edit";
+
+let gate = new Gate("xnor", []);
+let input1 = new Input(true);
 let input2 = new Input(true);
 
 let wire1 = gate.connect(input1);
@@ -74,16 +76,25 @@ let offsetY = 0;
 function mousePressed() {
   dragging = renderNodes.find(n => n.containsPoint(mouseX, mouseY));
 
-  if (dragging) {
-    offsetX = mouseX - dragging.x;
-    offsetY = mouseY - dragging.y;
+  if (mode === "edit") {
+    if (dragging) {
+      offsetX = mouseX - dragging.x;
+      offsetY = mouseY - dragging.y;
+    }
+  } else if (mode === "run") {
+    if (dragging.gate.type === "input") {
+      dragging.gate.setValue(!dragging.gate.output);
+      gate.evaluate();
+    }
   }
 }
 
 function mouseDragged() {
-  if (dragging) {
-    dragging.x = mouseX - offsetX;
-    dragging.y = mouseY - offsetY;
+  if (mode === "edit") {
+    if (dragging) {
+      dragging.x = mouseX - offsetX;
+      dragging.y = mouseY - offsetY;
+    }
   }
 }
 
