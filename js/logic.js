@@ -98,7 +98,7 @@ class Wire {
 }
 
 
-gate1 = new Gate("xor", []);
+const gate1 = new Gate("xor", []);
 gate1.connect(new Input(false));
 gate1.connect(new Input(false));
 gate1.connect(new Input(false));
