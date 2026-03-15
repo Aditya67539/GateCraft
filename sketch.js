@@ -36,17 +36,25 @@ class RenderPoint {
 
 let mode = "edit";
 
+document.getElementById("toggle").addEventListener("click", function() {
+  if (mode === "run") mode = "edit";
+  else if (mode === "edit") mode = "run"
+})
+
 let gate = new Gate("xnor", []);
 let input1 = new Input(true);
 let input2 = new Input(true);
 
+let output = new Output();
+
 let wire1 = gate.connect(input1);
 let wire2 = gate.connect(input2);
+let wire3 = output.connect(gate);
 
-gate.evaluate();
+let renderNodes = [new RenderPoint(gate, 400, 300), new RenderPoint(input1, 300, 250), new RenderPoint(input2, 300, 350), new RenderPoint(output, 500, 300)];
+let wires = [wire1, wire2, wire3];
 
-let renderNodes = [new RenderPoint(gate, 400, 300), new RenderPoint(input1, 300, 250), new RenderPoint(input2, 300, 350)];
-let wires = [wire1, wire2];
+evaluateAll(renderNodes);
 
 function drawGate(renderNode) {
   let color = renderNode.gate.output ? "green" : "red";
@@ -84,7 +92,7 @@ function mousePressed() {
   } else if (mode === "run") {
     if (dragging.gate.type === "input") {
       dragging.gate.setValue(!dragging.gate.output);
-      gate.evaluate();
+      evaluateAll(renderNodes);
     }
   }
 }

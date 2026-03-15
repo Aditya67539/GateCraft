@@ -15,6 +15,31 @@ class Input {
   }
 }
 
+class Output {
+  static nextId = 1;
+  constructor() {
+    this.id = Output.nextId++;
+    this.type = "output";
+    this.inputs = [];
+    this.output = false;
+  }
+
+  evaluate() {
+    if (this.inputs.length !== 1) {
+      console.error("Output does not support multiple inputs!");
+    }
+    this.output = this.inputs[0].from.evaluate();
+    return this.output;
+  }
+
+  connect(fromGate) {
+    const index = this.inputs.length;
+    const wire = new Wire(fromGate, this, index);
+    this.inputs.push(wire);
+    return wire;
+  }
+}
+
 class Gate {
   static nextId = 1;
   constructor(type, inputs) {
@@ -97,6 +122,14 @@ class Wire {
     this.to = to;
     this.toInputIndex = toInputIndex;
     this.signal = from.output;
+  }
+}
+
+function evaluateAll(renderNodes) {
+  for (let i = 0; i < renderNodes.length; i++) {
+    if (renderNodes[i].gate.type === "output") {
+      renderNodes[i].gate.evaluate();
+    }
   }
 }
 
