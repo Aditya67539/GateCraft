@@ -46,6 +46,34 @@ class Gate {
         }
         this.output = !resolvedInputs[0];
         break;
+      case "nand":
+        this.output = true;
+        resolvedInputs.forEach(input => {
+          this.output = this.output && input;
+        });
+        this.output = !this.output;
+        break;
+      case "nor":
+        this.output = false;
+        resolvedInputs.forEach(input => {
+          this.output = this.output || input;
+        });
+        this.output = !this.output;
+        break;
+      case "xor":
+        let countXOR = 0;
+        resolvedInputs.forEach(input => {
+          if (input) countXOR += 1;
+        });
+        this.output = countXOR % 2 ? true : false;
+        break;
+      case "xnor":
+        let countXNOR = 0;
+        resolvedInputs.forEach(input => {
+          if (input) countXNOR += 1;
+        });
+        this.output = countXNOR % 2 ? false : true;
+        break;
       default:
         console.error("Invalid operation");
     }
@@ -70,22 +98,11 @@ class Wire {
 }
 
 
-gate1 = new Gate("and", []);
-gate1.connect(new Input(true));
-gate1.connect(new Input(true));
-gate2 = new Gate("or", []);
-gate2.connect(new Input(false));
-gate2.connect(new Input(false));
-gate3 = new Gate("or", []);
-gate4 = new Gate("and", []);
-gate4.connect(new Input(false))
-gate5 = new Gate("not", []);
+gate1 = new Gate("xor", []);
+gate1.connect(new Input(false));
+gate1.connect(new Input(false));
+gate1.connect(new Input(false));
+gate1.connect(new Input(false));
 
-gate3.connect(gate1);
-gate3.connect(gate2);
-gate4.connect(gate3);
-gate5.connect(gate4);
-
-gate5.evaluate();
-
-console.log(gate5.output);
+gate1.evaluate();
+console.log(gate1.output);
