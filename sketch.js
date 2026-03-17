@@ -36,10 +36,21 @@ class RenderPoint {
 
 let mode = "edit";
 
+const modeText = document.getElementById("modeDisplay");
+
 document.getElementById("toggle").addEventListener("click", function() {
-  if (mode === "run") mode = "edit";
-  else if (mode === "edit") mode = "run"
-})
+  if (mode === "run") {
+    mode = "edit";
+    modeText.innerHTML = "Current mode: Edit";
+  }
+  else if (mode === "edit") {
+    mode = "run";
+    modeText.innerHTML = "Current mode: Run";
+  }
+});
+
+const WIDTH = window.innerWidth;
+const HEIGHT = window.innerHeight;
 
 let gate = new Gate("xnor", []);
 let input1 = new Input(true);
@@ -113,7 +124,7 @@ function mouseReleased() {
 }
 
 function setup() {
-  createCanvas(800, 600);
+  createCanvas(WIDTH, HEIGHT);
 }
 
 function draw() {
