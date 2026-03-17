@@ -52,7 +52,28 @@ document.getElementById("toggle").addEventListener("click", function() {
 const WIDTH = window.innerWidth;
 const HEIGHT = window.innerHeight;
 
-let gate = new Gate("xnor", []);
+let justPlacedFromToolbar = false;
+const buttons = document.querySelectorAll(".addComponent");
+
+buttons.forEach(button => {
+  button.addEventListener("click", function() {
+    const type = button.dataset.type;
+    justPlacedFromToolbar = true;
+    createNode(type);
+  });
+});
+
+let ghostNode = null;
+
+function createNode(type) {
+  const newGate = new Gate(type, []);
+  ghostNode = new RenderPoint(newGate, mouseX, mouseY);
+  mode = "placing";
+  modeText.innerHTML = "Current mode: Placing";
+  console.log(mouseX, mouseY);
+}
+
+let gate = new Gate("and", []);
 let input1 = new Input(true);
 let input2 = new Input(true);
 
@@ -93,6 +114,10 @@ let offsetX = 0;
 let offsetY = 0;
 
 function mousePressed() {
+  if (justPlacedFromToolbar) {
+    justPlacedFromToolbar = false;
+    return;
+  }
   dragging = renderNodes.find(n => n.containsPoint(mouseX, mouseY));
 
   if (mode === "edit") {
@@ -101,10 +126,15 @@ function mousePressed() {
       offsetY = mouseY - dragging.y;
     }
   } else if (mode === "run") {
-    if (dragging.gate.type === "input") {
+    if (dragging && dragging.gate.type === "input") {
       dragging.gate.setValue(!dragging.gate.output);
       evaluateAll(renderNodes);
     }
+  } else if (mode === "placing") {
+    mode = "edit";
+    renderNodes.push(ghostNode);
+    ghostNode = null;
+    modeText.innerHTML = "Current mode: Edit";
   }
 }
 
@@ -134,5 +164,12 @@ function draw() {
   }
   for (let i = 0; i < wires.length; i++) {
     drawWire(wires[i]);
+  }
+  if (ghostNode) {
+    drawGate(ghostNode);
+    if (mode === "placing") {
+      ghostNode.x = mouseX;
+      ghostNode.y = mouseY;
+    }
   }
 }
