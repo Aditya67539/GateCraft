@@ -1,7 +1,10 @@
-class Input {
+class Logic {
   static nextId = 1;
+}
+
+class Input {
   constructor(value) {
-    this.id = Input.nextId++;
+    this.id = Logic.nextId++;
     this.type = "input";
     this.output = value;
   }
@@ -16,9 +19,8 @@ class Input {
 }
 
 class Output {
-  static nextId = 1;
   constructor() {
-    this.id = Output.nextId++;
+    this.id = Logic.nextId++;
     this.type = "output";
     this.inputs = [];
     this.output = false;
@@ -41,9 +43,8 @@ class Output {
 }
 
 class Gate {
-  static nextId = 1;
   constructor(type, inputs) {
-    this.id = Gate.nextId++;
+    this.id = Logic.nextId++;
     this.type = type.toLowerCase();
     this.inputs = inputs;
     this.output = false;

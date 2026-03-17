@@ -23,7 +23,8 @@ class RenderPoint {
     };
   }
 
-  getInputPort(index) {
+  getInputPort(wire) {
+    const index = this.gate.inputs.indexOf(wire);
     const inputCount = this.gate.inputs.length;
     const spacing = this.height / inputCount;
 
@@ -34,7 +35,7 @@ class RenderPoint {
   }
 }
 
-let mode = "edit";
+let mode = "delete";
 
 const modeText = document.getElementById("modeDisplay");
 
@@ -104,7 +105,7 @@ function drawWire(wire) {
   const toNode = renderNodes.find(n => n.gate.id === wire.to.id);
 
   const start = fromNode.getOutputPort();
-  const end = toNode.getInputPort(wire.toInputIndex);
+  const end = toNode.getInputPort(wire);
 
   line(start.x, start.y, end.x, end.y);
 }
@@ -135,6 +136,18 @@ function mousePressed() {
     renderNodes.push(ghostNode);
     ghostNode = null;
     modeText.innerHTML = "Current mode: Edit";
+  } else if (mode === "delete") {
+    if (dragging) {
+      for (let i = 0; i < wires.length; i++) {
+        if (wires[i].from.id === dragging.gate.id) {
+          wires[i].to.inputs = wires[i].to.inputs.filter(
+            input => input.from.id !== dragging.gate.id
+          );
+        }
+      }
+      wires = wires.filter(n => n.from.id !== dragging.gate.id && n.to.id !== dragging.gate.id);
+      renderNodes = renderNodes.filter(n => n !== dragging);
+    }
   }
 }
 
