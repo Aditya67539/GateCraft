@@ -128,7 +128,7 @@ class Wire {
 
 function evaluateAll(renderNodes) {
   for (let i = 0; i < renderNodes.length; i++) {
-    if (renderNodes[i].gate.type === "output") {
+    if (renderNodes[i].gate.type !== "input") {
       renderNodes[i].gate.evaluate();
     }
   }

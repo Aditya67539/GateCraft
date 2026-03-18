@@ -33,9 +33,17 @@ class RenderPoint {
       y: this.y + spacing * index + spacing / 2
     };
   }
+
+  getInputPortByIndex(index, totalInputs) {
+    const spacing = this.height / totalInputs;
+    return {
+      x: this.x,
+      y: this.y + spacing * index + spacing / 2
+    };
+  }
 }
 
-let mode = "delete";
+let mode = "edit";
 
 const modeText = document.getElementById("modeDisplay");
 
@@ -114,6 +122,38 @@ let dragging = null;
 let offsetX = 0;
 let offsetY = 0;
 
+let drawingWire = null;
+
+function isNearPort(mouseX, mouseY, port) {
+  const d = dist(mouseX, mouseY, port.x, port.y);
+  return d < 15;
+}
+
+function findNearOutputPort(mx, my) {
+  for (let i = 0; i < renderNodes.length; i++) {
+    const port = renderNodes[i].getOutputPort();
+    if (isNearPort(mx, my, port)) {
+      return { fromNode: renderNodes[i] };
+    }
+  }
+  return null;
+}
+
+function findNearInputPort(mx, my) {
+  for (let i = 0; i < renderNodes.length; i++) {
+    if (renderNodes[i].gate instanceof Input) continue;
+    const totalInputs = renderNodes[i].gate.inputs.length + 1;
+
+    for (let j = 0; j < totalInputs; j++) {
+      const port = renderNodes[i].getInputPortByIndex(j, totalInputs);
+      if (isNearPort(mx, my, port)) {
+        return { toNode: renderNodes[i], index: j };
+      }
+    }
+  }
+  return null;
+}
+
 function mousePressed() {
   if (justPlacedFromToolbar) {
     justPlacedFromToolbar = false;
@@ -122,9 +162,24 @@ function mousePressed() {
   dragging = renderNodes.find(n => n.containsPoint(mouseX, mouseY));
 
   if (mode === "edit") {
-    if (dragging) {
-      offsetX = mouseX - dragging.x;
-      offsetY = mouseY - dragging.y;
+    // Check input ports
+    if (drawingWire) {
+      wireConnection = findNearInputPort(mouseX, mouseY);
+      if (wireConnection) {
+        let wire = wireConnection.toNode.gate.connect(drawingWire.fromNode.gate);
+        wires.push(wire);
+        drawingWire = null;
+        evaluateAll(renderNodes);
+      } else {
+        drawingWire = null;
+      }
+    } else {
+      drawingWire = findNearOutputPort(mouseX, mouseY);
+
+      if (!drawingWire && dragging) {
+        offsetX = mouseX - dragging.x;
+        offsetY = mouseY - dragging.y;
+      }
     }
   } else if (mode === "run") {
     if (dragging && dragging.gate.type === "input") {
@@ -171,9 +226,11 @@ function setup() {
 }
 
 function draw() {
-  background(220);
+  background(203, 203, 203);
   for (let i = 0; i < renderNodes.length; i++) {
     drawGate(renderNodes[i]);
+    const port = renderNodes[i].getOutputPort();
+    circle(port.x, port.y, 12);
   }
   for (let i = 0; i < wires.length; i++) {
     drawWire(wires[i]);
@@ -184,5 +241,9 @@ function draw() {
       ghostNode.x = mouseX;
       ghostNode.y = mouseY;
     }
+  }
+  if (drawingWire) {
+    let start = drawingWire.fromNode.getOutputPort();
+    line(start.x, start.y, mouseX, mouseY);
   }
 }
