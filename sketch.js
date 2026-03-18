@@ -47,35 +47,25 @@ let mode = "edit";
 
 const modeText = document.getElementById("modeDisplay");
 
-const btn = document.getElementById("dropdown-btn");
-const menu = document.getElementById("dropdown-menu");
-
-btn.addEventListener("click", () => {
-  menu.style.display = menu.style.display === "block" ? "none" : "block";
-});
-
-document.addEventListener("click", (e) => {
-  if (!btn.contains(e.target) && !menu.contains(e.target)) {
-    menu.style.display = "none";
-  }
-});
-
-document.querySelectorAll(".menu-item").forEach(item => {
-  item.addEventListener("click", () => {
-    mode = item.dataset.mode;
-    menu.style.display = "none";
-    modeText.innerHTML = `Current mode: ${mode}`;
+// Segmented mode switcher
+document.querySelectorAll(".mode-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    mode = btn.dataset.mode;
+    document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    modeText.textContent = `Mode: ${mode.charAt(0).toUpperCase() + mode.slice(1)}`;
   });
 });
 
-const WIDTH = window.innerWidth;
-const HEIGHT = window.innerHeight;
+const canvasHost = document.querySelector(".canvas-host");
+const WIDTH = canvasHost.clientWidth;
+const HEIGHT = canvasHost.clientHeight;
 
 let justPlacedFromToolbar = false;
 const buttons = document.querySelectorAll(".addComponent");
 
 buttons.forEach(button => {
-  button.addEventListener("click", function() {
+  button.addEventListener("click", function () {
     const type = button.dataset.type;
     justPlacedFromToolbar = true;
     createNode(type);
@@ -88,7 +78,7 @@ function createNode(type) {
   const newGate = type === "input" ? new Input(false) : type === "output" ? new Output() : new Gate(type, []);
   ghostNode = new RenderPoint(newGate, mouseX, mouseY);
   mode = "placing";
-  modeText.innerHTML = "Current mode: Placing";
+  modeText.textContent = "Mode: Placing";
 }
 
 let renderNodes = [];
@@ -189,7 +179,9 @@ function mousePressed() {
     mode = "edit";
     renderNodes.push(ghostNode);
     ghostNode = null;
-    modeText.innerHTML = "Current mode: Edit";
+    modeText.textContent = "Mode: Edit";
+    document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
+    document.getElementById("btn-edit").classList.add("active");
   } else if (mode === "delete") {
     if (dragging) {
       for (let i = 0; i < wires.length; i++) {
@@ -221,11 +213,13 @@ function mouseReleased() {
 }
 
 function setup() {
-  createCanvas(WIDTH, HEIGHT);
+  const cnv = createCanvas(WIDTH, HEIGHT);
+  cnv.parent(canvasHost);
 }
 
 function draw() {
-  background(203, 203, 203);
+  // background(15, 23, 42);
+  background(220);
   for (let i = 0; i < renderNodes.length; i++) {
     drawGate(renderNodes[i]);
     const port = renderNodes[i].getOutputPort();

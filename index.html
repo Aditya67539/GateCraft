@@ -4,54 +4,76 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Digital_logic_sim</title>
+  <title>GateCraft – Digital Logic Simulator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <script src="js/p5.min.js"></script>
 </head>
 
 <body>
-  <div class="toolbar">
-    <button id="dropdown-btn">Change mode ▼</button>
-    <div id="dropdown-menu" class="menu">
-      <div class="menu-item" data-mode="run">Run</div>
-      <div class="menu-item" data-mode="edit">Edit</div>
-      <div class="menu-item" data-mode="delete">Delete</div>
+
+  <!-- ── Top Toolbar ─────────────────────────────────────── -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <span class="logo">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="1" y="5" width="7" height="10" rx="2" fill="#6366f1" />
+          <rect x="12" y="5" width="7" height="10" rx="2" fill="#22d3ee" />
+          <line x1="8" y1="10" x2="12" y2="10" stroke="#a5b4fc" stroke-width="2" />
+          <circle cx="8" cy="10" r="1.5" fill="#a5b4fc" />
+          <circle cx="12" cy="10" r="1.5" fill="#a5b4fc" />
+        </svg>
+        GateCraft
+      </span>
     </div>
-    <span id="modeDisplay">Current mode: Edit</span>
-    <div class="inputs">
+
+    <div class="topbar-center">
+      <div class="mode-switcher" id="mode-switcher">
+        <button class="mode-btn active" data-mode="edit" id="btn-edit">Edit</button>
+        <button class="mode-btn" data-mode="run" id="btn-run">Run</button>
+        <button class="mode-btn" data-mode="delete" id="btn-delete">Delete</button>
+      </div>
+    </div>
+
+    <div class="topbar-right">
+      <span id="modeDisplay" class="mode-display">Mode: Edit</span>
+      <button class="icon-btn" title="Settings" aria-label="Settings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3" />
+          <path
+            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ── Left Sidebar ────────────────────────────────────── -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <p class="sidebar-label">I / O</p>
       <button class="addComponent" data-type="input">Input</button>
-    </div>
-    <div class="outputs">
       <button class="addComponent" data-type="output">Output</button>
     </div>
-    <div class="gates">
-      Gates
-      <br>
-      <ul>
-        <li>
-          <button class="addComponent" data-type="and">AND</button>
-        </li>
-        <li>
-          <button class="addComponent" data-type="or">OR</button>
-        </li>
-        <li>
-          <button class="addComponent" data-type="not">NOT</button>
-        </li>
-        <li>
-          <button class="addComponent" data-type="nand">NAND</button>
-        </li>
-        <li>
-          <button class="addComponent" data-type="nor">NOR</button>
-        </li>
-        <li>
-          <button class="addComponent" data-type="xor">XOR</button>
-        </li>
-        <li>
-          <button class="addComponent" data-type="xnor">XNOR</button>
-        </li>
-      </ul>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-section">
+      <p class="sidebar-label">Gates</p>
+      <button class="addComponent" data-type="and">AND</button>
+      <button class="addComponent" data-type="or">OR</button>
+      <button class="addComponent" data-type="not">NOT</button>
+      <button class="addComponent" data-type="nand">NAND</button>
+      <button class="addComponent" data-type="nor">NOR</button>
+      <button class="addComponent" data-type="xor">XOR</button>
+      <button class="addComponent" data-type="xnor">XNOR</button>
     </div>
-  </div>
+  </aside>
+
+  <!-- ── Canvas host (p5 injects here) ──────────────────── -->
+  <main class="canvas-host"></main>
+
   <script src="js/logic.js"></script>
   <script src="sketch.js"></script>
 </body>
