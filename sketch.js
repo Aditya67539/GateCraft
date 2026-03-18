@@ -47,15 +47,25 @@ let mode = "edit";
 
 const modeText = document.getElementById("modeDisplay");
 
-document.getElementById("toggle").addEventListener("click", function() {
-  if (mode === "run") {
-    mode = "edit";
-    modeText.innerHTML = "Current mode: Edit";
+const btn = document.getElementById("dropdown-btn");
+const menu = document.getElementById("dropdown-menu");
+
+btn.addEventListener("click", () => {
+  menu.style.display = menu.style.display === "block" ? "none" : "block";
+});
+
+document.addEventListener("click", (e) => {
+  if (!btn.contains(e.target) && !menu.contains(e.target)) {
+    menu.style.display = "none";
   }
-  else if (mode === "edit") {
-    mode = "run";
-    modeText.innerHTML = "Current mode: Run";
-  }
+});
+
+document.querySelectorAll(".menu-item").forEach(item => {
+  item.addEventListener("click", () => {
+    mode = item.dataset.mode;
+    menu.style.display = "none";
+    modeText.innerHTML = `Current mode: ${mode}`;
+  });
 });
 
 const WIDTH = window.innerWidth;
@@ -75,25 +85,14 @@ buttons.forEach(button => {
 let ghostNode = null;
 
 function createNode(type) {
-  const newGate = new Gate(type, []);
+  const newGate = type === "input" ? new Input(false) : type === "output" ? new Output() : new Gate(type, []);
   ghostNode = new RenderPoint(newGate, mouseX, mouseY);
   mode = "placing";
   modeText.innerHTML = "Current mode: Placing";
-  console.log(mouseX, mouseY);
 }
 
-let gate = new Gate("and", []);
-let input1 = new Input(true);
-let input2 = new Input(true);
-
-let output = new Output();
-
-let wire1 = gate.connect(input1);
-let wire2 = gate.connect(input2);
-let wire3 = output.connect(gate);
-
-let renderNodes = [new RenderPoint(gate, 400, 300), new RenderPoint(input1, 300, 250), new RenderPoint(input2, 300, 350), new RenderPoint(output, 500, 300)];
-let wires = [wire1, wire2, wire3];
+let renderNodes = [];
+let wires = [];
 
 evaluateAll(renderNodes);
 

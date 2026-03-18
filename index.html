@@ -11,10 +11,19 @@
 
 <body>
   <div class="toolbar">
-    <button id="toggle">Change mode</button>
+    <button id="dropdown-btn">Change mode ▼</button>
+    <div id="dropdown-menu" class="menu">
+      <div class="menu-item" data-mode="run">Run</div>
+      <div class="menu-item" data-mode="edit">Edit</div>
+      <div class="menu-item" data-mode="delete">Delete</div>
+    </div>
     <span id="modeDisplay">Current mode: Edit</span>
-    <div class="inputs">Inputs</div>
-    <div class="outputs">Outputs</div>
+    <div class="inputs">
+      <button class="addComponent" data-type="input">Input</button>
+    </div>
+    <div class="outputs">
+      <button class="addComponent" data-type="output">Output</button>
+    </div>
     <div class="gates">
       Gates
       <br>
