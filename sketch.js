@@ -97,14 +97,31 @@ function drawGate(renderNode) {
   text(`${renderNode.gate.type}`, renderNode.x + renderNode.width / 2, renderNode.y + renderNode.height / 2);
 }
 
-function drawWire(wire) {
+function getWirePorts(wire) {
   const fromNode = renderNodes.find(n => n.gate.id === wire.from.id);
   const toNode = renderNodes.find(n => n.gate.id === wire.to.id);
 
   const start = fromNode.getOutputPort();
   const end = toNode.getInputPort(wire);
 
-  line(start.x, start.y, end.x, end.y);
+  return {start: start, end: end};
+}
+
+function init_wire(wire) {
+  let ports = getWirePorts(wire);
+
+  let waypoint_1 = {x: ports.end.x - 20, y: ports.start.y};
+  let waypoint_2 = {x: waypoint_1.x, y: ports.end.y};
+
+  return {wire: wire, waypoint_1: waypoint_1, waypoint_2: waypoint_2};
+}
+
+function drawWire(wire_info) {
+  const ports = getWirePorts(wire_info.wire);
+
+  line(ports.start.x, ports.start.y, wire_info.waypoint_1.x, wire_info.waypoint_1.y);
+  line(wire_info.waypoint_1.x, wire_info.waypoint_1.y, wire_info.waypoint_2.x, wire_info.waypoint_2.y);
+  line(wire_info.waypoint_2.x, wire_info.waypoint_2.y, ports.end.x, ports.end.y);
 }
 
 let dragging = null;
@@ -112,6 +129,8 @@ let offsetX = 0;
 let offsetY = 0;
 
 let drawingWire = null;
+
+let changingWayPoint = null;
 
 function isNearPort(mouseX, mouseY, port) {
   const d = dist(mouseX, mouseY, port.x, port.y);
@@ -143,6 +162,22 @@ function findNearInputPort(mx, my) {
   return null;
 }
 
+function isNearWaypoint(mx, my, waypoint) {
+  const d = dist(mx, my, waypoint.x, waypoint.y);
+  return d < 10;
+}
+
+function findNearWaypoint(mx, my) {
+  for (let i = 0; i < wires.length; i++) {
+    if (isNearWaypoint(mx, my, wires[i].waypoint_1)) {
+      return wires[i].waypoint_1;
+    } else if (isNearWaypoint(mx, my, wires[i].waypoint_2)) {
+      return wires[i].waypoint_2;
+    }
+  }
+  return null;
+}
+
 function mousePressed() {
   if (justPlacedFromToolbar) {
     justPlacedFromToolbar = false;
@@ -156,7 +191,8 @@ function mousePressed() {
       wireConnection = findNearInputPort(mouseX, mouseY);
       if (wireConnection) {
         let wire = wireConnection.toNode.gate.connect(drawingWire.fromNode.gate);
-        wires.push(wire);
+        let wire_info = init_wire(wire);
+        wires.push(wire_info);
         drawingWire = null;
         evaluateAll(renderNodes);
       } else {
@@ -164,8 +200,9 @@ function mousePressed() {
       }
     } else {
       drawingWire = findNearOutputPort(mouseX, mouseY);
+      changingWayPoint = findNearWaypoint(mouseX, mouseY);
 
-      if (!drawingWire && dragging) {
+      if (!drawingWire && !changingWayPoint && dragging) {
         offsetX = mouseX - dragging.x;
         offsetY = mouseY - dragging.y;
       }
@@ -185,13 +222,13 @@ function mousePressed() {
   } else if (mode === "delete") {
     if (dragging) {
       for (let i = 0; i < wires.length; i++) {
-        if (wires[i].from.id === dragging.gate.id) {
-          wires[i].to.inputs = wires[i].to.inputs.filter(
+        if (wires[i].wire.from.id === dragging.gate.id) {
+          wires[i].wire.to.inputs = wires[i].wire.to.inputs.filter(
             input => input.from.id !== dragging.gate.id
           );
         }
       }
-      wires = wires.filter(n => n.from.id !== dragging.gate.id && n.to.id !== dragging.gate.id);
+      wires = wires.filter(n => n.wire.from.id !== dragging.gate.id && n.wire.to.id !== dragging.gate.id);
       renderNodes = renderNodes.filter(n => n !== dragging);
     }
   }
@@ -202,6 +239,10 @@ function mouseDragged() {
     if (dragging) {
       dragging.x = mouseX - offsetX;
       dragging.y = mouseY - offsetY;
+    }
+    if (changingWayPoint) {
+      changingWayPoint.x = mouseX;
+      changingWayPoint.y = mouseY;
     }
   }
 }
