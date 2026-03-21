@@ -133,13 +133,3 @@ function evaluateAll(renderNodes) {
     }
   }
 }
-
-
-const gate1 = new Gate("xor", []);
-gate1.connect(new Input(false));
-gate1.connect(new Input(false));
-gate1.connect(new Input(false));
-gate1.connect(new Input(false));
-
-gate1.evaluate();
-// console.log(gate1.output);

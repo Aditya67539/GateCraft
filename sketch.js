@@ -107,13 +107,23 @@ function getWirePorts(wire) {
   return {start: start, end: end};
 }
 
-function init_wire(wire) {
+function computeWayPoints(wire) {
   let ports = getWirePorts(wire);
-
-  let waypoint_1 = {x: ports.end.x - 20, y: ports.start.y};
+  let spacing = (wire.to.inputs.length + 1) * 5;
+  let waypoint_1 = {x: ports.end.x - spacing, y: ports.start.y};
   let waypoint_2 = {x: waypoint_1.x, y: ports.end.y};
+  return {waypoint_1: waypoint_1, waypoint_2: waypoint_2};
+}
 
-  return {wire: wire, waypoint_1: waypoint_1, waypoint_2: waypoint_2};
+function reComputeWayPoint(wire_info) {
+  let newWayPoints = computeWayPoints(wire_info.wire);
+  wire_info.waypoint_2.y = newWayPoints.waypoint_2.y;
+}
+
+function init_wire(wire) {
+  let waypoints = computeWayPoints(wire);
+
+  return {wire: wire, waypoint_1: waypoints.waypoint_1, waypoint_2: waypoints.waypoint_2};
 }
 
 function drawWire(wire_info) {
@@ -131,6 +141,8 @@ let offsetY = 0;
 let drawingWire = null;
 
 let changingWayPoint = null;
+
+let connectedWires = null;
 
 function isNearPort(mouseX, mouseY, port) {
   const d = dist(mouseX, mouseY, port.x, port.y);
@@ -193,6 +205,9 @@ function mousePressed() {
         let wire = wireConnection.toNode.gate.connect(drawingWire.fromNode.gate);
         let wire_info = init_wire(wire);
         wires.push(wire_info);
+        for (let i = 0; i < wires.length; i++) {
+          reComputeWayPoint(wires[i]);
+        }
         drawingWire = null;
         evaluateAll(renderNodes);
       } else {
@@ -205,6 +220,30 @@ function mousePressed() {
       if (!drawingWire && !changingWayPoint && dragging) {
         offsetX = mouseX - dragging.x;
         offsetY = mouseY - dragging.y;
+
+        let connectedInputWires = wires.filter(n => n.wire.to.id === dragging.gate.id);
+        let connectedOutputWires = wires.filter(n => n.wire.from.id === dragging.gate.id);
+
+        if (connectedInputWires || connectedOutputWires) {
+          connectedWires = [];
+          for (let i = 0; i < connectedInputWires.length; i++) {
+            connectedWires.push({
+              wire: connectedInputWires[i],
+              offsetX: mouseX - connectedInputWires[i].waypoint_2.x,
+              offsetY: mouseY - connectedInputWires[i].waypoint_2.y,
+              type: "input",
+            });
+          }
+
+          for (let i = 0; i < connectedOutputWires.length; i++) {
+            connectedWires.push({
+              wire: connectedOutputWires[i],
+              offsetX: mouseX - connectedOutputWires[i].waypoint_1.x,
+              offsetY: mouseY - connectedOutputWires[i].waypoint_1.y,
+              type: "output",
+            });
+          }
+        }
       }
     }
   } else if (mode === "run") {
@@ -230,6 +269,9 @@ function mousePressed() {
       }
       wires = wires.filter(n => n.wire.from.id !== dragging.gate.id && n.wire.to.id !== dragging.gate.id);
       renderNodes = renderNodes.filter(n => n !== dragging);
+      for (let i = 0; i < wires.length; i++) {
+        reComputeWayPoint(wires[i]);
+      }
     }
   }
 }
@@ -239,6 +281,16 @@ function mouseDragged() {
     if (dragging) {
       dragging.x = mouseX - offsetX;
       dragging.y = mouseY - offsetY;
+
+      if (connectedWires) {
+        for (let i = 0; i < connectedWires.length; i++) {
+          if (connectedWires[i].type === "input") {
+            connectedWires[i].wire.waypoint_2.y = mouseY - connectedWires[i].offsetY;
+          } else if (connectedWires[i].type === "output") {
+            connectedWires[i].wire.waypoint_1.y = mouseY - connectedWires[i].offsetY;
+          }
+        }
+      }
     }
     if (changingWayPoint) {
       changingWayPoint.x = mouseX;
