@@ -128,10 +128,17 @@ function init_wire(wire) {
 
 function drawWire(wire_info) {
   const ports = getWirePorts(wire_info.wire);
+  strokeWeight(3);
+
+  if (wire_info.wire.from.output) stroke(0, 200, 0);
+  else stroke(255, 0, 0);
 
   line(ports.start.x, ports.start.y, wire_info.waypoint_1.x, wire_info.waypoint_1.y);
   line(wire_info.waypoint_1.x, wire_info.waypoint_1.y, wire_info.waypoint_2.x, wire_info.waypoint_2.y);
   line(wire_info.waypoint_2.x, wire_info.waypoint_2.y, ports.end.x, ports.end.y);
+
+  stroke(0);
+  strokeWeight(1);
 }
 
 let dragging = null;
