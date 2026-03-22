@@ -24,14 +24,16 @@ class Output {
     this.type = "output";
     this.inputs = [];
     this.output = false;
+    this.tempOutput = false;
   }
 
   evaluate() {
-    if (this.inputs.length !== 1) {
+    if (!this.inputs || this.inputs.length !== 1) {
       console.error("Output does not support multiple inputs!");
+      return false;
     }
-    this.output = this.inputs[0].from.evaluate();
-    return this.output;
+    this.tempOutput = this.inputs[0].signal;
+    return this.tempOutput;
   }
 
   connect(fromGate) {
@@ -48,65 +50,66 @@ class Gate {
     this.type = type.toLowerCase();
     this.inputs = inputs;
     this.output = false;
+    this.tempOutput = false;
   }
 
   evaluate() {
     const resolvedInputs = this.inputs.map(input => {
       if (input instanceof Wire) {
-        return input.from.evaluate();
+        return input.signal;
       }
     });
     switch(this.type) {
       case "and":
-        this.output = true;
+        this.tempOutput = true;
         resolvedInputs.forEach(input => {
-          this.output = this.output && input;
+          this.tempOutput = this.tempOutput && input;
         });
         break;
       case "or":
-        this.output = false;
+        this.tempOutput = false;
         resolvedInputs.forEach(input => {
-          this.output = this.output || input;
+          this.tempOutput = this.tempOutput || input;
         });
         break;
       case "not":
         if (resolvedInputs.length !== 1) {
           console.error("Not operator does not support multiple inputs!");
         }
-        this.output = !resolvedInputs[0];
+        this.tempOutput = !resolvedInputs[0];
         break;
       case "nand":
-        this.output = true;
+        this.tempOutput = true;
         resolvedInputs.forEach(input => {
-          this.output = this.output && input;
+          this.tempOutput = this.tempOutput && input;
         });
-        this.output = !this.output;
+        this.tempOutput = !this.tempOutput;
         break;
       case "nor":
-        this.output = false;
+        this.tempOutput = false;
         resolvedInputs.forEach(input => {
-          this.output = this.output || input;
+          this.tempOutput = this.tempOutput || input;
         });
-        this.output = !this.output;
+        this.tempOutput = !this.tempOutput;
         break;
       case "xor":
         let countXOR = 0;
         resolvedInputs.forEach(input => {
           if (input) countXOR += 1;
         });
-        this.output = countXOR % 2 ? true : false;
+        this.tempOutput = countXOR % 2 ? true : false;
         break;
       case "xnor":
         let countXNOR = 0;
         resolvedInputs.forEach(input => {
           if (input) countXNOR += 1;
         });
-        this.output = countXNOR % 2 ? false : true;
+        this.tempOutput = countXNOR % 2 ? false : true;
         break;
       default:
         console.error("Invalid operation");
     }
-    return this.output;
+    return this.tempOutput;
   }
 
   connect(fromGate) {
@@ -126,10 +129,33 @@ class Wire {
   }
 }
 
-function evaluateAll(renderNodes) {
-  for (let i = 0; i < renderNodes.length; i++) {
-    if (renderNodes[i].gate.type !== "input") {
-      renderNodes[i].gate.evaluate();
+const MAX_ITER = 3;
+
+function evaluateAll(renderNodes, wires) {
+  for (let iter_count = 0; iter_count < MAX_ITER; iter_count++) {
+    for (let i = 0; i < wires.length; i++) {
+      if (wires[i].wire.from.type === "input") {
+        wires[i].wire.signal = wires[i].wire.from.output;
+      }
     }
+
+    let tempOutputs = [];
+    for (let i = 0; i < renderNodes.length; i++) {
+      if (renderNodes[i].gate.type !== "input") {
+        tempOutputs.push({ index: i, output: renderNodes[i].gate.evaluate() });
+      }
+    }
+
+    let changed = false;
+
+    for (let i = 0; i < tempOutputs.length; i++) {
+      renderNodes[tempOutputs[i].index].gate.output = tempOutputs[i].output;
+    }
+
+    for (let i = 0; i < wires.length; i++) {
+      wires[i].wire.signal = wires[i].wire.from.output;
+    }
+
+    if (!changed) break;
   }
 }

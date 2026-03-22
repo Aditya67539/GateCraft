@@ -84,7 +84,7 @@ function createNode(type) {
 let renderNodes = [];
 let wires = [];
 
-evaluateAll(renderNodes);
+evaluateAll(renderNodes, wires);
 
 function drawGate(renderNode) {
   let color = renderNode.gate.output ? "green" : "red";
@@ -216,7 +216,7 @@ function mousePressed() {
           reComputeWayPoint(wires[i]);
         }
         drawingWire = null;
-        evaluateAll(renderNodes);
+        evaluateAll(renderNodes, wires);
       } else {
         drawingWire = null;
       }
@@ -256,7 +256,7 @@ function mousePressed() {
   } else if (mode === "run") {
     if (dragging && dragging.gate.type === "input") {
       dragging.gate.setValue(!dragging.gate.output);
-      evaluateAll(renderNodes);
+      evaluateAll(renderNodes, wires);
     }
   } else if (mode === "placing") {
     mode = "edit";
@@ -279,6 +279,8 @@ function mousePressed() {
       for (let i = 0; i < wires.length; i++) {
         reComputeWayPoint(wires[i]);
       }
+
+      evaluateAll(renderNodes, wires);
     }
   }
 }
