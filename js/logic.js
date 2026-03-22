@@ -18,6 +18,17 @@ class Input {
   }
 }
 
+class Clock extends Input {
+  constructor(value) {
+    super(value);
+    this.type = "clock";
+  }
+
+  tick() {
+    super.setValue(!this.output);
+  }
+}
+
 class Output {
   constructor() {
     this.id = Logic.nextId++;
@@ -134,14 +145,14 @@ const MAX_ITER = 3;
 function evaluateAll(renderNodes, wires) {
   for (let iter_count = 0; iter_count < MAX_ITER; iter_count++) {
     for (let i = 0; i < wires.length; i++) {
-      if (wires[i].wire.from.type === "input") {
+      if (wires[i].wire.from.type === "input" || wires[i].wire.from.type === "clock") {
         wires[i].wire.signal = wires[i].wire.from.output;
       }
     }
 
     let tempOutputs = [];
     for (let i = 0; i < renderNodes.length; i++) {
-      if (renderNodes[i].gate.type !== "input") {
+      if (renderNodes[i].gate.type !== "input" && renderNodes[i].gate.type !== "clock") {
         tempOutputs.push({ index: i, output: renderNodes[i].gate.evaluate() });
       }
     }

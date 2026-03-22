@@ -75,7 +75,7 @@ buttons.forEach(button => {
 let ghostNode = null;
 
 function createNode(type) {
-  const newGate = type === "input" ? new Input(false) : type === "output" ? new Output() : new Gate(type, []);
+  const newGate = type === "input" ? new Input(false) : type === "output" ? new Output() : type === "clock" ? new Clock(false) : new Gate(type, []);
   ghostNode = new RenderPoint(newGate, mouseX, mouseY);
   mode = "placing";
   modeText.textContent = "Mode: Placing";
@@ -124,9 +124,6 @@ function computeWayPoints(wire) {
     waypoints.push({x: ports.end.x - spacing, y: ports.end.y - 3 * spacing * direction});
     waypoints.push({x: ports.end.x - spacing, y: ports.end.y});
   }
-  // let waypoint_1 = {x: ports.end.x - spacing, y: ports.start.y};
-  // let waypoint_2 = {x: waypoint_1.x, y: ports.end.y};
-  // return {waypoint_1: waypoint_1, waypoint_2: waypoint_2};
   return waypoints;
 }
 
@@ -139,7 +136,6 @@ function reComputeWayPoint(wire_info) {
 function init_wire(wire) {
   let waypoints = computeWayPoints(wire);
 
-  // return {wire: wire, waypoint_1: waypoints.waypoint_1, waypoint_2: waypoints.waypoint_2};
   return {wire: wire, waypoints: waypoints};
 }
 
@@ -149,10 +145,6 @@ function drawWire(wire_info) {
 
   if (wire_info.wire.from.output) stroke(0, 200, 0);
   else stroke(255, 0, 0);
-
-  // line(ports.start.x, ports.start.y, wire_info.waypoint_1.x, wire_info.waypoint_1.y);
-  // line(wire_info.waypoint_1.x, wire_info.waypoint_1.y, wire_info.waypoint_2.x, wire_info.waypoint_2.y);
-  // line(wire_info.waypoint_2.x, wire_info.waypoint_2.y, ports.end.x, ports.end.y);
 
   const waypointCount = wire_info.waypoints.length;
   line(ports.start.x, ports.start.y, wire_info.waypoints[0].x, wire_info.waypoints[0].y);
@@ -168,12 +160,12 @@ function drawWire(wire_info) {
 let dragging = null;
 let offsetX = 0;
 let offsetY = 0;
-
 let drawingWire = null;
-
 let changingWayPoint = null;
-
 let connectedWires = null;
+let intervalId = null;
+
+const FREQUENCY = 1; // Hertz
 
 function isNearPort(mouseX, mouseY, port) {
   const d = dist(mouseX, mouseY, port.x, port.y);
@@ -212,11 +204,6 @@ function isNearWaypoint(mx, my, waypoint) {
 
 function findNearWaypoint(mx, my) {
   for (let i = 0; i < wires.length; i++) {
-    // if (isNearWaypoint(mx, my, wires[i].waypoint_1)) {
-    //   return { waypoint: wires[i].waypoint_1, otherWaypoint: wires[i].waypoint_2 };
-    // } else if (isNearWaypoint(mx, my, wires[i].waypoint_2)) {
-    //   return { waypoint: wires[i].waypoint_2, otherWaypoint: wires[i].waypoint_1 };
-    // }
     const waypointCount = wires[i].waypoints.length;
     for (let j = 0; j < waypointCount; j++) {
       if (isNearWaypoint(mx, my, wires[i].waypoints[j])) {
@@ -299,6 +286,23 @@ function mousePressed() {
     if (dragging && dragging.gate.type === "input") {
       dragging.gate.setValue(!dragging.gate.output);
       evaluateAll(renderNodes, wires);
+    } else if (dragging && dragging.gate.type === "clock") {
+      if (intervalId !== null) {
+        clearInterval(intervalId);
+        intervalId = null;
+        return;
+      }
+      const clockNode = dragging;
+      const timeInterval = 1000 / (2 * FREQUENCY);
+      intervalId = setInterval(() => {
+        clockNode.gate.tick();
+        evaluateAll(renderNodes, wires);
+      }, timeInterval);
+
+      setTimeout(() => {
+        clearInterval(intervalId);
+        intervalId = null;
+      }, 10000);
     }
   } else if (mode === "placing") {
     mode = "edit";
@@ -365,7 +369,6 @@ function setup() {
 }
 
 function draw() {
-  // background(15, 23, 42);
   background(220);
   for (let i = 0; i < renderNodes.length; i++) {
     drawGate(renderNodes[i]);
