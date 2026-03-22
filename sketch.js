@@ -189,9 +189,9 @@ function isNearWaypoint(mx, my, waypoint) {
 function findNearWaypoint(mx, my) {
   for (let i = 0; i < wires.length; i++) {
     if (isNearWaypoint(mx, my, wires[i].waypoint_1)) {
-      return wires[i].waypoint_1;
+      return { waypoint: wires[i].waypoint_1, otherWaypoint: wires[i].waypoint_2 };
     } else if (isNearWaypoint(mx, my, wires[i].waypoint_2)) {
-      return wires[i].waypoint_2;
+      return { waypoint: wires[i].waypoint_2, otherWaypoint: wires[i].waypoint_1 };
     }
   }
   return null;
@@ -300,8 +300,9 @@ function mouseDragged() {
       }
     }
     if (changingWayPoint) {
-      changingWayPoint.x = mouseX;
-      changingWayPoint.y = mouseY;
+      changingWayPoint.waypoint.x = mouseX;
+      changingWayPoint.waypoint.y = mouseY;
+      changingWayPoint.otherWaypoint.x = changingWayPoint.waypoint.x;
     }
   }
 }
