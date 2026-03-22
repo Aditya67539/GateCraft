@@ -110,20 +110,37 @@ function getWirePorts(wire) {
 function computeWayPoints(wire) {
   let ports = getWirePorts(wire);
   let spacing = (wire.to.inputs.length + 1) * 5;
-  let waypoint_1 = {x: ports.end.x - spacing, y: ports.start.y};
-  let waypoint_2 = {x: waypoint_1.x, y: ports.end.y};
-  return {waypoint_1: waypoint_1, waypoint_2: waypoint_2};
+  let waypoints = [];
+  if (ports.start.x <= ports.end.x) {
+    // 2 Waypoints
+    waypoints.push({x: ports.end.x - spacing, y: ports.start.y});
+    waypoints.push({x: ports.end.x - spacing, y: ports.end.y});
+  } else {
+    // 4 Waypoints
+    let direction = 1;
+    if (ports.start.y > ports.end.y) direction = -1;
+    waypoints.push({x: ports.start.x + spacing, y: ports.start.y});
+    waypoints.push({x: ports.start.x + spacing, y: ports.start.y + 3 * spacing * direction});
+    waypoints.push({x: ports.end.x - spacing, y: ports.end.y - 3 * spacing * direction});
+    waypoints.push({x: ports.end.x - spacing, y: ports.end.y});
+  }
+  // let waypoint_1 = {x: ports.end.x - spacing, y: ports.start.y};
+  // let waypoint_2 = {x: waypoint_1.x, y: ports.end.y};
+  // return {waypoint_1: waypoint_1, waypoint_2: waypoint_2};
+  return waypoints;
 }
 
 function reComputeWayPoint(wire_info) {
   let newWayPoints = computeWayPoints(wire_info.wire);
-  wire_info.waypoint_2.y = newWayPoints.waypoint_2.y;
+  const waypointCount = newWayPoints.length;
+  wire_info.waypoints[waypointCount - 1].y = newWayPoints[waypointCount - 1].y;
 }
 
 function init_wire(wire) {
   let waypoints = computeWayPoints(wire);
 
-  return {wire: wire, waypoint_1: waypoints.waypoint_1, waypoint_2: waypoints.waypoint_2};
+  // return {wire: wire, waypoint_1: waypoints.waypoint_1, waypoint_2: waypoints.waypoint_2};
+  return {wire: wire, waypoints: waypoints};
 }
 
 function drawWire(wire_info) {
@@ -133,9 +150,16 @@ function drawWire(wire_info) {
   if (wire_info.wire.from.output) stroke(0, 200, 0);
   else stroke(255, 0, 0);
 
-  line(ports.start.x, ports.start.y, wire_info.waypoint_1.x, wire_info.waypoint_1.y);
-  line(wire_info.waypoint_1.x, wire_info.waypoint_1.y, wire_info.waypoint_2.x, wire_info.waypoint_2.y);
-  line(wire_info.waypoint_2.x, wire_info.waypoint_2.y, ports.end.x, ports.end.y);
+  // line(ports.start.x, ports.start.y, wire_info.waypoint_1.x, wire_info.waypoint_1.y);
+  // line(wire_info.waypoint_1.x, wire_info.waypoint_1.y, wire_info.waypoint_2.x, wire_info.waypoint_2.y);
+  // line(wire_info.waypoint_2.x, wire_info.waypoint_2.y, ports.end.x, ports.end.y);
+
+  const waypointCount = wire_info.waypoints.length;
+  line(ports.start.x, ports.start.y, wire_info.waypoints[0].x, wire_info.waypoints[0].y);
+  for (let i = 0; i < waypointCount - 1; i++) {
+    line(wire_info.waypoints[i].x, wire_info.waypoints[i].y, wire_info.waypoints[i + 1].x, wire_info.waypoints[i + 1].y);
+  }
+  line(wire_info.waypoints[waypointCount - 1].x, wire_info.waypoints[waypointCount - 1].y, ports.end.x, ports.end.y);
 
   stroke(0);
   strokeWeight(1);
@@ -188,10 +212,27 @@ function isNearWaypoint(mx, my, waypoint) {
 
 function findNearWaypoint(mx, my) {
   for (let i = 0; i < wires.length; i++) {
-    if (isNearWaypoint(mx, my, wires[i].waypoint_1)) {
-      return { waypoint: wires[i].waypoint_1, otherWaypoint: wires[i].waypoint_2 };
-    } else if (isNearWaypoint(mx, my, wires[i].waypoint_2)) {
-      return { waypoint: wires[i].waypoint_2, otherWaypoint: wires[i].waypoint_1 };
+    // if (isNearWaypoint(mx, my, wires[i].waypoint_1)) {
+    //   return { waypoint: wires[i].waypoint_1, otherWaypoint: wires[i].waypoint_2 };
+    // } else if (isNearWaypoint(mx, my, wires[i].waypoint_2)) {
+    //   return { waypoint: wires[i].waypoint_2, otherWaypoint: wires[i].waypoint_1 };
+    // }
+    const waypointCount = wires[i].waypoints.length;
+    for (let j = 0; j < waypointCount; j++) {
+      if (isNearWaypoint(mx, my, wires[i].waypoints[j])) {
+        let otherWaypoint = null;
+        if (waypointCount === 2) {
+          otherWaypoint = wires[i].waypoints[j === 0 ? 1 : 0];
+        } else if (waypointCount === 4) {
+          let otherIndex = 0;
+          if (j === 0) otherIndex = 1;
+          else if (j === 1) otherIndex = 0;
+          else if (j === 2) otherIndex = 3;
+          else if (j === 3) otherIndex = 2;
+          otherWaypoint = wires[i].waypoints[otherIndex];
+        }
+        return { waypoint: wires[i].waypoints[j], otherWaypoint: otherWaypoint };
+      }
     }
   }
   return null;
@@ -234,10 +275,11 @@ function mousePressed() {
         if (connectedInputWires || connectedOutputWires) {
           connectedWires = [];
           for (let i = 0; i < connectedInputWires.length; i++) {
+            const lastWaypoint = connectedInputWires[i].waypoints.length - 1;
             connectedWires.push({
               wire: connectedInputWires[i],
-              offsetX: mouseX - connectedInputWires[i].waypoint_2.x,
-              offsetY: mouseY - connectedInputWires[i].waypoint_2.y,
+              offsetX: mouseX - connectedInputWires[i].waypoints[lastWaypoint].x,
+              offsetY: mouseY - connectedInputWires[i].waypoints[lastWaypoint].y,
               type: "input",
             });
           }
@@ -245,8 +287,8 @@ function mousePressed() {
           for (let i = 0; i < connectedOutputWires.length; i++) {
             connectedWires.push({
               wire: connectedOutputWires[i],
-              offsetX: mouseX - connectedOutputWires[i].waypoint_1.x,
-              offsetY: mouseY - connectedOutputWires[i].waypoint_1.y,
+              offsetX: mouseX - connectedOutputWires[i].waypoints[0].x,
+              offsetY: mouseY - connectedOutputWires[i].waypoints[0].y,
               type: "output",
             });
           }
@@ -293,10 +335,12 @@ function mouseDragged() {
 
       if (connectedWires) {
         for (let i = 0; i < connectedWires.length; i++) {
+          const lastWaypoint = connectedWires[i].wire.waypoints.length - 1;
+          const firstWaypoint = 0;
           if (connectedWires[i].type === "input") {
-            connectedWires[i].wire.waypoint_2.y = mouseY - connectedWires[i].offsetY;
+            connectedWires[i].wire.waypoints[lastWaypoint].y = mouseY - connectedWires[i].offsetY;
           } else if (connectedWires[i].type === "output") {
-            connectedWires[i].wire.waypoint_1.y = mouseY - connectedWires[i].offsetY;
+            connectedWires[i].wire.waypoints[firstWaypoint].y = mouseY - connectedWires[i].offsetY;
           }
         }
       }
