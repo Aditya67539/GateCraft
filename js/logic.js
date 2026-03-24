@@ -143,28 +143,31 @@ class Wire {
 const MAX_ITER = 3;
 
 function evaluateAll(renderNodes, wires) {
+  for (let i = 0; i < wires.length; i++) {
+    if (wires[i].wire.from.type === "input" || wires[i].wire.from.type === "clock") {
+      wires[i].wire.signal = wires[i].wire.from.output;
+    }
+  }
+
   for (let iter_count = 0; iter_count < MAX_ITER; iter_count++) {
-    for (let i = 0; i < wires.length; i++) {
-      if (wires[i].wire.from.type === "input" || wires[i].wire.from.type === "clock") {
-        wires[i].wire.signal = wires[i].wire.from.output;
-      }
-    }
-
-    let tempOutputs = [];
-    for (let i = 0; i < renderNodes.length; i++) {
-      if (renderNodes[i].gate.type !== "input" && renderNodes[i].gate.type !== "clock") {
-        tempOutputs.push({ index: i, output: renderNodes[i].gate.evaluate() });
-      }
-    }
-
     let changed = false;
 
-    for (let i = 0; i < tempOutputs.length; i++) {
-      renderNodes[tempOutputs[i].index].gate.output = tempOutputs[i].output;
-    }
+    for (let i = 0; i < renderNodes.length; i++) {
+      const gate = renderNodes[i].gate;
+      if (gate.type === "input" || gate.type === "clock") continue;
 
-    for (let i = 0; i < wires.length; i++) {
-      wires[i].wire.signal = wires[i].wire.from.output;
+      const newOutput = gate.evaluate();
+
+      if (newOutput !== gate.output) {
+        changed = true;
+        gate.output = newOutput;
+
+        for (let j = 0; j < wires.length; j++) {
+          if (wires[j].wire.from.id === gate.id) {
+            wires[j].wire.signal = newOutput;
+          }
+        }
+      }
     }
 
     if (!changed) break;
