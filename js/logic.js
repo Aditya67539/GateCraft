@@ -143,33 +143,83 @@ class Wire {
 const MAX_ITER = 3;
 
 function evaluateAll(renderNodes, wires) {
-  for (let i = 0; i < wires.length; i++) {
-    if (wires[i].wire.from.type === "input" || wires[i].wire.from.type === "clock") {
-      wires[i].wire.signal = wires[i].wire.from.output;
+  const queue = new Set();
+  const gateMap = {};
+
+  for (const rn of renderNodes) {
+    gateMap[rn.gate.id] = rn.gate;
+  }
+
+  for (const wi of wires) {
+    const from = wi.wire.from;
+    if (from.type === "input" || from.type === "clock") {
+      const newSignal = from.output;
+      if (wi.wire.signal !== newSignal) {
+        wi.wire.signal = newSignal;
+        queue.add(wi.wire.to.id);
+      }
     }
   }
 
-  for (let iter_count = 0; iter_count < MAX_ITER; iter_count++) {
-    let changed = false;
+  const visited = new Set();
 
-    for (let i = 0; i < renderNodes.length; i++) {
-      const gate = renderNodes[i].gate;
-      if (gate.type === "input" || gate.type === "clock") continue;
+  while (queue.size > 0) {
+    const [gateId] = queue;
+    queue.delete(gateId);
 
-      const newOutput = gate.evaluate();
+    const gate = gateMap[gateId];
+    if (!gate || gate.type === "input" || gate.type === "clock") continue;
 
-      if (newOutput !== gate.output) {
-        changed = true;
-        gate.output = newOutput;
+    const oldOutput = gate.output;
+    const newOutput = gate.evaluate();
+    gate.output = newOutput;
 
-        for (let j = 0; j < wires.length; j++) {
-          if (wires[j].wire.from.id === gate.id) {
-            wires[j].wire.signal = newOutput;
+    if (newOutput !== oldOutput) {
+      for (const wi of wires) {
+        if (wi.wire.from.id === gate.id) {
+          wi.wire.signal = newOutput;
+          const downstreamId = wi.wire.to.id;
+
+          if (!visited.has(downstreamId)) {
+            queue.add(downstreamId);
           }
         }
       }
     }
 
-    if (!changed) break;
+    visited.add(gateId);
+  }
+}
+
+function evaluateOnce(renderNodes, wires) {
+  for (const wi of wires) {
+    const from = wi.wire.from;
+    if (from.type === "input" || from.type === "clock") {
+      wi.wire.signal = from.output;
+    }
+  }
+
+  for (const rn of renderNodes) {
+    const gate = rn.gate;
+    if (gate.type === "input" || gate.type === "clock") continue;
+    gate.output = gate.evaluate();
+    for (const wi of wires) {
+      if (wi.wire.from.id === gate.id) {
+        wi.wire.signal = gate.output;
+      }
+    }
+  }
+}
+
+function settleCircuit(renderNodes, wires) {
+  let stable = false;
+  let iterations = 0;
+
+  while (!stable && iterations < 100) {
+    const before = wires.map(w => w.wire.signal);
+    evaluateOnce(renderNodes, wires);
+    const after = wires.map(w => w.wire.signal);
+    stable = before.every((v, i) => v === after[i]);
+    iterations++;
   }
 }

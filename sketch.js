@@ -84,8 +84,6 @@ function createNode(type) {
 let renderNodes = [];
 let wires = [];
 
-evaluateAll(renderNodes, wires);
-
 function drawGate(renderNode) {
   let color = renderNode.gate.output ? "green" : "red";
   fill(color);
@@ -244,7 +242,7 @@ function mousePressed() {
           reComputeWayPoint(wires[i]);
         }
         drawingWire = null;
-        evaluateAll(renderNodes, wires);
+        settleCircuit(renderNodes, wires);
       } else {
         drawingWire = null;
       }
@@ -326,7 +324,7 @@ function mousePressed() {
         reComputeWayPoint(wires[i]);
       }
 
-      evaluateAll(renderNodes, wires);
+      settleCircuit(renderNodes, wires);
     }
   }
 }
