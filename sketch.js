@@ -1,4 +1,6 @@
-import { Input, Clock, Output, Gate, settleCircuit, evaluateAll } from "./js/logic.js";
+// import { Input, Clock, Output, Gate, settleCircuit, evaluateAll } from "./js/logic.js";
+import { Input, Clock, Output, Gate } from "./logic/gates.js";
+import { settleCircuit, evaluateAll } from "./logic/evaluate.js";
 import { FREQUENCY } from "./constants.js";
 import { state } from "./state.js";
 
