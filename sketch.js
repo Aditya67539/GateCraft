@@ -1,37 +1,13 @@
-import { Input } from "./logic/gates.js";
 import { state } from "./state.js";
-import { createNode } from "./render/RenderPoint.js";
-import { computeWayPoints } from "./render/wireGeometry.js";
 import { drawGate, drawWire } from "./render/draw.js";
 import { registerMouseHandlers } from "./input/mouseHandlers.js";
+import { initToolbar } from "./ui/toolbar.js";
 
 let mouse = { x: 0, y: 0 };
-
-export const modeText = document.getElementById("modeDisplay");
-
-// Segmented mode switcher
-document.querySelectorAll(".mode-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    state.mode = btn.dataset.mode;
-    document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    modeText.textContent = `Mode: ${state.mode.charAt(0).toUpperCase() + state.mode.slice(1)}`;
-  });
-});
 
 const canvasHost = document.querySelector(".canvas-host");
 const WIDTH = canvasHost.clientWidth;
 const HEIGHT = canvasHost.clientHeight;
-
-const buttons = document.querySelectorAll(".addComponent");
-
-buttons.forEach(button => {
-  button.addEventListener("click", function () {
-    const type = button.dataset.type;
-    state.justPlacedFromToolbar = true;
-    createNode(type, mouse.x, mouse.y);
-  });
-});
 
 let renderNodes = [];
 let wires = [];
@@ -40,6 +16,7 @@ const sketch = (p) => {
   p.setup = function() {
     const cnv = p.createCanvas(WIDTH, HEIGHT);
     cnv.parent(canvasHost);
+    initToolbar(p);
   }
 
   p.draw = function() {

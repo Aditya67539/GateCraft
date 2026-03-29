@@ -3,7 +3,7 @@ import { Input } from "../logic/gates.js";
 import { settleCircuit, evaluateAll } from "../logic/evaluate.js";
 import { FREQUENCY } from "../constants.js";
 import { reComputeWayPoint, init_wire } from "../render/wireGeometry.js";
-import { modeText } from "../sketch.js";
+import { modeText } from "../ui/toolbar.js";
 
 export function registerMouseHandlers(p, renderNodes, wires) {
   p.mousePressed = function () {

@@ -1,6 +1,6 @@
 import { Input, Output, Clock, Gate } from "../logic/gates.js";
 import { state } from "../state.js";
-import { modeText } from "../sketch.js";
+import { modeText } from "../ui/toolbar.js";
 
 export class RenderPoint {
   constructor(gate, x, y) {
