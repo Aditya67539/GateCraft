@@ -1,4 +1,6 @@
 import { Input, Clock, Output, Gate, settleCircuit, evaluateAll } from "./js/logic.js";
+import { FREQUENCY } from "./constants.js";
+import { state } from "./state.js";
 
 class RenderPoint {
   constructor(gate, x, y) {
@@ -45,7 +47,6 @@ class RenderPoint {
   }
 }
 
-let mode = "edit";
 let mouse = { x: 0, y: 0 };
 
 const modeText = document.getElementById("modeDisplay");
@@ -53,10 +54,10 @@ const modeText = document.getElementById("modeDisplay");
 // Segmented mode switcher
 document.querySelectorAll(".mode-btn").forEach(btn => {
   btn.addEventListener("click", () => {
-    mode = btn.dataset.mode;
+    state.mode = btn.dataset.mode;
     document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
-    modeText.textContent = `Mode: ${mode.charAt(0).toUpperCase() + mode.slice(1)}`;
+    modeText.textContent = `Mode: ${state.mode.charAt(0).toUpperCase() + state.mode.slice(1)}`;
   });
 });
 
@@ -64,23 +65,21 @@ const canvasHost = document.querySelector(".canvas-host");
 const WIDTH = canvasHost.clientWidth;
 const HEIGHT = canvasHost.clientHeight;
 
-let justPlacedFromToolbar = false;
 const buttons = document.querySelectorAll(".addComponent");
 
 buttons.forEach(button => {
   button.addEventListener("click", function () {
     const type = button.dataset.type;
-    justPlacedFromToolbar = true;
+    state.justPlacedFromToolbar = true;
     createNode(type, mouse.x, mouse.y);
   });
 });
 
-let ghostNode = null;
 
 function createNode(type, mouseX, mouseY) {
   const newGate = type === "input" ? new Input(false) : type === "output" ? new Output() : type === "clock" ? new Clock(false) : new Gate(type, []);
-  ghostNode = new RenderPoint(newGate, mouseX, mouseY);
-  mode = "placing";
+  state.ghostNode = new RenderPoint(newGate, mouseX, mouseY);
+  state.mode = "placing";
   modeText.textContent = "Mode: Placing";
 }
 
@@ -157,16 +156,6 @@ function drawWire(wire_info, p) {
   p.stroke(0);
   p.strokeWeight(1);
 }
-
-let dragging = null;
-let offsetX = 0;
-let offsetY = 0;
-let drawingWire = null;
-let changingWayPoint = null;
-let connectedWires = null;
-let intervalId = null;
-
-const FREQUENCY = 1; // Hertz
 
 function isNearPort(mouseX, mouseY, port, p) {
   const d = p.dist(mouseX, mouseY, port.x, port.y);
@@ -245,58 +234,58 @@ const sketch = (p) => {
     for (let i = 0; i < wires.length; i++) {
       drawWire(wires[i], p);
     }
-    if (ghostNode) {
-      drawGate(ghostNode, p);
-      if (mode === "placing") {
-        ghostNode.x = p.mouseX;
-        ghostNode.y = p.mouseY;
+    if (state.ghostNode) {
+      drawGate(state.ghostNode, p);
+      if (state.mode === "placing") {
+        state.ghostNode.x = p.mouseX;
+        state.ghostNode.y = p.mouseY;
       }
     }
-    if (drawingWire) {
-      let start = drawingWire.fromNode.getOutputPort();
+    if (state.drawingWire) {
+      let start = state.drawingWire.fromNode.getOutputPort();
       p.line(start.x, start.y, p.mouseX, p.mouseY);
     }
   }
 
   p.mousePressed = function() {
-    if (justPlacedFromToolbar) {
-      justPlacedFromToolbar = false;
+    if (state.justPlacedFromToolbar) {
+      state.justPlacedFromToolbar = false;
       return;
     }
-    dragging = renderNodes.find(n => n.containsPoint(p.mouseX, p.mouseY));
+    state.dragging = renderNodes.find(n => n.containsPoint(p.mouseX, p.mouseY));
 
-    if (mode === "edit") {
+    if (state.mode === "edit") {
       // Check input ports
-      if (drawingWire) {
+      if (state.drawingWire) {
         let wireConnection = findNearInputPort(p.mouseX, p.mouseY, p);
         if (wireConnection) {
-          let wire = wireConnection.toNode.gate.connect(drawingWire.fromNode.gate);
+          let wire = wireConnection.toNode.gate.connect(state.drawingWire.fromNode.gate);
           let wire_info = init_wire(wire);
           wires.push(wire_info);
           for (let i = 0; i < wires.length; i++) {
             reComputeWayPoint(wires[i]);
           }
-          drawingWire = null;
+          state.drawingWire = null;
           settleCircuit(renderNodes, wires);
         } else {
-          drawingWire = null;
+          state.drawingWire = null;
         }
       } else {
-        drawingWire = findNearOutputPort(p.mouseX, p.mouseY, p);
-        changingWayPoint = findNearWaypoint(p.mouseX, p.mouseY, p);
+        state.drawingWire = findNearOutputPort(p.mouseX, p.mouseY, p);
+        state.changingWayPoint = findNearWaypoint(p.mouseX, p.mouseY, p);
 
-        if (!drawingWire && !changingWayPoint && dragging) {
-          offsetX = p.mouseX - dragging.x;
-          offsetY = p.mouseY - dragging.y;
+        if (!state.drawingWire && !state.changingWayPoint && state.dragging) {
+          state.offsetX = p.mouseX - state.dragging.x;
+          state.offsetY = p.mouseY - state.dragging.y;
 
-          let connectedInputWires = wires.filter(n => n.wire.to.id === dragging.gate.id);
-          let connectedOutputWires = wires.filter(n => n.wire.from.id === dragging.gate.id);
+          let connectedInputWires = wires.filter(n => n.wire.to.id === state.dragging.gate.id);
+          let connectedOutputWires = wires.filter(n => n.wire.from.id === state.dragging.gate.id);
 
           if (connectedInputWires || connectedOutputWires) {
-            connectedWires = [];
+            state.connectedWires = [];
             for (let i = 0; i < connectedInputWires.length; i++) {
               const lastWaypoint = connectedInputWires[i].waypoints.length - 1;
-              connectedWires.push({
+              state.connectedWires.push({
                 wire: connectedInputWires[i],
                 offsetX: p.mouseX - connectedInputWires[i].waypoints[lastWaypoint].x,
                 offsetY: p.mouseY - connectedInputWires[i].waypoints[lastWaypoint].y,
@@ -305,7 +294,7 @@ const sketch = (p) => {
             }
 
             for (let i = 0; i < connectedOutputWires.length; i++) {
-              connectedWires.push({
+              state.connectedWires.push({
                 wire: connectedOutputWires[i],
                 offsetX: p.mouseX - connectedOutputWires[i].waypoints[0].x,
                 offsetY: p.mouseY - connectedOutputWires[i].waypoints[0].y,
@@ -315,46 +304,46 @@ const sketch = (p) => {
           }
         }
       }
-    } else if (mode === "run") {
-      if (dragging && dragging.gate.type === "input") {
-        dragging.gate.setValue(!dragging.gate.output);
+    } else if (state.mode === "run") {
+      if (state.dragging && state.dragging.gate.type === "input") {
+        state.dragging.gate.setValue(!state.dragging.gate.output);
         evaluateAll(renderNodes, wires);
-      } else if (dragging && dragging.gate.type === "clock") {
-        if (intervalId !== null) {
-          clearInterval(intervalId);
-          intervalId = null;
+      } else if (state.dragging && state.dragging.gate.type === "clock") {
+        if (state.intervalId !== null) {
+          clearInterval(state.intervalId);
+          state.intervalId = null;
           return;
         }
-        const clockNode = dragging;
+        const clockNode = state.dragging;
         const timeInterval = 1000 / (2 * FREQUENCY);
-        intervalId = setInterval(() => {
+        state.intervalId = setInterval(() => {
           clockNode.gate.tick();
           evaluateAll(renderNodes, wires);
         }, timeInterval);
 
         setTimeout(() => {
-          clearInterval(intervalId);
-          intervalId = null;
+          clearInterval(state.intervalId);
+          state.intervalId = null;
         }, 10000);
       }
-    } else if (mode === "placing") {
-      mode = "edit";
-      renderNodes.push(ghostNode);
-      ghostNode = null;
+    } else if (state.mode === "placing") {
+      state.mode = "edit";
+      renderNodes.push(state.ghostNode);
+      state.ghostNode = null;
       modeText.textContent = "Mode: Edit";
       document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
       document.getElementById("btn-edit").classList.add("active");
-    } else if (mode === "delete") {
-      if (dragging) {
+    } else if (state.mode === "delete") {
+      if (state.dragging) {
         for (let i = 0; i < wires.length; i++) {
-          if (wires[i].wire.from.id === dragging.gate.id) {
+          if (wires[i].wire.from.id === state.dragging.gate.id) {
             wires[i].wire.to.inputs = wires[i].wire.to.inputs.filter(
-              input => input.from.id !== dragging.gate.id
+              input => input.from.id !== state.dragging.gate.id
             );
           }
         }
-        wires = wires.filter(n => n.wire.from.id !== dragging.gate.id && n.wire.to.id !== dragging.gate.id);
-        renderNodes = renderNodes.filter(n => n !== dragging);
+        wires = wires.filter(n => n.wire.from.id !== state.dragging.gate.id && n.wire.to.id !== state.dragging.gate.id);
+        renderNodes = renderNodes.filter(n => n !== state.dragging);
         for (let i = 0; i < wires.length; i++) {
           reComputeWayPoint(wires[i]);
         }
@@ -365,35 +354,35 @@ const sketch = (p) => {
   }
 
   p.mouseDragged = function() {
-    if (mode === "edit") {
-      if (dragging) {
-        dragging.x = p.mouseX - offsetX;
-        dragging.y = p.mouseY - offsetY;
+    if (state.mode === "edit") {
+      if (state.dragging) {
+        state.dragging.x = p.mouseX - state.offsetX;
+        state.dragging.y = p.mouseY - state.offsetY;
 
-        if (connectedWires) {
-          for (let i = 0; i < connectedWires.length; i++) {
-            const lastWaypoint = connectedWires[i].wire.waypoints.length - 1;
+        if (state.connectedWires) {
+          for (let i = 0; i < state.connectedWires.length; i++) {
+            const lastWaypoint = state.connectedWires[i].wire.waypoints.length - 1;
             const firstWaypoint = 0;
-            if (connectedWires[i].type === "input") {
-              connectedWires[i].wire.waypoints[lastWaypoint].y = p.mouseY - connectedWires[i].offsetY;
-            } else if (connectedWires[i].type === "output") {
-              connectedWires[i].wire.waypoints[firstWaypoint].y = p.mouseY - connectedWires[i].offsetY;
+            if (state.connectedWires[i].type === "input") {
+              state.connectedWires[i].wire.waypoints[lastWaypoint].y = p.mouseY - state.connectedWires[i].offsetY;
+            } else if (state.connectedWires[i].type === "output") {
+              state.connectedWires[i].wire.waypoints[firstWaypoint].y = p.mouseY - state.connectedWires[i].offsetY;
             }
           }
         }
       }
-      if (changingWayPoint) {
-        changingWayPoint.waypoint.x = p.mouseX;
-        changingWayPoint.waypoint.y = p.mouseY;
-        changingWayPoint.otherWaypoint.x = changingWayPoint.waypoint.x;
+      if (state.changingWayPoint) {
+        state.changingWayPoint.waypoint.x = p.mouseX;
+        state.changingWayPoint.waypoint.y = p.mouseY;
+        state.changingWayPoint.otherWaypoint.x = state.changingWayPoint.waypoint.x;
       }
     }
   }
 
   p.mouseReleased = function() {
-    dragging = null;
-    offsetX = 0;
-    offsetY = 0;
+    state.dragging = null;
+    state.offsetX = 0;
+    state.offsetY = 0;
   }
 }
 
