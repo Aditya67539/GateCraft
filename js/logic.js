@@ -2,7 +2,7 @@ class Logic {
   static nextId = 1;
 }
 
-class Input {
+export class Input {
   constructor(value) {
     this.id = Logic.nextId++;
     this.type = "input";
@@ -18,7 +18,7 @@ class Input {
   }
 }
 
-class Clock extends Input {
+export class Clock extends Input {
   constructor(value) {
     super(value);
     this.type = "clock";
@@ -29,7 +29,7 @@ class Clock extends Input {
   }
 }
 
-class Output {
+export class Output {
   constructor() {
     this.id = Logic.nextId++;
     this.type = "output";
@@ -55,7 +55,7 @@ class Output {
   }
 }
 
-class Gate {
+export class Gate {
   constructor(type, inputs) {
     this.id = Logic.nextId++;
     this.type = type.toLowerCase();
@@ -131,7 +131,7 @@ class Gate {
   }
 }
 
-class Wire {
+export class Wire {
   constructor(from, to, toInputIndex) {
     this.from = from;
     this.to = to;
@@ -142,7 +142,7 @@ class Wire {
 
 const MAX_ITER = 3;
 
-function evaluateAll(renderNodes, wires) {
+export function evaluateAll(renderNodes, wires) {
   const queue = new Set();
   const gateMap = {};
 
@@ -191,7 +191,7 @@ function evaluateAll(renderNodes, wires) {
   }
 }
 
-function evaluateOnce(renderNodes, wires) {
+export function evaluateOnce(renderNodes, wires) {
   for (const wi of wires) {
     const from = wi.wire.from;
     if (from.type === "input" || from.type === "clock") {
@@ -211,7 +211,7 @@ function evaluateOnce(renderNodes, wires) {
   }
 }
 
-function settleCircuit(renderNodes, wires) {
+export function settleCircuit(renderNodes, wires) {
   let stable = false;
   let iterations = 0;
 
