@@ -1,57 +1,14 @@
-// import { Input, Clock, Output, Gate, settleCircuit, evaluateAll } from "./js/logic.js";
-import { Input, Clock, Output, Gate } from "./logic/gates.js";
+import { Input } from "./logic/gates.js";
 import { settleCircuit, evaluateAll } from "./logic/evaluate.js";
 import { FREQUENCY } from "./constants.js";
 import { state } from "./state.js";
-
-class RenderPoint {
-  constructor(gate, x, y) {
-    this.gate = gate;
-    this.x = x;
-    this.y = y;
-    this.width = 60;
-    this.height = 40;
-  }
-
-  containsPoint(px, py) {
-    return (
-      px >= this.x &&
-      px <= this.x + this.width &&
-      py >= this.y &&
-      py <= this.y + this.height
-    );
-  }
-
-  getOutputPort() {
-    return {
-      x: this.x + this.width,
-      y: this.y + this.height / 2
-    };
-  }
-
-  getInputPort(wire) {
-    const index = this.gate.inputs.indexOf(wire);
-    const inputCount = this.gate.inputs.length;
-    const spacing = this.height / inputCount;
-
-    return {
-      x: this.x,
-      y: this.y + spacing * index + spacing / 2
-    };
-  }
-
-  getInputPortByIndex(index, totalInputs) {
-    const spacing = this.height / totalInputs;
-    return {
-      x: this.x,
-      y: this.y + spacing * index + spacing / 2
-    };
-  }
-}
+import { createNode } from "./render/RenderPoint.js";
+import { computeWayPoints, reComputeWayPoint } from "./render/wireGeometry.js";
+import { drawGate, drawWire } from "./render/draw.js";
 
 let mouse = { x: 0, y: 0 };
 
-const modeText = document.getElementById("modeDisplay");
+export const modeText = document.getElementById("modeDisplay");
 
 // Segmented mode switcher
 document.querySelectorAll(".mode-btn").forEach(btn => {
@@ -77,86 +34,12 @@ buttons.forEach(button => {
   });
 });
 
-
-function createNode(type, mouseX, mouseY) {
-  const newGate = type === "input" ? new Input(false) : type === "output" ? new Output() : type === "clock" ? new Clock(false) : new Gate(type, []);
-  state.ghostNode = new RenderPoint(newGate, mouseX, mouseY);
-  state.mode = "placing";
-  modeText.textContent = "Mode: Placing";
-}
-
 let renderNodes = [];
 let wires = [];
 
-function drawGate(renderNode, p) {
-  let color = renderNode.gate.output ? "green" : "red";
-  p.fill(color);
-  p.rect(renderNode.x, renderNode.y, renderNode.width, renderNode.height);
-
-  p.fill(255);
-  p.textAlign(p.CENTER, p.CENTER);
-  p.textSize(20);
-  p.text(`${renderNode.gate.type}`, renderNode.x + renderNode.width / 2, renderNode.y + renderNode.height / 2);
-}
-
-function getWirePorts(wire) {
-  const fromNode = renderNodes.find(n => n.gate.id === wire.from.id);
-  const toNode = renderNodes.find(n => n.gate.id === wire.to.id);
-
-  const start = fromNode.getOutputPort();
-  const end = toNode.getInputPort(wire);
-
-  return {start: start, end: end};
-}
-
-function computeWayPoints(wire) {
-  let ports = getWirePorts(wire);
-  let spacing = (wire.to.inputs.length + 1) * 5;
-  let waypoints = [];
-  if (ports.start.x <= ports.end.x) {
-    // 2 Waypoints
-    waypoints.push({x: ports.end.x - spacing, y: ports.start.y});
-    waypoints.push({x: ports.end.x - spacing, y: ports.end.y});
-  } else {
-    // 4 Waypoints
-    let direction = 1;
-    if (ports.start.y > ports.end.y) direction = -1;
-    waypoints.push({x: ports.start.x + spacing, y: ports.start.y});
-    waypoints.push({x: ports.start.x + spacing, y: ports.start.y + 3 * spacing * direction});
-    waypoints.push({x: ports.end.x - spacing, y: ports.end.y - 3 * spacing * direction});
-    waypoints.push({x: ports.end.x - spacing, y: ports.end.y});
-  }
-  return waypoints;
-}
-
-function reComputeWayPoint(wire_info) {
-  let newWayPoints = computeWayPoints(wire_info.wire);
-  const waypointCount = newWayPoints.length;
-  wire_info.waypoints[waypointCount - 1].y = newWayPoints[waypointCount - 1].y;
-}
-
 function init_wire(wire) {
-  let waypoints = computeWayPoints(wire);
-
+  let waypoints = computeWayPoints(renderNodes, wire);
   return {wire: wire, waypoints: waypoints};
-}
-
-function drawWire(wire_info, p) {
-  const ports = getWirePorts(wire_info.wire);
-  p.strokeWeight(3);
-
-  if (wire_info.wire.from.output) p.stroke(0, 200, 0);
-  else p.stroke(255, 0, 0);
-
-  const waypointCount = wire_info.waypoints.length;
-  p.line(ports.start.x, ports.start.y, wire_info.waypoints[0].x, wire_info.waypoints[0].y);
-  for (let i = 0; i < waypointCount - 1; i++) {
-    p.line(wire_info.waypoints[i].x, wire_info.waypoints[i].y, wire_info.waypoints[i + 1].x, wire_info.waypoints[i + 1].y);
-  }
-  p.line(wire_info.waypoints[waypointCount - 1].x, wire_info.waypoints[waypointCount - 1].y, ports.end.x, ports.end.y);
-
-  p.stroke(0);
-  p.strokeWeight(1);
 }
 
 function isNearPort(mouseX, mouseY, port, p) {
@@ -234,7 +117,7 @@ const sketch = (p) => {
       p.circle(port.x, port.y, 12);
     }
     for (let i = 0; i < wires.length; i++) {
-      drawWire(wires[i], p);
+      drawWire(renderNodes, wires[i], p);
     }
     if (state.ghostNode) {
       drawGate(state.ghostNode, p);
@@ -265,7 +148,7 @@ const sketch = (p) => {
           let wire_info = init_wire(wire);
           wires.push(wire_info);
           for (let i = 0; i < wires.length; i++) {
-            reComputeWayPoint(wires[i]);
+            reComputeWayPoint(renderNodes, wires[i]);
           }
           state.drawingWire = null;
           settleCircuit(renderNodes, wires);
@@ -347,7 +230,7 @@ const sketch = (p) => {
         wires = wires.filter(n => n.wire.from.id !== state.dragging.gate.id && n.wire.to.id !== state.dragging.gate.id);
         renderNodes = renderNodes.filter(n => n !== state.dragging);
         for (let i = 0; i < wires.length; i++) {
-          reComputeWayPoint(wires[i]);
+          reComputeWayPoint(renderNodes, wires[i]);
         }
 
         settleCircuit(renderNodes, wires);
