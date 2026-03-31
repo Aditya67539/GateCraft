@@ -4,6 +4,14 @@ A browser-based digital logic circuit simulator built with [p5.js](https://p5js.
 
 ---
 
+## Demo
+
+![4-bit ripple counter built in GateCraft](assets/4BitRippleCounter.gif)
+
+*A 4-bit ripple counter — four T flip-flops chained together, counting from 0 to 15 and wrapping back around.*
+
+---
+
 ## Features
 
 - **7 gate types** — AND, OR, NOT, NAND, NOR, XOR, XNOR
