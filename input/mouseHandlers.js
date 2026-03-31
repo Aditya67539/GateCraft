@@ -1,7 +1,7 @@
 import { state } from "../state.js";
 import { Input } from "../logic/gates.js";
 import { settleCircuit, evaluateAll } from "../logic/evaluate.js";
-import { FREQUENCY } from "../constants.js";
+import { CLOCK_TIMER, FREQUENCY } from "../constants.js";
 import { reComputeWayPoint, init_wire } from "../render/wireGeometry.js";
 import { modeText } from "../ui/toolbar.js";
 
@@ -90,7 +90,7 @@ export function registerMouseHandlers(p, renderNodes, wires) {
         setTimeout(() => {
           clearInterval(state.intervalId);
           state.intervalId = null;
-        }, 10000);
+        }, CLOCK_TIMER);
       }
     } else if (state.mode === "placing") {
       state.mode = "edit";
