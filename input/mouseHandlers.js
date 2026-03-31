@@ -22,7 +22,14 @@ export function registerMouseHandlers(p, renderNodes, wires) {
           let wire_info = init_wire(renderNodes, wire);
           wires.push(wire_info);
           for (let i = 0; i < wires.length; i++) {
-            reComputeWayPoint(renderNodes, wires[i]);
+            if (wires[i].wire.from.id === state.drawingWire.fromNode.gate.id) {
+              const toGate = wires[i].wire.to.id;
+              for (let j = 0; j < wires.length; j++) {
+                if (wires[j].wire.to.id === toGate) {
+                  reComputeWayPoint(renderNodes, wires[j]);
+                }
+              }
+            }
           }
           state.drawingWire = null;
           settleCircuit(renderNodes, wires);
