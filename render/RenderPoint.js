@@ -47,9 +47,13 @@ export class RenderPoint {
   }
 }
 
-export function createNode(type, mouseX, mouseY) {
+export function initNode(type, x, y) {
   const newGate = type === "input" ? new Input(false) : type === "output" ? new Output() : type === "clock" ? new Clock(false) : new Gate(type, []);
-  state.ghostNode = new RenderPoint(newGate, mouseX, mouseY);
+  return new RenderPoint(newGate, x, y);
+}
+
+export function createNode(type, mouseX, mouseY) {
+  state.ghostNode = initNode(type, mouseX, mouseY);
   state.mode = "placing";
   modeText.textContent = "Mode: Placing";
 }
