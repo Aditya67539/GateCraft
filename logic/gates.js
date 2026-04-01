@@ -31,8 +31,20 @@ export class Clock extends Input {
   }
 }
 
-export class Output {
+class ConnectableGate {
+  connect(fromGate, index = null) {
+    if (!index) {
+      index = this.inputs.length;
+    }
+    const wire = new Wire(fromGate, this, index);
+    this.inputs[index] = wire;
+    return wire;
+  }
+}
+
+export class Output extends ConnectableGate {
   constructor() {
+    super();
     this.id = Logic.nextId++;
     this.type = "output";
     this.inputs = [];
@@ -48,17 +60,11 @@ export class Output {
     this.tempOutput = this.inputs[0].signal;
     return this.tempOutput;
   }
-
-  connect(fromGate) {
-    const index = this.inputs.length;
-    const wire = new Wire(fromGate, this, index);
-    this.inputs.push(wire);
-    return wire;
-  }
 }
 
-export class Gate {
+export class Gate extends ConnectableGate {
   constructor(type, inputs) {
+    super();
     this.id = Logic.nextId++;
     this.type = type.toLowerCase();
     this.inputs = inputs;
@@ -123,12 +129,5 @@ export class Gate {
         console.error("Invalid operation");
     }
     return this.tempOutput;
-  }
-
-  connect(fromGate) {
-    const index = this.inputs.length;
-    const wire = new Wire(fromGate, this, index);
-    this.inputs.push(wire);
-    return wire;
   }
 }
