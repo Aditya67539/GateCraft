@@ -21,16 +21,7 @@ export function registerMouseHandlers(p, renderNodes, wires) {
           let wire = wireConnection.toNode.gate.connect(state.drawingWire.fromNode.gate);
           let wire_info = init_wire(renderNodes, wire);
           wires.push(wire_info);
-          for (let i = 0; i < wires.length; i++) {
-            if (wires[i].wire.from.id === state.drawingWire.fromNode.gate.id) {
-              const toGate = wires[i].wire.to.id;
-              for (let j = 0; j < wires.length; j++) {
-                if (wires[j].wire.to.id === toGate) {
-                  reComputeWayPoint(renderNodes, wires[j]);
-                }
-              }
-            }
-          }
+          adjustWaypoints(renderNodes, wires, state.drawingWire.fromNode.gate.id);
           state.drawingWire = null;
           settleCircuit(renderNodes, wires);
         } else {
@@ -109,22 +100,13 @@ export function registerMouseHandlers(p, renderNodes, wires) {
             );
           }
         }
-        // Also disconnect wires whose destination is this gate
-        for (let i = 0; i < wires.length; i++) {
-          if (wires[i].wire.to.id === state.dragging.gate.id) {
-            const fromGate = wires[i].wire.from;
-            // nothing to disconnect on source side, but the wire object is gone
-          }
-        }
+        adjustWaypoints(renderNodes, wires, state.dragging.gate.id);
         // Mutate arrays in-place so sketch.js references stay valid
         const toRemove = wires.filter(n => n.wire.from.id === state.dragging.gate.id || n.wire.to.id === state.dragging.gate.id);
         toRemove.forEach(w => wires.splice(wires.indexOf(w), 1));
         const nodeIdx = renderNodes.indexOf(state.dragging);
         if (nodeIdx !== -1) renderNodes.splice(nodeIdx, 1);
         state.dragging = null;
-        for (let i = 0; i < wires.length; i++) {
-          reComputeWayPoint(renderNodes, wires[i]);
-        }
         settleCircuit(renderNodes, wires);
       }
     }
@@ -224,3 +206,16 @@ function findNearWaypoint(mx, my, p, wires) {
   return null;
 }
 
+function adjustWaypoints(renderNodes, wires, fromGateId) {
+  for (let i = 0; i < wires.length; i++) {
+    if (wires[i].wire.from.id === fromGateId) {
+      const toGate = wires[i].wire.to.id;
+      // Only re-compute waypoints for gates which are connected to toGate
+      for (let j = 0; j < wires.length; j++) {
+        if (wires[j].wire.to.id === toGate) {
+          reComputeWayPoint(renderNodes, wires[j]);
+        }
+      }
+    }
+  }
+}
