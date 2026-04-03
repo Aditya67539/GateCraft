@@ -92,8 +92,12 @@ export class Gate extends ConnectableGate {
         });
         break;
       case "not":
-        if (resolvedInputs.length !== 1) {
-          console.error("Not operator does not support multiple inputs!");
+        if (resolvedInputs.length > 1) {
+          console.error("NOT operator does not support multiple inputs!");
+          break;
+        } else if (resolvedInputs.length === 0) {
+          console.error("No input connected!");
+          break;
         }
         this.tempOutput = !resolvedInputs[0];
         break;
