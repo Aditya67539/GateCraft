@@ -53,9 +53,14 @@ export class Output extends ConnectableGate {
   }
 
   evaluate() {
-    if (!this.inputs || this.inputs.length !== 1) {
-      console.error("Output does not support multiple inputs!");
-      return false;
+    if (this.inputs) {
+      if (this.inputs.length > 1) {
+        console.error("Output does not support multiple inputs!");
+        return false;
+      } else if (this.inputs.length === 0) {
+        console.error("No input connected!");
+        return false;
+      }
     }
     this.tempOutput = this.inputs[0].signal;
     return this.tempOutput;
