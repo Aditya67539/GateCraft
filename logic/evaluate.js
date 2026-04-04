@@ -30,14 +30,29 @@ export function evaluateAll(renderNodes, wires) {
     const newOutput = gate.evaluate();
     gate.output = newOutput;
 
-    if (newOutput !== oldOutput) {
-      for (const wi of wires) {
-        if (wi.wire.from.id === gate.id) {
-          wi.wire.signal = newOutput;
-          const downstreamId = wi.wire.to.id;
+    if (Array.isArray(newOutput)) {
+      if (!arraysEqual(newOutput, oldOutput)) {
+        for (const wi of wires) {
+          if (wi.wire.from.id === gate.id) {
+            wi.wire.signal = newOutput[wi.wire.fromOutputIndex];
+            const downstreamId = wi.wire.to.id;
 
-          if (!visited.has(downstreamId)) {
-            queue.add(downstreamId);
+            if (!visited.has(downstreamId)) {
+              queue.add(downstreamId);
+            }
+          }
+        }
+      }
+    } else {
+      if (newOutput !== oldOutput) {
+        for (const wi of wires) {
+          if (wi.wire.from.id === gate.id) {
+            wi.wire.signal = newOutput;
+            const downstreamId = wi.wire.to.id;
+
+            if (!visited.has(downstreamId)) {
+              queue.add(downstreamId);
+            }
           }
         }
       }
@@ -45,6 +60,11 @@ export function evaluateAll(renderNodes, wires) {
 
     visited.add(gateId);
   }
+}
+
+function arraysEqual(a, b) {
+  if (a.length !== b.length) return false;
+  return a.every((val, index) => val === b[index]);
 }
 
 export function evaluateOnce(renderNodes, wires) {
@@ -59,9 +79,12 @@ export function evaluateOnce(renderNodes, wires) {
     const gate = rn.gate;
     if (gate.type === "input" || gate.type === "clock") continue;
     gate.output = gate.evaluate();
+    let signal;
     for (const wi of wires) {
+      if (Array.isArray(gate.output)) signal = gate.output[wi.wire.fromOutputIndex];
+      else signal = gate.output;
       if (wi.wire.from.id === gate.id) {
-        wi.wire.signal = gate.output;
+        wi.wire.signal = signal;
       }
     }
   }
