@@ -1,4 +1,5 @@
 import { Wire } from "./wire.js";
+import { evaluateAll } from "./evaluate.js";
 
 class Logic {
   static nextId = 1;
@@ -32,12 +33,12 @@ export class Clock extends Input {
 }
 
 class ConnectableGate {
-  connect(fromGate, index = null) {
-    if (!index) {
-      index = this.inputs.length;
+  connect(fromGate, toInputIndex = null, fromOutputIndex = null) {
+    if (!toInputIndex) {
+      toInputIndex = this.inputs.length;
     }
-    const wire = new Wire(fromGate, this, index);
-    this.inputs[index] = wire;
+    const wire = new Wire(fromGate, this, toInputIndex, fromOutputIndex);
+    this.inputs[toInputIndex] = wire;
     return wire;
   }
 }
@@ -137,6 +138,73 @@ export class Gate extends ConnectableGate {
       default:
         console.error("Invalid operation");
     }
+    return this.tempOutput;
+  }
+}
+
+
+export class CompositeGate extends ConnectableGate {
+  constructor(inputs, circuitData) {
+    super();
+    this.id = Logic.nextId++;
+    this.type = "composite";
+    this.inputs = inputs;
+    this.output = [];
+    this.tempOutput = [];
+    this.circuitData = circuitData;
+  }
+
+    parseCircuitData() {
+    let inputNodes = [];
+    let outputNodes = [];
+    this.circuitData.renderNodes.forEach(node => {
+      if (node.gate.type === "input") {
+        inputNodes.push(node);
+      } else if (node.gate.type === "output") {
+        outputNodes.push(node);
+      }
+    });
+
+    // TODO: Change to better sorting algorithm
+    for (let i = 0; i < inputNodes.length; i++) {
+      let min_idx = i;
+      for (let j = i + 1; j < inputNodes.length; j++) {
+        if (inputNodes[j].y < inputNodes[min_idx].y) min_idx = j;
+      }
+      [inputNodes[i], inputNodes[min_idx]] = [inputNodes[min_idx], inputNodes[i]];
+    }
+
+    for (let i = 0; i < outputNodes.length; i++) {
+      let min_idx = i;
+      for (let j = i + 1; j < outputNodes.length; j++) {
+        if (outputNodes[j].y < outputNodes[min_idx].y) min_idx = j;
+      }
+      [outputNodes[i], outputNodes[min_idx]] = [outputNodes[min_idx], outputNodes[i]];
+    }
+
+    this.internalInputs = inputNodes.map(node => node.gate);
+    this.internalOutputs = outputNodes.map(node => node.gate);
+  }
+
+  evaluate() {
+    const resolvedInputs = this.inputs.map(input => {
+      if (input instanceof Wire) {
+        return input.signal;
+      }
+    });
+    
+    // Assuming internalInputs is array of input gates in the internal circuit
+    for (let i = 0; i < this.internalInputs.length; i++) {
+      this.internalInputs[i].setValue(resolvedInputs[i]);
+    }
+
+    evaluateAll(this.circuitData.renderNodes, this.circuitData.wires);
+
+    // Assuming internalOutputs is array of output gates in the internal circuit
+    for (let i = 0; i < this.internalOutputs.length; i++) {
+      this.tempOutput[i] = this.internalOutputs[i].output;
+    }
+
     return this.tempOutput;
   }
 }
