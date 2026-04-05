@@ -7,7 +7,7 @@ export function getWirePorts(renderNodes, wire) {
   const fromNode = renderNodes.find(n => n.gate.id === wire.from.id);
   const toNode = renderNodes.find(n => n.gate.id === wire.to.id);
 
-  const start = fromNode.getOutputPort();
+  const start = fromNode.type === "composite" ? fromNode.getOutputPort(wire) : fromNode.getOutputPort();
   const end = toNode.getInputPort(wire);
 
   return { start: start, end: end };
