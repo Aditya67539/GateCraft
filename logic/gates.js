@@ -184,6 +184,8 @@ export class CompositeGate extends ConnectableGate {
 
     this.internalInputs = inputNodes.map(node => node.gate);
     this.internalOutputs = outputNodes.map(node => node.gate);
+
+    this.outputCount = this.internalOutputs.length;
   }
 
   evaluate() {
