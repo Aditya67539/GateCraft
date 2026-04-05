@@ -18,7 +18,8 @@ export function registerMouseHandlers(p, renderNodes, wires) {
       if (state.drawingWire) {
         let wireConnection = findNearInputPort(p.mouseX, p.mouseY, p, renderNodes);
         if (wireConnection) {
-          let wire = wireConnection.toNode.gate.connect(state.drawingWire.fromNode.gate);
+          const outputIndex = state.drawingWire.fromOutputIndex;
+          let wire = wireConnection.toNode.gate.connect(state.drawingWire.fromNode.gate, null, outputIndex);
           let wire_info = init_wire(renderNodes, wire);
           wires.push(wire_info);
           adjustWaypoints(renderNodes, wires, state.drawingWire.fromNode.gate.id);
@@ -159,9 +160,18 @@ function isNearWaypoint(mx, my, waypoint, p) {
 
 function findNearOutputPort(mx, my, p, renderNodes) {
   for (let i = 0; i < renderNodes.length; i++) {
+    const gate = renderNodes[i].gate;
+    if (gate.type === "composite") {
+      for (let j = 0; j < gate.output.length; j++) {
+        const port = renderNodes[i].getOutputPortByIndex(j, gate.output.length);
+        if (isNearPort(mx, my, port, p)) {
+          return { fromNode: renderNodes[i], fromOutputIndex: j};
+        }
+      }
+    }
     const port = renderNodes[i].getOutputPort();
     if (isNearPort(mx, my, port, p)) {
-      return { fromNode: renderNodes[i] };
+      return { fromNode: renderNodes[i], fromOutputIndex: null };
     }
   }
   return null;
