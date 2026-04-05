@@ -162,8 +162,8 @@ function findNearOutputPort(mx, my, p, renderNodes) {
   for (let i = 0; i < renderNodes.length; i++) {
     const gate = renderNodes[i].gate;
     if (gate.type === "composite") {
-      for (let j = 0; j < gate.output.length; j++) {
-        const port = renderNodes[i].getOutputPortByIndex(j, gate.output.length);
+      for (let j = 0; j < gate.outputCount; j++) {
+        const port = renderNodes[i].getOutputPortByIndex(j, gate.outputCount);
         if (isNearPort(mx, my, port, p)) {
           return { fromNode: renderNodes[i], fromOutputIndex: j};
         }
