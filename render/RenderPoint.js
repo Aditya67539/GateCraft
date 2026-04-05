@@ -20,10 +20,28 @@ export class RenderPoint {
     );
   }
 
-  getOutputPort() {
+  getOutputPort(wire = null) {
+    if (wire !== null && wire.from.type === "composite") {
+      const index = wire.fromOutputIndex;
+      const outputCount = wire.from.output.length;
+      const spacing = this.height / outputCount;
+
+      return {
+        x: this.x + this.width,
+        y: this.y + index * spacing + spacing / 2,
+      };
+    }
     return {
       x: this.x + this.width,
       y: this.y + this.height / 2
+    };
+  }
+
+  getOutputPortByIndex(index, totalOutputs) {
+    const spacing = this.height / totalOutputs;
+    return {
+      x: this.x + this.width,
+      y: this.y + index * spacing + spacing / 2,
     };
   }
 
