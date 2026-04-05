@@ -28,3 +28,16 @@ export function drawWire(renderNodes, wire_info, p) {
   p.stroke(0);
   p.strokeWeight(1);
 }
+
+export function drawOutputPorts(renderNodes, p) {
+  for (let i = 0; i < renderNodes.length; i++) {
+    const gate = renderNodes[i].gate;
+    if (gate.type === "output") continue;
+    const totalOutputs = gate.type === "composite" ? gate.output.length : 1;
+
+    for (let j = 0; j < totalOutputs; j++) {
+      const port = renderNodes[i].getOutputPortByIndex(j, totalOutputs);
+      p.circle(port.x, port.y, 12);
+    }
+  }
+}
