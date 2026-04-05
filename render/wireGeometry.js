@@ -10,7 +10,6 @@ export function getWirePorts(renderNodes, wire) {
   let start;
 
   if (wire.fromOutputIndex !== null) {
-    console.log(wire);
     const index = wire.fromOutputIndex;
     const outputCount = wire.from.outputCount;
     start = fromNode.getOutputPortByIndex(index, outputCount);
