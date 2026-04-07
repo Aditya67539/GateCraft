@@ -1,5 +1,5 @@
 import { state } from "./state.js";
-import { drawGate, drawOutputPorts, drawWire } from "./render/draw.js";
+import { drawGate, drawInputPorts, drawOutputPorts, drawWire } from "./render/draw.js";
 import { registerMouseHandlers } from "./input/mouseHandlers.js";
 import { initToolbar } from "./ui/toolbar.js";
 
@@ -13,13 +13,13 @@ let renderNodes = [];
 let wires = [];
 
 const sketch = (p) => {
-  p.setup = function() {
+  p.setup = function () {
     const cnv = p.createCanvas(WIDTH, HEIGHT);
     cnv.parent(canvasHost);
-    initToolbar(p);
+    initToolbar(p, renderNodes, wires);
   }
 
-  p.draw = function() {
+  p.draw = function () {
     mouse.x = p.mouseX;
     mouse.y = p.mouseY;
     p.background(220);
@@ -27,6 +27,7 @@ const sketch = (p) => {
       drawGate(renderNodes[i], p);
     }
     drawOutputPorts(renderNodes, p);
+    drawInputPorts(renderNodes, p);
     for (let i = 0; i < wires.length; i++) {
       drawWire(renderNodes, wires[i], p);
     }
