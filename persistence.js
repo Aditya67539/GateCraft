@@ -1,64 +1,81 @@
 import { initNode } from "./render/RenderPoint.js";
 
-export function saveCircuit(renderNodes, wires) {
-  let gateData = [];
-  let wireData = [];
+const STORAGE_KEY = "compositeGates";
+
+function getStore() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  return raw ? JSON.parse(raw) : {};
+}
+
+function setStore(store) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+}
+
+export function saveCompositeGate(name, renderNodes, wires) {
+  const gateData = [];
+  const wireData = [];
 
   renderNodes.forEach(node => {
-    let data = {};
-    data.type = node.gate.type;
-    data.id = node.gate.id;
-    data.x = node.x;
-    data.y = node.y;
+    const data = {
+      type: node.gate.type,
+      id: node.gate.id,
+      x: node.x,
+      y: node.y,
+    };
     if (node.gate.type === "input" || node.gate.type === "clock") {
       data.signal = node.gate.output;
     }
-    // console.log("Local node data:");
-    // console.log(data);
     gateData.push(data);
   });
 
   wires.forEach(w => {
-    let data = {
+    wireData.push({
       fromGateId: w.wire.from.id,
       toGateId: w.wire.to.id,
       toInputIndex: w.wire.toInputIndex,
-      signal: w.wire.from.signal,
       waypoints: w.waypoints,
-    }
-    // console.log("Local wire data:");
-    // console.log(data);
-    wireData.push(data);
+    });
   });
 
-  localStorage.setItem("circuitData", JSON.stringify({gateData: gateData, wireData: wireData}));
+  const store = getStore();
+  store[name] = { gateData, wireData };
+  setStore(store);
 }
 
-export function loadCircuit() {
-  let circuitData = localStorage.getItem("circuitData");
-  if (!circuitData) return null;
+export function loadCompositeGate(name) {
+  const store = getStore();
+  if (!store[name]) return null;
 
-  const { gateData, wireData } = JSON.parse(circuitData);
-  let renderNodes = [];
-  let wires = [];
+  const { gateData, wireData } = store[name];
+  const renderNodes = [];
+  const wires = [];
 
+  // Give internal nodes fresh IDs so they don't collide with canvas nodes
+  const idMap = {};
   gateData.forEach(gate => {
-    const newGate = initNode(gate.type, gate.x, gate.y);
-    newGate.gate.id = gate.id;
-    if (gate.signal) {
-      newGate.gate.output = gate.signal;
-    }
-    renderNodes.push(newGate);
+    const newNode = initNode(gate.type, gate.x, gate.y);
+    idMap[gate.id] = newNode.gate.id;
+    if (gate.signal !== undefined) newNode.gate.output = gate.signal;
+    renderNodes.push(newNode);
   });
 
   wireData.forEach(w => {
-    const fromGate = renderNodes.find(n => n.gate.id === w.fromGateId);
-    const toGate = renderNodes.find(n => n.gate.id === w.toGateId);
-
-    const wire = toGate.gate.connect(fromGate.gate, w.toInputIndex);
-
-    wires.push({wire: wire, waypoints: w.waypoints});
+    const fromNode = renderNodes.find(n => n.gate.id === idMap[w.fromGateId]);
+    const toNode = renderNodes.find(n => n.gate.id === idMap[w.toGateId]);
+    if (!fromNode || !toNode) return;
+    const wire = toNode.gate.connect(fromNode.gate, w.toInputIndex);
+    wires.push({ wire, waypoints: w.waypoints });
   });
 
-  return { renderNodes: renderNodes, wires: wires };
+  return { renderNodes, wires };
+}
+
+export function listCompositeGates() {
+  return Object.keys(getStore());
+}
+
+export function deleteCompositeGate(name) {
+  const store = getStore();
+  delete store[name];
+  setStore(store);
 }
