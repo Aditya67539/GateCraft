@@ -38,6 +38,18 @@
 
     <div class="topbar-right">
       <span id="modeDisplay" class="mode-display">Mode: Edit</span>
+
+      <!-- Save circuit as composite gate -->
+      <button class="save-gate-btn" id="btn-save-gate" title="Save circuit as composite gate">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+          <polyline points="17 21 17 13 7 13 7 21" />
+          <polyline points="7 3 7 8 15 8" />
+        </svg>
+        Save as Gate
+      </button>
+
       <button class="icon-btn" title="Settings" aria-label="Settings">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round">
@@ -70,7 +82,28 @@
       <button class="addComponent" data-type="xor">XOR</button>
       <button class="addComponent" data-type="xnor">XNOR</button>
     </div>
+
+    <div class="sidebar-divider"></div>
+
+    <!-- Dynamically populated by toolbar.js -->
+    <div class="sidebar-section" id="composite-section">
+      <p class="sidebar-label">Composite</p>
+    </div>
   </aside>
+
+  <!-- ── Save-as-Gate Modal ─────────────────────────────────── -->
+  <div class="modal-overlay" id="save-gate-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-card">
+      <h3 class="modal-title" id="modal-title">Save as Composite Gate</h3>
+      <p class="modal-desc">Give this circuit a name. It will appear in the sidebar as a reusable gate.</p>
+      <input class="modal-input" id="gate-name-input" type="text" placeholder="e.g. Half Adder" maxlength="32"
+        autocomplete="off" />
+      <div class="modal-actions">
+        <button class="modal-btn cancel" id="modal-cancel-btn">Cancel</button>
+        <button class="modal-btn confirm" id="modal-save-btn">Save Gate</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ── Canvas host (p5 injects here) ──────────────────── -->
   <main class="canvas-host"></main>
