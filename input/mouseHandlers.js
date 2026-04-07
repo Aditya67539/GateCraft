@@ -185,7 +185,9 @@ function findNearOutputPort(mx, my, p, renderNodes) {
 function findNearInputPort(mx, my, p, renderNodes) {
   for (let i = 0; i < renderNodes.length; i++) {
     if (renderNodes[i].gate instanceof Input) continue;
-    const totalInputs = renderNodes[i].gate.inputs.length + 1;
+    const totalInputs = renderNodes[i].gate.type === "composite" ?
+                        renderNodes[i].gate.inputCount :
+                        renderNodes[i].gate.inputs.length + 1;
 
     for (let j = 0; j < totalInputs; j++) {
       const port = renderNodes[i].getInputPortByIndex(j, totalInputs);
