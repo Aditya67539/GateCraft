@@ -1,14 +1,17 @@
 import { getWirePorts } from "./wireGeometry.js";
 
 export function drawGate(renderNode, p) {
-  let color = renderNode.gate.output ? "green" : "red";
+  const gate = renderNode.gate;
+  const isOn = Array.isArray(gate.output) ? gate.output.some(Boolean) : gate.output;
+  let color = gate.type !== "input" && gate.type !== "clock" && gate.type !== "output" ? "blue" : isOn ? "green" : "red";
   p.fill(color);
   p.rect(renderNode.x, renderNode.y, renderNode.width, renderNode.height);
 
   p.fill(255);
   p.textAlign(p.CENTER, p.CENTER);
-  p.textSize(20);
-  p.text(`${renderNode.gate.type}`, renderNode.x + renderNode.width / 2, renderNode.y + renderNode.height / 2);
+  p.textSize(16);
+  const label = gate.label || gate.type;
+  p.text(label, renderNode.x + renderNode.width / 2, renderNode.y + renderNode.height / 2);
 }
 
 export function drawWire(renderNodes, wire_info, p) {
