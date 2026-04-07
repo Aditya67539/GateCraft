@@ -36,10 +36,23 @@ export function drawOutputPorts(renderNodes, p) {
   for (let i = 0; i < renderNodes.length; i++) {
     const gate = renderNodes[i].gate;
     if (gate.type === "output") continue;
-    const totalOutputs = gate.type === "composite" ? gate.output.length : 1;
+    const totalOutputs = gate.type === "composite" ? gate.outputCount : 1;
 
     for (let j = 0; j < totalOutputs; j++) {
       const port = renderNodes[i].getOutputPortByIndex(j, totalOutputs);
+      p.circle(port.x, port.y, 12);
+    }
+  }
+}
+
+export function drawInputPorts(renderNodes, p) {
+  for (let i = 0; i < renderNodes.length; i++) {
+    const gate = renderNodes[i].gate;
+    if (gate.type !== "composite" && gate.type !== "output") continue;
+    const totalInputs = gate.type === "composite" ? gate.inputCount : 1;
+    
+    for (let j = 0; j < totalInputs; j++) {
+      const port = renderNodes[i].getInputPortByIndex(j, totalInputs);
       p.circle(port.x, port.y, 12);
     }
   }
