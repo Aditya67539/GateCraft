@@ -154,7 +154,7 @@ export class CompositeGate extends ConnectableGate {
     this.circuitData = circuitData;
   }
 
-    parseCircuitData() {
+  parseCircuitData() {
     let inputNodes = [];
     let outputNodes = [];
     this.circuitData.renderNodes.forEach(node => {
@@ -186,6 +186,7 @@ export class CompositeGate extends ConnectableGate {
     this.internalOutputs = outputNodes.map(node => node.gate);
 
     this.outputCount = this.internalOutputs.length;
+    this.inputCount = this.internalInputs.length;
   }
 
   evaluate() {
