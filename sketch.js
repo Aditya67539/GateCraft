@@ -39,11 +39,19 @@ const sketch = (p) => {
       }
     }
     if (state.drawingWire) {
-      let start = state.drawingWire.fromNode.getOutputPort();
+      const node = state.drawingWire.fromNode;
+      let start;
+      if (node.gate.type === "composite") {
+        const index = state.drawingWire.fromOutputIndex;
+        const outputCount = node.gate.outputCount;
+        start = node.getOutputPortByIndex(index, outputCount);
+      } else {
+        start = state.drawingWire.fromNode.getOutputPort();
+      }
       p.line(start.x, start.y, p.mouseX, p.mouseY);
     }
   }
-  
+
   registerMouseHandlers(p, renderNodes, wires);
 }
 
