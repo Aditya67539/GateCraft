@@ -1,4 +1,4 @@
-import { Input, Output, Clock, Gate } from "../logic/gates.js";
+import { Input, Output, Clock, Gate, CompositeGate } from "../logic/gates.js";
 import { state } from "../state.js";
 import { modeText } from "../ui/toolbar.js";
 
@@ -41,7 +41,7 @@ export class RenderPoint {
     const spacing = this.height / totalOutputs;
     return {
       x: this.x + this.width,
-      y: this.y + index * spacing + spacing / 2,
+      y: this.y + spacing * index + spacing / 2,
     };
   }
 
@@ -72,6 +72,16 @@ export function initNode(type, x, y) {
 
 export function createNode(type, mouseX, mouseY) {
   state.ghostNode = initNode(type, mouseX, mouseY);
+  state.mode = "placing";
+  modeText.textContent = "Mode: Placing";
+}
+
+export function createCompositeNode(name, circuitData, mouseX, mouseY) {
+  const inputs = new Array(circuitData.renderNodes.filter(n => n.gate.type === "input").length);
+  const gate = new CompositeGate(inputs, circuitData);
+  gate.label = name;
+  gate.parseCircuitData();
+  state.ghostNode = new RenderPoint(gate, mouseX, mouseY);
   state.mode = "placing";
   modeText.textContent = "Mode: Placing";
 }
