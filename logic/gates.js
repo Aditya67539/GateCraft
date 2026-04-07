@@ -34,7 +34,7 @@ export class Clock extends Input {
 
 class ConnectableGate {
   connect(fromGate, toInputIndex = null, fromOutputIndex = null) {
-    if (!toInputIndex) {
+    if (toInputIndex === null) {
       toInputIndex = this.inputs.length;
     }
     const wire = new Wire(fromGate, this, toInputIndex, fromOutputIndex);
