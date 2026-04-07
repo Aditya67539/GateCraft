@@ -18,7 +18,7 @@ export function drawWire(renderNodes, wire_info, p) {
   const ports = getWirePorts(renderNodes, wire_info.wire);
   p.strokeWeight(3);
 
-  if (wire_info.wire.from.output) p.stroke(0, 200, 0);
+  if (wire_info.wire.signal) p.stroke(0, 200, 0);
   else p.stroke(255, 0, 0);
 
   const waypointCount = wire_info.waypoints.length;
