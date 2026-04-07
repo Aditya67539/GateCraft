@@ -19,7 +19,12 @@ export function registerMouseHandlers(p, renderNodes, wires) {
         let wireConnection = findNearInputPort(p.mouseX, p.mouseY, p, renderNodes);
         if (wireConnection) {
           const outputIndex = state.drawingWire.fromOutputIndex;
-          let wire = wireConnection.toNode.gate.connect(state.drawingWire.fromNode.gate, null, outputIndex);
+          const inputIndex = wireConnection.index;
+          if (inputIndex < 0 || inputIndex >= wireConnection.toNode.internalInputs) {
+            console.error("Invalid index!");
+            return;
+          }
+          let wire = wireConnection.toNode.gate.connect(state.drawingWire.fromNode.gate, inputIndex, outputIndex);
           let wire_info = init_wire(renderNodes, wire);
           wires.push(wire_info);
           adjustWaypoints(renderNodes, wires, state.drawingWire.fromNode.gate.id);
