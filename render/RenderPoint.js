@@ -92,7 +92,7 @@ export function createCompositeNode(name, circuitData, mouseX, mouseY) {
 }
 
 function computeSize(gate) {
-  if (gate.type === "input" || gate.type === "output" || gate.type === "not") return { width: 60, height: 40 };
+  if (gate.type === "input" || gate.type === "output" || gate.type === "not" || gate.type === "clock") return { width: 60, height: 40 };
   const inputCount = gate.type === "composite" ? gate.inputCount : gate.inputs.length + 1;
   const outputCount = gate.type === "composite" ? gate.outputCount : 1;
 
