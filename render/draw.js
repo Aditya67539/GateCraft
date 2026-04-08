@@ -52,7 +52,7 @@ export function drawInputPorts(renderNodes, p) {
     if (gate.type === "input" || gate.type === "clock") continue;
     const totalInputs = gate.type === "composite" 
           ? gate.inputCount 
-          : gate.type !== "output"
+          : gate.type !== "output" && gate.type !== "not"
           ? gate.inputs.length + 1
           : 1;
     

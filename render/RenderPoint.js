@@ -62,7 +62,7 @@ export class RenderPoint {
   getInputPort(wire) {
     const index = this.gate.inputs.indexOf(wire);
     let inputCount = this.gate.inputs.length;
-    if (this.gate.type !== "input" && this.gate.type !== "output" && this.gate.type !== "composite") {
+    if (this.gate.type !== "input" && this.gate.type !== "output" && this.gate.type !== "composite" && this.gate.type !== "not") {
       inputCount += 1;
     }
     const spacing = this.height / inputCount;
