@@ -84,7 +84,7 @@ export class Gate extends ConnectableGate {
         return input.signal;
       }
     });
-    switch(this.type) {
+    switch (this.type) {
       case "and":
         this.tempOutput = true;
         resolvedInputs.forEach(input => {
@@ -187,6 +187,11 @@ export class CompositeGate extends ConnectableGate {
 
     this.outputCount = this.internalOutputs.length;
     this.inputCount = this.internalInputs.length;
+
+    // Invalidate wire signals so the first evaluateAll detects changes
+    for (const wi of this.circuitData.wires) {
+      wi.wire.signal = undefined;
+    }
   }
 
   evaluate() {
@@ -195,7 +200,7 @@ export class CompositeGate extends ConnectableGate {
         return input.signal;
       }
     });
-    
+
     // Assuming internalInputs is array of input gates in the internal circuit
     for (let i = 0; i < this.internalInputs.length; i++) {
       this.internalInputs[i].setValue(resolvedInputs[i]);
