@@ -33,6 +33,7 @@ export function saveCompositeGate(name, renderNodes, wires) {
       fromGateId: w.wire.from.id,
       toGateId: w.wire.to.id,
       toInputIndex: w.wire.toInputIndex,
+      fromOutputIndex: w.wire.fromOutputIndex,
       waypoints: w.waypoints,
     });
   });
@@ -63,7 +64,7 @@ export function loadCompositeGate(name) {
     const fromNode = renderNodes.find(n => n.gate.id === idMap[w.fromGateId]);
     const toNode = renderNodes.find(n => n.gate.id === idMap[w.toGateId]);
     if (!fromNode || !toNode) return;
-    const wire = toNode.gate.connect(fromNode.gate, w.toInputIndex);
+    const wire = toNode.gate.connect(fromNode.gate, w.toInputIndex, w.fromOutputIndex);
     wires.push({ wire, waypoints: w.waypoints });
   });
 
