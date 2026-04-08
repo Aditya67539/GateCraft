@@ -49,7 +49,7 @@ export function drawOutputPorts(renderNodes, p) {
 export function drawInputPorts(renderNodes, p) {
   for (let i = 0; i < renderNodes.length; i++) {
     const gate = renderNodes[i].gate;
-    if (gate.type === "input") continue;
+    if (gate.type === "input" || gate.type === "clock") continue;
     const totalInputs = gate.type === "composite" 
           ? gate.inputCount 
           : gate.type !== "output"
