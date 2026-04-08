@@ -1,3 +1,4 @@
+import { FONT_SIZE } from "../constants.js";
 import { getWirePorts } from "./wireGeometry.js";
 
 export function drawGate(renderNode, p) {
@@ -9,7 +10,7 @@ export function drawGate(renderNode, p) {
 
   p.fill(255);
   p.textAlign(p.CENTER, p.CENTER);
-  p.textSize(16);
+  p.textSize(FONT_SIZE);
   const label = gate.label || gate.type;
   p.text(label, renderNode.x + renderNode.width / 2, renderNode.y + renderNode.height / 2);
 }
