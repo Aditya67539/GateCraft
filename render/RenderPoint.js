@@ -1,3 +1,4 @@
+import { FONT_SIZE } from "../constants.js";
 import { Input, Output, Clock, Gate, CompositeGate } from "../logic/gates.js";
 import { state } from "../state.js";
 import { modeText } from "../ui/toolbar.js";
@@ -7,8 +8,21 @@ export class RenderPoint {
     this.gate = gate;
     this.x = x;
     this.y = y;
-    this.width = 60;
-    this.height = 40;
+    const { width, height } = this.computeSize();
+    this.width = width;
+    this.height = height;
+  }
+
+  computeSize() {
+    if (this.gate.type !== "composite") return { width: 60, height: 40 };
+    const inputCount = this.gate.inputCount;
+    const outputCount = this.gate.outputCount;
+
+    const maxPortCount = Math.max(inputCount, outputCount);
+    const height = Math.max(60, maxPortCount * 20);
+    const label = this.gate.label || this.gate.type;
+    const width = Math.max(60, label.length * FONT_SIZE * 0.6 + 20);
+    return { width: width, height: height };
   }
 
   containsPoint(px, py) {
