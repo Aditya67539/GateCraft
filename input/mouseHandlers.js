@@ -25,6 +25,7 @@ export function registerMouseHandlers(p, renderNodes, wires) {
             return;
           }
           let wire = wireConnection.toNode.gate.connect(state.drawingWire.fromNode.gate, inputIndex, outputIndex);
+          if (wire === null) return;
           let wire_info = init_wire(renderNodes, wire);
           wires.push(wire_info);
           adjustWaypoints(renderNodes, wires, state.drawingWire.fromNode.gate.id);

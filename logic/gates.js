@@ -36,6 +36,9 @@ class ConnectableGate {
   connect(fromGate, toInputIndex = null, fromOutputIndex = null) {
     if (toInputIndex === null) {
       toInputIndex = this.inputs.length;
+    } else if (this.inputs[toInputIndex] !== undefined) {
+      console.error("Wire is already connected!\n");
+      return null;
     }
     const wire = new Wire(fromGate, this, toInputIndex, fromOutputIndex);
     this.inputs[toInputIndex] = wire;

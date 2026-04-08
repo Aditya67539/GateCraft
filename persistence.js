@@ -65,6 +65,7 @@ export function loadCompositeGate(name) {
     const toNode = renderNodes.find(n => n.gate.id === idMap[w.toGateId]);
     if (!fromNode || !toNode) return;
     const wire = toNode.gate.connect(fromNode.gate, w.toInputIndex, w.fromOutputIndex);
+    if (wire === null) return;
     wires.push({ wire, waypoints: w.waypoints });
   });
 
