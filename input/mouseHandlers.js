@@ -4,6 +4,7 @@ import { settleCircuit, evaluateAll } from "../logic/evaluate.js";
 import { CLOCK_TIMER, FREQUENCY } from "../constants.js";
 import { reComputeWayPoint, init_wire } from "../render/wireGeometry.js";
 import { modeText } from "../ui/toolbar.js";
+import { setNodeSize } from "../render/RenderPoint.js";
 
 export function registerMouseHandlers(p, renderNodes, wires) {
   p.mousePressed = function () {
@@ -25,6 +26,7 @@ export function registerMouseHandlers(p, renderNodes, wires) {
             return;
           }
           let wire = wireConnection.toNode.gate.connect(state.drawingWire.fromNode.gate, inputIndex, outputIndex);
+          setNodeSize(wireConnection.toNode);
           if (wire === null) return;
           let wire_info = init_wire(renderNodes, wire);
           wires.push(wire_info);
@@ -107,6 +109,8 @@ export function registerMouseHandlers(p, renderNodes, wires) {
             );
           }
         }
+
+        for (let i = 0; i < renderNodes.length; i++) setNodeSize(renderNodes[i]);
         adjustWaypoints(renderNodes, wires, state.dragging.gate.id);
         // Mutate arrays in-place so sketch.js references stay valid
         const toRemove = wires.filter(n => n.wire.from.id === state.dragging.gate.id || n.wire.to.id === state.dragging.gate.id);

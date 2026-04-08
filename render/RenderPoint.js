@@ -8,21 +8,9 @@ export class RenderPoint {
     this.gate = gate;
     this.x = x;
     this.y = y;
-    const { width, height } = this.computeSize();
+    const { width, height } = computeSize(this.gate);
     this.width = width;
     this.height = height;
-  }
-
-  computeSize() {
-    if (this.gate.type !== "composite") return { width: 60, height: 40 };
-    const inputCount = this.gate.inputCount;
-    const outputCount = this.gate.outputCount;
-
-    const maxPortCount = Math.max(inputCount, outputCount);
-    const height = Math.max(60, maxPortCount * 20);
-    const label = this.gate.label || this.gate.type;
-    const width = Math.max(60, label.length * FONT_SIZE * 0.6 + 20);
-    return { width: width, height: height };
   }
 
   containsPoint(px, py) {
@@ -101,4 +89,23 @@ export function createCompositeNode(name, circuitData, mouseX, mouseY) {
   state.ghostNode = new RenderPoint(gate, mouseX, mouseY);
   state.mode = "placing";
   modeText.textContent = "Mode: Placing";
+}
+
+function computeSize(gate) {
+  if (gate.type === "input" || gate.type === "output" || gate.type === "not") return { width: 60, height: 40 };
+  const inputCount = gate.type === "composite" ? gate.inputCount : gate.inputs.length + 1;
+  const outputCount = gate.type === "composite" ? gate.outputCount : 1;
+
+  const maxPortCount = Math.max(inputCount, outputCount);
+  const height = Math.max(60, maxPortCount * 20);
+  const label = gate.label || gate.type;
+  const width = Math.max(60, label.length * FONT_SIZE * 0.6 + 20);
+  return { width: width, height: height };
+}
+
+export function setNodeSize(node) {
+  if (node.gate.type === "input" || node.gate.type === "output") return;
+  const { width, height } = computeSize(node.gate);
+  node.width = width;
+  node.height = height;
 }
