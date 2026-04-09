@@ -26,7 +26,7 @@ export function evaluateAll(renderNodes, wires) {
     const gate = gateMap[gateId];
     if (!gate || gate.type === "input" || gate.type === "clock") continue;
 
-    const oldOutput = Array.isArray(gate.output) ? gate.output.map(n => n.output) : gate.output;
+    const oldOutput = Array.isArray(gate.output) ? [...gate.output] : gate.output;
     const newOutput = gate.evaluate();
     gate.output = newOutput;
     
