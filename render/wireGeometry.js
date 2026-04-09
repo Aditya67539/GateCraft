@@ -7,7 +7,7 @@ export function getWirePorts(renderNodes, wire) {
   const fromNode = renderNodes.find(n => n.gate.id === wire.from.id);
   const toNode = renderNodes.find(n => n.gate.id === wire.to.id);
 
-  let start;
+  let start, end;
 
   if (wire.fromOutputIndex !== null) {
     const index = wire.fromOutputIndex;
@@ -16,13 +16,20 @@ export function getWirePorts(renderNodes, wire) {
   } else {
     start = fromNode.getOutputPort();
   }
-  const end = toNode.getInputPort(wire);
+
+  if (wire.to.type === "composite") {
+    const index = wire.toInputIndex;
+    const inputCount = wire.to.inputCount;
+    end = toNode.getInputPortByIndex(index, inputCount);
+  } else {
+    end = toNode.getInputPort(wire);
+  }
   return { start: start, end: end };
 }
 
 export function computeWayPoints(renderNodes, wire) {
   let ports = getWirePorts(renderNodes, wire);
-  let spacing = (wire.to.inputs.length + 1) * 5;
+  let spacing = wire.to.type === "composite" ? (wire.toInputIndex + 2) * 8 : (wire.to.inputs.length + 1) * 8;
   let waypoints = [];
   if (ports.start.x <= ports.end.x) {
     // 2 Waypoints
@@ -41,6 +48,7 @@ export function computeWayPoints(renderNodes, wire) {
 }
 
 export function reComputeWayPoint(renderNodes, wire_info) {
+  if (wire_info.wire.to.type === "composite") return;
   let newWayPoints = computeWayPoints(renderNodes, wire_info.wire);
   const waypointCount = newWayPoints.length;
   wire_info.waypoints[waypointCount - 1].y = newWayPoints[waypointCount - 1].y;

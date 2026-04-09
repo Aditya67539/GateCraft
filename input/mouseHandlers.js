@@ -238,6 +238,7 @@ function adjustWaypoints(renderNodes, wires, fromGateId) {
           reComputeWayPoint(renderNodes, wires[j]);
         }
       }
+      break;
     }
   }
 }
