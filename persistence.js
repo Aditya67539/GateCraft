@@ -11,31 +11,43 @@ function setStore(store) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
 }
 
+function getGateData(node) {
+  const data = {
+    type: node.gate.type,
+    id: node.gate.id,
+    x: node.x,
+    y: node.y,
+  };
+  if (node.gate.type === "input" || node.gate.type === "clock") {
+    data.signal = node.gate.output;
+  }
+  return data;
+}
+
+function getWireData(w) {
+  return {
+    fromGateId: w.wire.from.id,
+    toGateId: w.wire.to.id,
+    toInputIndex: w.wire.toInputIndex,
+    fromOutputIndex: w.wire.fromOutputIndex,
+    waypoints: w.waypoints,
+  };
+}
+
 export function saveCompositeGate(name, renderNodes, wires) {
   const gateData = [];
   const wireData = [];
 
   renderNodes.forEach(node => {
-    const data = {
-      type: node.gate.type,
-      id: node.gate.id,
-      x: node.x,
-      y: node.y,
-    };
-    if (node.gate.type === "input" || node.gate.type === "clock") {
-      data.signal = node.gate.output;
+    const data = getGateData(node);
+    if (node.gate.type === "composite") {
+      data.compositeName = node.gate.label;
     }
     gateData.push(data);
   });
 
   wires.forEach(w => {
-    wireData.push({
-      fromGateId: w.wire.from.id,
-      toGateId: w.wire.to.id,
-      toInputIndex: w.wire.toInputIndex,
-      fromOutputIndex: w.wire.fromOutputIndex,
-      waypoints: w.waypoints,
-    });
+    wireData.push(getWireData(w));
   });
 
   const store = getStore();
