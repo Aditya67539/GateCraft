@@ -8,6 +8,7 @@ const palette = {
   rust:     { hex: "#8b3535" },
   coal:     { hex: "#1c1c21" },
   graphite: { hex: "#252529" },
+  slate:    { hex: "#64748b" },
 }
 
 const forgeTheme = {
@@ -29,6 +30,7 @@ const forgeTheme = {
   wires: {
     high:   palette.forest,
     low:    palette.brick,
+    ghost:  palette.slate,
   },
   panel: {
     bg:     palette.coal,

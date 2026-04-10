@@ -51,7 +51,11 @@ const sketch = (p) => {
       } else {
         start = state.drawingWire.fromNode.getOutputPort();
       }
+      p.stroke(forgeTheme.wires.ghost.hex);
+      p.strokeWeight(3);
       p.line(start.x, start.y, p.mouseX, p.mouseY);
+      p.stroke(0);
+      p.strokeWeight(1);
     }
   }
 
