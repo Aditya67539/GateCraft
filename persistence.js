@@ -1,4 +1,4 @@
-import { initNode } from "./render/RenderPoint.js";
+import { initNode, initCompositeNode } from "./render/RenderPoint.js";
 
 const STORAGE_KEY = "compositeGates";
 
@@ -11,31 +11,43 @@ function setStore(store) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
 }
 
+function getGateData(node) {
+  const data = {
+    type: node.gate.type,
+    id: node.gate.id,
+    x: node.x,
+    y: node.y,
+  };
+  if (node.gate.type === "input" || node.gate.type === "clock") {
+    data.signal = node.gate.output;
+  }
+  return data;
+}
+
+function getWireData(w) {
+  return {
+    fromGateId: w.wire.from.id,
+    toGateId: w.wire.to.id,
+    toInputIndex: w.wire.toInputIndex,
+    fromOutputIndex: w.wire.fromOutputIndex,
+    waypoints: w.waypoints,
+  };
+}
+
 export function saveCompositeGate(name, renderNodes, wires) {
   const gateData = [];
   const wireData = [];
 
   renderNodes.forEach(node => {
-    const data = {
-      type: node.gate.type,
-      id: node.gate.id,
-      x: node.x,
-      y: node.y,
-    };
-    if (node.gate.type === "input" || node.gate.type === "clock") {
-      data.signal = node.gate.output;
+    const data = getGateData(node);
+    if (node.gate.type === "composite") {
+      data.compositeName = node.gate.label;
     }
     gateData.push(data);
   });
 
   wires.forEach(w => {
-    wireData.push({
-      fromGateId: w.wire.from.id,
-      toGateId: w.wire.to.id,
-      toInputIndex: w.wire.toInputIndex,
-      fromOutputIndex: w.wire.fromOutputIndex,
-      waypoints: w.waypoints,
-    });
+    wireData.push(getWireData(w));
   });
 
   const store = getStore();
@@ -54,7 +66,17 @@ export function loadCompositeGate(name) {
   // Give internal nodes fresh IDs so they don't collide with canvas nodes
   const idMap = {};
   gateData.forEach(gate => {
-    const newNode = initNode(gate.type, gate.x, gate.y);
+    let newNode;
+    if (gate.type === "composite") {
+      const circuitData = loadCompositeGate(gate.compositeName);
+      if (!circuitData) {
+        console.error(`Error: Missing nested composite gate '${gate.compositeName}'`);
+        return;
+      }
+      newNode = initCompositeNode(gate.compositeName, circuitData, gate.x, gate.y);
+    } else {
+      newNode = initNode(gate.type, gate.x, gate.y);
+    }
     idMap[gate.id] = newNode.gate.id;
     if (gate.signal !== undefined) newNode.gate.output = gate.signal;
     renderNodes.push(newNode);
