@@ -45,6 +45,9 @@ export function drawGate(renderNode, p) {
   }
   const label = gate.label || gate.type;
   p.text(label, renderNode.x + renderNode.width / 2, renderNode.y + renderNode.height / 2);
+  p.fill(0);
+  p.stroke(0);
+  p.strokeWeight(1);
 }
 
 export function drawWire(renderNodes, wire_info, p) {
