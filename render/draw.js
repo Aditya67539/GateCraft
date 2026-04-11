@@ -2,6 +2,21 @@ import { FONT_SIZE } from "../constants.js";
 import { getActiveTheme } from "./theme.js";
 import { getWirePorts } from "./wireGeometry.js";
 
+/**
+ * Return "#ffffff" or "#1a1a2e" depending on which has better contrast
+ * against the given hex background color.
+ */
+function contrastText(hex) {
+  hex = hex.replace(/^#/, "");
+  if (hex.length === 3) hex = hex.split("").map(c => c + c).join("");
+  const r = parseInt(hex.slice(0, 2), 16) / 255;
+  const g = parseInt(hex.slice(2, 4), 16) / 255;
+  const b = parseInt(hex.slice(4, 6), 16) / 255;
+  // sRGB relative luminance
+  const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return lum > 0.35 ? "#1a1a2e" : "#ffffff";
+}
+
 export function drawGate(renderNode, p) {
   const theme = getActiveTheme();
   const gate = renderNode.gate;
@@ -17,9 +32,17 @@ export function drawGate(renderNode, p) {
   p.fill(color);
   p.rect(renderNode.x, renderNode.y, renderNode.width, renderNode.height);
 
-  p.fill(255);
+  // Compute label color with good contrast against the gate fill
+  const labelColor = contrastText(color);
+  p.fill(labelColor);
+  p.noStroke();
   p.textAlign(p.CENTER, p.CENTER);
   p.textSize(FONT_SIZE);
+  if (theme.font && theme.font.family) {
+    // Strip quotes for p5 textFont
+    const fontName = theme.font.family.split(",")[0].replace(/'/g, "").trim();
+    p.textFont(fontName);
+  }
   const label = gate.label || gate.type;
   p.text(label, renderNode.x + renderNode.width / 2, renderNode.y + renderNode.height / 2);
 }
