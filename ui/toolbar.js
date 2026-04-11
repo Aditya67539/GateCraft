@@ -6,6 +6,7 @@ import {
   listCompositeGates,
   deleteCompositeGate,
 } from "../persistence.js";
+import { themes, getActiveThemeId, setActiveThemeId } from "../render/theme.js";
 
 export const modeText = document.getElementById("modeDisplay");
 
@@ -26,6 +27,58 @@ function openSaveModal() {
 
 function closeSaveModal() {
   modal.classList.remove("open");
+}
+
+// ─── Settings panel helpers ─────────────────────────────────────
+const settingsOverlay = document.getElementById("settings-overlay");
+const settingsCloseBtn = document.getElementById("settings-close-btn");
+const themeGrid = document.getElementById("theme-grid");
+
+function openSettings() {
+  settingsOverlay.classList.add("open");
+  renderThemeGrid();
+}
+
+function closeSettings() {
+  settingsOverlay.classList.remove("open");
+}
+
+function renderThemeGrid() {
+  themeGrid.innerHTML = "";
+  const activeId = getActiveThemeId();
+
+  for (const [id, entry] of Object.entries(themes)) {
+    const card = document.createElement("button");
+    card.className = `theme-card${id === activeId ? " active" : ""}`;
+    card.dataset.themeId = id;
+
+    // Pick representative colors for swatches
+    const t = entry.theme;
+    const swatchColors = [
+      t.canvas.bg.hex,
+      t.gates.logic.hex,
+      t.gates.input.high.hex,
+      t.wires.high.hex,
+      t.accent.hex,
+    ];
+
+    card.innerHTML = `
+      <div class="theme-swatches">
+        ${swatchColors.map(c => `<span class="theme-swatch" style="background:${c}"></span>`).join("")}
+      </div>
+      <div class="theme-card-info">
+        <span class="theme-card-name">${entry.label}</span>
+        <span class="theme-card-active-badge">Active</span>
+      </div>
+    `;
+
+    card.addEventListener("click", () => {
+      setActiveThemeId(id);
+      renderThemeGrid();
+    });
+
+    themeGrid.appendChild(card);
+  }
 }
 
 // ─── Sidebar composite section ──────────────────────────────────
@@ -128,6 +181,13 @@ export function initToolbar(p, renderNodes, wires) {
   // Click outside modal to close
   modal.addEventListener("click", e => {
     if (e.target === modal) closeSaveModal();
+  });
+
+  // ─── Settings panel ────────────────────────────────────────────
+  document.getElementById("btn-settings").addEventListener("click", openSettings);
+  settingsCloseBtn.addEventListener("click", closeSettings);
+  settingsOverlay.addEventListener("click", e => {
+    if (e.target === settingsOverlay) closeSettings();
   });
 
   // Initial population of composite section
