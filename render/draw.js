@@ -45,6 +45,7 @@ export function drawGate(renderNode, p) {
   }
   const label = gate.label || gate.type;
   p.text(label, renderNode.x + renderNode.width / 2, renderNode.y + renderNode.height / 2);
+
   p.fill(0);
   p.stroke(0);
   p.strokeWeight(1);
@@ -70,6 +71,7 @@ export function drawWire(renderNodes, wire_info, p) {
 }
 
 export function drawOutputPorts(renderNodes, p) {
+  const theme = getActiveTheme();
   for (let i = 0; i < renderNodes.length; i++) {
     const gate = renderNodes[i].gate;
     if (gate.type === "output") continue;
@@ -77,24 +79,37 @@ export function drawOutputPorts(renderNodes, p) {
 
     for (let j = 0; j < totalOutputs; j++) {
       const port = renderNodes[i].getOutputPortByIndex(j, totalOutputs);
+      p.fill(theme.accent.hex);
+      p.stroke(theme.text.primary.hex);
+      p.strokeWeight(1.5);
       p.circle(port.x, port.y, 12);
     }
   }
+  p.fill(0);
+  p.stroke(0);
+  p.strokeWeight(1);
 }
 
 export function drawInputPorts(renderNodes, p) {
+  const theme = getActiveTheme();
   for (let i = 0; i < renderNodes.length; i++) {
     const gate = renderNodes[i].gate;
     if (gate.type === "input" || gate.type === "clock") continue;
-    const totalInputs = gate.type === "composite" 
-          ? gate.inputCount 
-          : gate.type !== "output" && gate.type !== "not"
-          ? gate.inputs.length + 1
-          : 1;
-    
+    const totalInputs = gate.type === "composite"
+      ? gate.inputCount
+      : gate.type !== "output" && gate.type !== "not"
+        ? gate.inputs.length + 1
+        : 1;
+
     for (let j = 0; j < totalInputs; j++) {
       const port = renderNodes[i].getInputPortByIndex(j, totalInputs);
+      p.fill(theme.accent.hex);
+      p.stroke(theme.text.primary.hex);
+      p.strokeWeight(1.5);
       p.circle(port.x, port.y, 12);
     }
   }
+  p.fill(0);
+  p.stroke(0);
+  p.strokeWeight(1);
 }
