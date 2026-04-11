@@ -40,7 +40,22 @@ const forgeTheme = {
     bg:     forgePalette.graphite,
   },
   accent:   forgePalette.emerald,
-  danger:   forgePalette.rust
+  danger:   forgePalette.rust,
+  text: {
+    primary: { hex: "#f8fafc" },
+    muted:   { hex: "#94a3b8" },
+    inverse: { hex: "#141417" },
+  },
+  font: {
+    family: "'Inter', system-ui, sans-serif",
+    google: "Inter:wght@400;500;600;700",
+  },
+  ui: {
+    border:       { hex: "#ffffff", alpha: 0.10 },
+    borderHover:  { hex: "#ffffff", alpha: 0.22 },
+    overlay:      { hex: "#ffffff", alpha: 0.05 },
+    overlayHover: { hex: "#ffffff", alpha: 0.10 },
+  },
 }
 
 // ── Neon Palette & Theme ───────────────────────────────────────
@@ -80,7 +95,22 @@ const neonTheme = {
   panel: { bg: neonPalette.obsidian },
   surface: { bg: neonPalette.charcoal },
   accent: neonPalette.violet,
-  danger: neonPalette.pink
+  danger: neonPalette.pink,
+  text: {
+    primary: { hex: "#e0e7ff" },
+    muted:   { hex: "#7c7ca0" },
+    inverse: { hex: "#0a0a0f" },
+  },
+  font: {
+    family: "'Orbitron', 'Inter', sans-serif",
+    google: "Orbitron:wght@400;500;600;700",
+  },
+  ui: {
+    border:       { hex: "#ffffff", alpha: 0.10 },
+    borderHover:  { hex: "#ffffff", alpha: 0.22 },
+    overlay:      { hex: "#ffffff", alpha: 0.05 },
+    overlayHover: { hex: "#ffffff", alpha: 0.10 },
+  },
 }
 
 // ── Terminal Palette & Theme ───────────────────────────────────
@@ -121,7 +151,22 @@ const terminalTheme = {
   panel: { bg: terminalPalette.jet },
   surface: { bg: terminalPalette.onyx },
   accent: terminalPalette.lime,
-  danger: terminalPalette.scarlet
+  danger: terminalPalette.scarlet,
+  text: {
+    primary: { hex: "#00ff88" },
+    muted:   { hex: "#2a7a50" },
+    inverse: { hex: "#000000" },
+  },
+  font: {
+    family: "'Fira Code', 'Courier New', monospace",
+    google: "Fira+Code:wght@400;500;600;700",
+  },
+  ui: {
+    border:       { hex: "#00ff88", alpha: 0.12 },
+    borderHover:  { hex: "#00ff88", alpha: 0.28 },
+    overlay:      { hex: "#00ff88", alpha: 0.04 },
+    overlayHover: { hex: "#00ff88", alpha: 0.08 },
+  },
 }
 
 // ── Molten Palette & Theme ─────────────────────────────────────
@@ -163,7 +208,22 @@ const moltenTheme = {
   panel: { bg: moltenPalette.charcoal },
   surface: { bg: moltenPalette.soot },
   accent: moltenPalette.amber,
-  danger: moltenPalette.scarlet
+  danger: moltenPalette.scarlet,
+  text: {
+    primary: { hex: "#fde8d0" },
+    muted:   { hex: "#8b6b5b" },
+    inverse: { hex: "#1a0f0f" },
+  },
+  font: {
+    family: "'Rajdhani', 'Inter', sans-serif",
+    google: "Rajdhani:wght@400;500;600;700",
+  },
+  ui: {
+    border:       { hex: "#ffffff", alpha: 0.08 },
+    borderHover:  { hex: "#ff8c42", alpha: 0.30 },
+    overlay:      { hex: "#ff6b00", alpha: 0.04 },
+    overlayHover: { hex: "#ff6b00", alpha: 0.10 },
+  },
 }
 
 // ── Ocean Palette & Theme ──────────────────────────────────────
@@ -205,7 +265,171 @@ const oceanTheme = {
   panel: { bg: oceanPalette.midnight },
   surface: { bg: oceanPalette.dusk },
   accent: oceanPalette.azure,
-  danger: oceanPalette.coral
+  danger: oceanPalette.coral,
+  text: {
+    primary: { hex: "#e2e8f0" },
+    muted:   { hex: "#64748b" },
+    inverse: { hex: "#0b1220" },
+  },
+  font: {
+    family: "'Inter', system-ui, sans-serif",
+    google: "Inter:wght@400;500;600;700",
+  },
+  ui: {
+    border:       { hex: "#ffffff", alpha: 0.10 },
+    borderHover:  { hex: "#ffffff", alpha: 0.22 },
+    overlay:      { hex: "#ffffff", alpha: 0.05 },
+    overlayHover: { hex: "#ffffff", alpha: 0.10 },
+  },
+}
+
+// ── Voltage Palette & Theme ────────────────────────────────────
+const voltagePalette = {
+  void:     { hex: "#0f111a" },
+  electric: { hex: "#ffff00" },
+  plasma:   { hex: "#7000ff" },
+  storm:    { hex: "#1a1b26" },
+  dead:     { hex: "#444444" },
+  spark:    { hex: "#00ffcc" },
+  hot:      { hex: "#ff0055" },
+}
+
+const voltageTheme = {
+  canvas: {
+    bg:     voltagePalette.void,
+    grid:   voltagePalette.storm,
+  },
+  gates: {
+    logic:  voltagePalette.plasma,
+    input:  {
+      high: voltagePalette.electric,
+      low:  voltagePalette.dead,
+    },
+    output: {
+      high: voltagePalette.electric,
+      low:  voltagePalette.dead,
+    }
+  },
+  wires: {
+    high:   voltagePalette.electric,
+    low:    voltagePalette.dead,
+    ghost:  voltagePalette.storm,
+  },
+  panel: { bg: { hex: "#16161e" } },
+  surface: { bg: { hex: "#1a1b26" } },
+  accent: voltagePalette.spark,
+  danger: voltagePalette.hot,
+  text: {
+    primary: { hex: "#f0f0ff" },
+    muted:   { hex: "#6b6b8a" },
+    inverse: { hex: "#0f111a" },
+  },
+  font: {
+    family: "'Share Tech Mono', 'Courier New', monospace",
+    google: "Share+Tech+Mono",
+  },
+  ui: {
+    border:       { hex: "#ffffff", alpha: 0.10 },
+    borderHover:  { hex: "#ffff00", alpha: 0.25 },
+    overlay:      { hex: "#ffff00", alpha: 0.03 },
+    overlayHover: { hex: "#ffff00", alpha: 0.08 },
+  },
+}
+
+// ── Retro Grade Palette & Theme ────────────────────────────────
+const retroPalette = {
+  cream:    { hex: "#fbf1c7" },
+  clay:     { hex: "#ebdbb2" },
+  rust:     { hex: "#af3a03" },
+  moss:     { hex: "#79740e" },
+  faded:    { hex: "#928374" },
+  wood:     { hex: "#3c3836" },
+  blood:    { hex: "#9d0006" },
+}
+
+const retroTheme = {
+  canvas: {
+    bg:     retroPalette.cream,
+    grid:   retroPalette.clay,
+  },
+  gates: {
+    logic:  retroPalette.wood,
+    input:  {
+      high: retroPalette.moss,
+      low:  retroPalette.rust,
+    },
+    output: {
+      high: retroPalette.moss,
+      low:  retroPalette.rust,
+    }
+  },
+  wires: {
+    high:   retroPalette.moss,
+    low:    retroPalette.rust,
+    ghost:  retroPalette.faded,
+  },
+  panel: { bg: retroPalette.clay },
+  surface: { bg: retroPalette.cream },
+  accent: retroPalette.wood,
+  danger: retroPalette.blood,
+  text: {
+    primary: { hex: "#3c3836" },
+    muted:   { hex: "#7c6f64" },
+    inverse: { hex: "#fbf1c7" },
+  },
+  font: {
+    family: "'Bitter', 'Georgia', serif",
+    google: "Bitter:wght@400;500;600;700",
+  },
+  ui: {
+    border:       { hex: "#3c3836", alpha: 0.15 },
+    borderHover:  { hex: "#3c3836", alpha: 0.30 },
+    overlay:      { hex: "#3c3836", alpha: 0.06 },
+    overlayHover: { hex: "#3c3836", alpha: 0.12 },
+  },
+}
+
+// ── Ghost Palette & Theme ──────────────────────────────────────
+const ghostTheme = {
+  canvas: {
+    bg:     { hex: "#f8f9fa" },
+    grid:   { hex: "#e9ecef" },
+  },
+  gates: {
+    logic:  { hex: "#212529" },
+    input:  {
+      high: { hex: "#000000" },
+      low:  { hex: "#dee2e6" },
+    },
+    output: {
+      high: { hex: "#000000" },
+      low:  { hex: "#dee2e6" },
+    }
+  },
+  wires: {
+    high:   { hex: "#000000" },
+    low:    { hex: "#adb5bd" },
+    ghost:  { hex: "#e9ecef" },
+  },
+  panel: { bg: { hex: "#ffffff" } },
+  surface: { bg: { hex: "#f8f9fa" } },
+  accent: { hex: "#343a40" },
+  danger: { hex: "#fa5252" },
+  text: {
+    primary: { hex: "#212529" },
+    muted:   { hex: "#868e96" },
+    inverse: { hex: "#f8f9fa" },
+  },
+  font: {
+    family: "'DM Sans', 'Inter', sans-serif",
+    google: "DM+Sans:wght@400;500;600;700",
+  },
+  ui: {
+    border:       { hex: "#000000", alpha: 0.10 },
+    borderHover:  { hex: "#000000", alpha: 0.20 },
+    overlay:      { hex: "#000000", alpha: 0.04 },
+    overlayHover: { hex: "#000000", alpha: 0.08 },
+  },
 }
 
 // ── Theme registry ─────────────────────────────────────────────
@@ -215,6 +439,9 @@ export const themes = {
   terminal: { label: "Terminal", theme: terminalTheme },
   molten:   { label: "Molten",   theme: moltenTheme },
   ocean:    { label: "Ocean",    theme: oceanTheme },
+  voltage:  { label: "Voltage",  theme: voltageTheme },
+  retro:    { label: "Retro",    theme: retroTheme },
+  ghost:    { label: "Ghost",    theme: ghostTheme },
 };
 
 const THEME_STORAGE_KEY = "gatecraft-theme";
@@ -264,6 +491,9 @@ export function applyTheme(theme) {
       if (obj.hasOwnProperty(key)) {
         const val = obj[key];
         const newPrefix = prefix ? `${prefix}-${key}` : key;
+
+        // Skip non-CSS properties
+        if (key === "family" || key === "google") continue;
         
         if (val && typeof val.hex === "string") {
           // Inject hex
@@ -271,6 +501,10 @@ export function applyTheme(theme) {
           // Inject rgb components for rgba() usage
           const { r, g, b } = hexToRGB(val.hex);
           root.style.setProperty(`--${newPrefix}-rgb`, `${r}, ${g}, ${b}`);
+          // Inject alpha if present (for ui border/overlay)
+          if (typeof val.alpha === "number") {
+            root.style.setProperty(`--${newPrefix}-alpha`, val.alpha);
+          }
         } else if (typeof val === "object") {
           flatten(val, newPrefix);
         }
@@ -279,6 +513,22 @@ export function applyTheme(theme) {
   }
 
   flatten(theme);
+
+  // Apply font family
+  if (theme.font) {
+    root.style.setProperty("--theme-font-family", theme.font.family);
+
+    // Dynamically load the Google Font
+    const fontId = "theme-google-font";
+    let link = document.getElementById(fontId);
+    if (!link) {
+      link = document.createElement("link");
+      link.id = fontId;
+      link.rel = "stylesheet";
+      document.head.appendChild(link);
+    }
+    link.href = `https://fonts.googleapis.com/css2?family=${theme.font.google}&display=swap`;
+  }
 }
 
-export { forgeTheme, neonTheme, terminalTheme, moltenTheme, oceanTheme };
+export { forgeTheme, neonTheme, terminalTheme, moltenTheme, oceanTheme, voltageTheme, retroTheme, ghostTheme };
