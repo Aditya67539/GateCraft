@@ -91,6 +91,14 @@ export function createCompositeNode(name, circuitData, mouseX, mouseY) {
   modeText.textContent = "Mode: Placing";
 }
 
+export function initCompositeNode(name, circuitData, x, y) {
+  const inputs = new Array(circuitData.renderNodes.filter(n => n.gate.type === "input").length);
+  const gate = new CompositeGate(inputs, circuitData);
+  gate.label = name;
+  gate.parseCircuitData();
+  return new RenderPoint(gate, x, y);
+}
+
 function computeSize(gate) {
   if (gate.type === "input" || gate.type === "output" || gate.type === "not" || gate.type === "clock") return { width: 60, height: 40 };
   const inputCount = gate.type === "composite" ? gate.inputCount : gate.inputs.length + 1;
