@@ -1,17 +1,18 @@
 import { FONT_SIZE } from "../constants.js";
-import { forgeTheme } from "./theme.js";
+import { getActiveTheme } from "./theme.js";
 import { getWirePorts } from "./wireGeometry.js";
 
 export function drawGate(renderNode, p) {
+  const theme = getActiveTheme();
   const gate = renderNode.gate;
   const isOn = Array.isArray(gate.output) ? gate.output.some(Boolean) : gate.output;
   let color;
   if (gate.type === "input" || gate.type === "clock") {
-    color = isOn ? forgeTheme.gates.input.high.hex : forgeTheme.gates.input.low.hex;
+    color = isOn ? theme.gates.input.high.hex : theme.gates.input.low.hex;
   } else if (gate.type === "output") {
-    color = isOn ? forgeTheme.gates.output.high.hex : forgeTheme.gates.output.low.hex;
+    color = isOn ? theme.gates.output.high.hex : theme.gates.output.low.hex;
   } else {
-    color = forgeTheme.gates.logic.hex;
+    color = theme.gates.logic.hex;
   }
   p.fill(color);
   p.rect(renderNode.x, renderNode.y, renderNode.width, renderNode.height);
@@ -24,10 +25,11 @@ export function drawGate(renderNode, p) {
 }
 
 export function drawWire(renderNodes, wire_info, p) {
+  const theme = getActiveTheme();
   const ports = getWirePorts(renderNodes, wire_info.wire);
   p.strokeWeight(3);
 
-  let color = wire_info.wire.signal ? forgeTheme.wires.high.hex : forgeTheme.wires.low.hex;
+  let color = wire_info.wire.signal ? theme.wires.high.hex : theme.wires.low.hex;
   p.stroke(color);
 
   const waypointCount = wire_info.waypoints.length;

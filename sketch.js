@@ -2,9 +2,9 @@ import { state } from "./state.js";
 import { drawGate, drawInputPorts, drawOutputPorts, drawWire } from "./render/draw.js";
 import { registerMouseHandlers } from "./input/mouseHandlers.js";
 import { initToolbar } from "./ui/toolbar.js";
-import { forgeTheme, applyTheme } from "./render/theme.js";
+import { getActiveTheme, applyTheme } from "./render/theme.js";
 
-applyTheme(forgeTheme);
+applyTheme(getActiveTheme());
 
 let mouse = { x: 0, y: 0 };
 
@@ -25,7 +25,8 @@ const sketch = (p) => {
   p.draw = function () {
     mouse.x = p.mouseX;
     mouse.y = p.mouseY;
-    p.background(forgeTheme.canvas.bg.hex);
+    const theme = getActiveTheme();
+    p.background(theme.canvas.bg.hex);
     for (let i = 0; i < renderNodes.length; i++) {
       drawGate(renderNodes[i], p);
     }
@@ -51,7 +52,7 @@ const sketch = (p) => {
       } else {
         start = state.drawingWire.fromNode.getOutputPort();
       }
-      p.stroke(forgeTheme.wires.ghost.hex);
+      p.stroke(theme.wires.ghost.hex);
       p.strokeWeight(3);
       p.line(start.x, start.y, p.mouseX, p.mouseY);
       p.stroke(0);
