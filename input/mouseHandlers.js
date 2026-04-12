@@ -8,6 +8,7 @@ import { setNodeSize } from "../render/RenderPoint.js";
 
 export function registerMouseHandlers(p, renderNodes, wires) {
   p.mousePressed = function () {
+    if (state.labelEditing) return;
     if (state.justPlacedFromToolbar) {
       state.justPlacedFromToolbar = false;
       return;
@@ -155,6 +156,23 @@ export function registerMouseHandlers(p, renderNodes, wires) {
     state.offsetY = 0;
     state.connectedWires = null;
   }
+
+  // Right-click on an input/output gate to edit its label
+  const canvasHost = document.querySelector(".canvas-host");
+  canvasHost.addEventListener("contextmenu", function (e) {
+    e.preventDefault();
+    if (state.labelEditing) return;
+    // Convert page coords to p5 canvas coords
+    const canvas = canvasHost.querySelector("canvas");
+    const rect = canvas.getBoundingClientRect();
+    const mx = (e.clientX - rect.left) * (p.width / rect.width);
+    const my = (e.clientY - rect.top) * (p.height / rect.height);
+    const target = renderNodes.find(n => n.containsPoint(mx, my));
+    if (!target) return;
+    const gateType = target.gate.type;
+    if (gateType !== "input" && gateType !== "output") return;
+    openLabelEditor(target, p);
+  });
 }
 
 
@@ -176,7 +194,7 @@ function findNearOutputPort(mx, my, p, renderNodes) {
       for (let j = 0; j < gate.outputCount; j++) {
         const port = renderNodes[i].getOutputPortByIndex(j, gate.outputCount);
         if (isNearPort(mx, my, port, p)) {
-          return { fromNode: renderNodes[i], fromOutputIndex: j};
+          return { fromNode: renderNodes[i], fromOutputIndex: j };
         }
       }
     }
@@ -192,8 +210,8 @@ function findNearInputPort(mx, my, p, renderNodes) {
   for (let i = 0; i < renderNodes.length; i++) {
     if (renderNodes[i].gate instanceof Input) continue;
     const totalInputs = renderNodes[i].gate.type === "composite" ?
-                        renderNodes[i].gate.inputCount :
-                        renderNodes[i].gate.inputs.length + 1;
+      renderNodes[i].gate.inputCount :
+      renderNodes[i].gate.inputs.length + 1;
 
     for (let j = 0; j < totalInputs; j++) {
       const port = renderNodes[i].getInputPortByIndex(j, totalInputs);
@@ -242,4 +260,70 @@ function adjustWaypoints(renderNodes, wires, fromGateId) {
       break;
     }
   }
+}
+
+/**
+ * Spawn a floating HTML <input> over the gate for label editing.
+ * Commits on Enter or blur; cancels on Escape.
+ */
+function openLabelEditor(renderNode, p) {
+  state.labelEditing = true;
+  const canvasHost = document.querySelector(".canvas-host");
+  const canvas = canvasHost.querySelector("canvas");
+  // Map p5 canvas coords → CSS pixels on the canvas element
+  const canvasRect = canvas.getBoundingClientRect();
+  const scaleX = canvasRect.width / p.width;
+  const scaleY = canvasRect.height / p.height;
+  // Position the input centered over the gate
+  const gateCenterX = renderNode.x + renderNode.width / 2;
+  const gateCenterY = renderNode.y + renderNode.height / 2;
+  const cssX = gateCenterX * scaleX;
+  const cssY = gateCenterY * scaleY;
+  const inputWidth = Math.max(renderNode.width * scaleX, 80);
+  const input = document.createElement("input");
+  input.type = "text";
+  input.className = "gate-label-input";
+  input.maxLength = 16;
+  input.placeholder = renderNode.gate.type;
+  input.value = renderNode.gate.label || "";
+  input.style.left = `${cssX - inputWidth / 2}px`;
+  input.style.top = `${cssY - 16}px`;
+  input.style.width = `${inputWidth}px`;
+  canvasHost.appendChild(input);
+  // Select all text for easy replacement
+  requestAnimationFrame(() => {
+    input.focus();
+    input.select();
+  });
+  function commit() {
+    const value = input.value.trim();
+    if (value) {
+      renderNode.gate.label = value;
+    } else {
+      // Clear custom label — drawGate falls back to gate.type
+      delete renderNode.gate.label;
+    }
+    cleanup();
+  }
+  function cleanup() {
+    if (!input.parentNode) return; // already removed
+    input.removeEventListener("keydown", onKeyDown);
+    input.removeEventListener("blur", onBlur);
+    input.remove();
+    state.labelEditing = false;
+  }
+  function onKeyDown(e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      commit();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      cleanup();
+    }
+  }
+  function onBlur() {
+    commit();
+  }
+  input.addEventListener("keydown", onKeyDown);
+  input.addEventListener("blur", onBlur);
 }

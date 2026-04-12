@@ -21,6 +21,9 @@ function getGateData(node) {
   if (node.gate.type === "input" || node.gate.type === "clock") {
     data.signal = node.gate.output;
   }
+  if (node.gate.label) {
+    data.label = node.gate.label;
+  }
   return data;
 }
 
@@ -79,6 +82,7 @@ export function loadCompositeGate(name) {
     }
     idMap[gate.id] = newNode.gate.id;
     if (gate.signal !== undefined) newNode.gate.output = gate.signal;
+    if (gate.label) newNode.gate.label = gate.label;
     renderNodes.push(newNode);
   });
 
