@@ -1,4 +1,4 @@
-import { FONT_SIZE } from "../constants.js";
+import { FONT_SIZE, PORT_LABEL_SIZE } from "../constants.js";
 import { getActiveTheme } from "./theme.js";
 import { getWirePorts } from "./wireGeometry.js";
 
@@ -83,6 +83,16 @@ export function drawOutputPorts(renderNodes, p) {
       p.stroke(theme.text.primary.hex);
       p.strokeWeight(1.5);
       p.circle(port.x, port.y, 12);
+
+      // Draw port label for composite gates
+      if (gate.type === "composite" && gate.internalOutputs && gate.internalOutputs[j]) {
+        const portLabel = gate.internalOutputs[j].label || gate.internalOutputs[j].type;
+        p.noStroke();
+        p.fill(theme.text.muted ? theme.text.muted.hex : "#94a3b8");
+        p.textSize(PORT_LABEL_SIZE);
+        p.textAlign(p.RIGHT, p.CENTER);
+        p.text(portLabel, port.x - 10, port.y);
+      }
     }
   }
   p.fill(0);
@@ -107,6 +117,16 @@ export function drawInputPorts(renderNodes, p) {
       p.stroke(theme.text.primary.hex);
       p.strokeWeight(1.5);
       p.circle(port.x, port.y, 12);
+
+      // Draw port label for composite gates
+      if (gate.type === "composite" && gate.internalInputs && gate.internalInputs[j]) {
+        const portLabel = gate.internalInputs[j].label || gate.internalInputs[j].type;
+        p.noStroke();
+        p.fill(theme.text.muted ? theme.text.muted.hex : "#94a3b8");
+        p.textSize(PORT_LABEL_SIZE);
+        p.textAlign(p.LEFT, p.CENTER);
+        p.text(portLabel, port.x + 10, port.y);
+      }
     }
   }
   p.fill(0);
