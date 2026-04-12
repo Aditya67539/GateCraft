@@ -1,4 +1,4 @@
-import { FONT_SIZE } from "../constants.js";
+import { FONT_SIZE, PORT_LABEL_SIZE } from "../constants.js";
 import { Input, Output, Clock, Gate, CompositeGate } from "../logic/gates.js";
 import { state } from "../state.js";
 import { modeText } from "../ui/toolbar.js";
@@ -105,10 +105,38 @@ function computeSize(gate) {
   const outputCount = gate.type === "composite" ? gate.outputCount : 1;
 
   const maxPortCount = Math.max(inputCount, outputCount);
+  const centerLabel = gate.label || gate.type;
+
+  if (gate.type === "composite") {
+    // Taller rows so port labels don't overlap
+    const height = Math.max(60, maxPortCount * 30);
+
+    // Measure the widest input and output port labels
+    let maxInputLabelLen = 0;
+    let maxOutputLabelLen = 0;
+    if (gate.internalInputs) {
+      for (const g of gate.internalInputs) {
+        const lbl = g.label || g.type;
+        if (lbl.length > maxInputLabelLen) maxInputLabelLen = lbl.length;
+      }
+    }
+    if (gate.internalOutputs) {
+      for (const g of gate.internalOutputs) {
+        const lbl = g.label || g.type;
+        if (lbl.length > maxOutputLabelLen) maxOutputLabelLen = lbl.length;
+      }
+    }
+
+    const inputLabelWidth = maxInputLabelLen * PORT_LABEL_SIZE * 0.55 + 10;
+    const outputLabelWidth = maxOutputLabelLen * PORT_LABEL_SIZE * 0.55 + 10;
+    const centerLabelWidth = centerLabel.length * FONT_SIZE * 0.6 + 20;
+    const width = Math.max(80, inputLabelWidth + centerLabelWidth + outputLabelWidth);
+    return { width, height };
+  }
+
   const height = Math.max(60, maxPortCount * 20);
-  const label = gate.label || gate.type;
-  const width = Math.max(60, label.length * FONT_SIZE * 0.6 + 20);
-  return { width: width, height: height };
+  const width = Math.max(60, centerLabel.length * FONT_SIZE * 0.6 + 20);
+  return { width, height };
 }
 
 export function setNodeSize(node) {
