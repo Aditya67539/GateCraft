@@ -171,6 +171,7 @@ function isNearWaypoint(mx, my, waypoint, p) {
 function findNearOutputPort(mx, my, p, renderNodes) {
   for (let i = 0; i < renderNodes.length; i++) {
     const gate = renderNodes[i].gate;
+    if (gate.type === "output") continue;
     if (gate.type === "composite") {
       for (let j = 0; j < gate.outputCount; j++) {
         const port = renderNodes[i].getOutputPortByIndex(j, gate.outputCount);
