@@ -9,4 +9,5 @@ export const state = {
   changingWayPoint: null,
   connectedWires: null,
   intervalId: null,
+  labelEditing: false,
 };
