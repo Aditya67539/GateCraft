@@ -161,7 +161,7 @@ export function registerMouseHandlers(p, renderNodes, wires) {
   const canvasHost = document.querySelector(".canvas-host");
   canvasHost.addEventListener("contextmenu", function (e) {
     e.preventDefault();
-    if (state.labelEditing) return;
+    if (state.mode !== "edit" || state.labelEditing) return;
     // Convert page coords to p5 canvas coords
     const canvas = canvasHost.querySelector("canvas");
     const rect = canvas.getBoundingClientRect();
