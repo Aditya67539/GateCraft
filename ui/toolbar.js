@@ -105,6 +105,8 @@ function refreshCompositeSection() {
     empty.textContent = "No saved gates";
     compositeSection.appendChild(empty);
     return;
+  } else {
+    compositeSection.querySelectorAll(".composite-empty").forEach(el => el.remove());
   }
 
   names.forEach(name => {
