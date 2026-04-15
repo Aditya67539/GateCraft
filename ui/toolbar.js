@@ -19,6 +19,15 @@ const modalCancel = document.getElementById("modal-cancel-btn");
 let _renderNodes = null;
 let _wires = null;
 
+function clearCanvas() {
+  if (state.intervalId !== null) {
+    clearInterval(state.intervalId);
+    state.intervalId = null;
+  }
+  _renderNodes.splice(0, _renderNodes.length);
+  _wires.splice(0, _wires.length);
+}
+
 function openSaveModal() {
   modalInput.value = "";
   modal.classList.add("open");
@@ -169,6 +178,7 @@ export function initToolbar(p, renderNodes, wires) {
     if (!name) { modalInput.focus(); return; }
     saveCompositeGate(name, _renderNodes, _wires);
     closeSaveModal();
+    clearCanvas();
     refreshCompositeSection();
   });
 
@@ -182,6 +192,9 @@ export function initToolbar(p, renderNodes, wires) {
   modal.addEventListener("click", e => {
     if (e.target === modal) closeSaveModal();
   });
+
+  // ─── Clear canvas ─────────────────────────────────────────────
+  document.getElementById("btn-clear-canvas").addEventListener("click", clearCanvas);
 
   // ─── Settings panel ────────────────────────────────────────────
   document.getElementById("btn-settings").addEventListener("click", openSettings);
