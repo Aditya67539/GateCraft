@@ -109,7 +109,8 @@ export function registerMouseHandlers(p, renderNodes, wires) {
               input => input.from.id !== state.dragging.gate.id
             );
           }
-        }        
+        }
+
         for (let i = 0; i < renderNodes.length; i++) setNodeSize(renderNodes[i]);
         adjustWaypoints(renderNodes, wires, state.dragging.gate.id);
         // Mutate arrays in-place so sketch.js references stay valid
@@ -120,7 +121,40 @@ export function registerMouseHandlers(p, renderNodes, wires) {
         state.dragging = null;
         settleCircuit(renderNodes, wires);
       } else {
-        getWireAtPoint(p.mouseX, p.mouseY, renderNodes, wires);
+        const wire_info = getWireAtPoint(p.mouseX, p.mouseY, renderNodes, wires);
+        if (wire_info) {
+          const toGate = wire_info.wire.to;
+          const removedIndex = wire_info.wire.toInputIndex;
+
+          if (toGate.type === "composite") {
+            // Composite gates have fixed-size input arrays; just clear the slot
+            toGate.inputs[removedIndex] = undefined;
+          } else {
+            // Basic gates & output: splice the input out by its index
+            toGate.inputs.splice(removedIndex, 1);
+
+            // Update toInputIndex on all remaining wires whose index shifted
+            for (const w of wires) {
+              if (w.wire.to.id === toGate.id && w.wire.toInputIndex > removedIndex) {
+                w.wire.toInputIndex--;
+              }
+            }
+          }
+
+          // Resize the destination node to reflect the reduced input count
+          const toRenderNode = renderNodes.find(n => n.gate.id === toGate.id);
+          if (toRenderNode) setNodeSize(toRenderNode);
+
+          // Re-compute waypoints for all remaining wires going into this gate
+          for (const w of wires) {
+            if (w.wire.to.id === toGate.id) {
+              reComputeWayPoint(renderNodes, w);
+            }
+          }
+
+          wires.splice(wires.indexOf(wire_info), 1);
+          settleCircuit(renderNodes, wires);
+        }
       }
     }
   }
@@ -254,13 +288,13 @@ function getWireAtPoint(mx, my, renderNodes, wires) {
     points.push(port.end);
 
     for (let i = 0; i < points.length - 1; i++) {
-      if (isOnWireSegment(points[i], points[i + 1], {x: mx, y: my}, 15)) {
+      if (isOnWireSegment(points[i], points[i + 1], { x: mx, y: my }, 15)) {
         return wire_info;
       }
     }
   }
   return null;
-} 
+}
 
 
 function findNearWaypoint(mx, my, p, wires) {
