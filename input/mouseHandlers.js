@@ -2,7 +2,7 @@ import { state } from "../state.js";
 import { Input } from "../logic/gates.js";
 import { settleCircuit, evaluateAll } from "../logic/evaluate.js";
 import { CLOCK_TIMER, FREQUENCY } from "../constants.js";
-import { reComputeWayPoint, init_wire } from "../render/wireGeometry.js";
+import { reComputeWayPoint, init_wire, getWirePorts } from "../render/wireGeometry.js";
 import { modeText } from "../ui/toolbar.js";
 import { setNodeSize } from "../render/RenderPoint.js";
 
@@ -120,6 +120,41 @@ export function registerMouseHandlers(p, renderNodes, wires) {
         if (nodeIdx !== -1) renderNodes.splice(nodeIdx, 1);
         state.dragging = null;
         settleCircuit(renderNodes, wires);
+      } else {
+        const wire_info = getWireAtPoint(p.mouseX, p.mouseY, renderNodes, wires);
+        if (wire_info) {
+          const toGate = wire_info.wire.to;
+          const removedIndex = wire_info.wire.toInputIndex;
+
+          if (toGate.type === "composite") {
+            // Composite gates have fixed-size input arrays; just clear the slot
+            toGate.inputs[removedIndex] = undefined;
+          } else {
+            // Basic gates & output: splice the input out by its index
+            toGate.inputs.splice(removedIndex, 1);
+
+            // Update toInputIndex on all remaining wires whose index shifted
+            for (const w of wires) {
+              if (w.wire.to.id === toGate.id && w.wire.toInputIndex > removedIndex) {
+                w.wire.toInputIndex--;
+              }
+            }
+          }
+
+          // Resize the destination node to reflect the reduced input count
+          const toRenderNode = renderNodes.find(n => n.gate.id === toGate.id);
+          if (toRenderNode) setNodeSize(toRenderNode);
+
+          // Re-compute waypoints for all remaining wires going into this gate
+          for (const w of wires) {
+            if (w.wire.to.id === toGate.id) {
+              reComputeWayPoint(renderNodes, w);
+            }
+          }
+
+          wires.splice(wires.indexOf(wire_info), 1);
+          settleCircuit(renderNodes, wires);
+        }
       }
     }
   }
@@ -217,6 +252,44 @@ function findNearInputPort(mx, my, p, renderNodes) {
       const port = renderNodes[i].getInputPortByIndex(j, totalInputs);
       if (isNearPort(mx, my, port, p)) {
         return { toNode: renderNodes[i], index: j };
+      }
+    }
+  }
+  return null;
+}
+
+
+function distancePointToSegment(A, B, O) {
+  const AB = { x: B.x - A.x, y: B.y - A.y };
+  const AO = { x: O.x - A.x, y: O.y - A.y };
+
+  let projection = (AO.x * AB.x + AO.y * AB.y) / (Math.pow(AB.x, 2) + Math.pow(AB.y, 2));
+  projection = Math.max(0, Math.min(1, projection));
+
+  const closestPoint = { x: A.x + projection * AB.x, y: A.y + projection * AB.y };
+
+  const d = Math.pow(O.x - closestPoint.x, 2) + Math.pow(O.y - closestPoint.y, 2);
+  return d;
+}
+
+function isOnWireSegment(A, B, O, threshold) {
+  const d = distancePointToSegment(A, B, O);
+  return d <= Math.pow(threshold, 2);
+}
+
+function getWireAtPoint(mx, my, renderNodes, wires) {
+  for (const wire_info of wires) {
+    const port = getWirePorts(renderNodes, wire_info.wire);
+    const points = [];
+    points.push(port.start);
+    for (const waypoint of wire_info.waypoints) {
+      points.push(waypoint);
+    }
+    points.push(port.end);
+
+    for (let i = 0; i < points.length - 1; i++) {
+      if (isOnWireSegment(points[i], points[i + 1], { x: mx, y: my }, 15)) {
+        return wire_info;
       }
     }
   }
