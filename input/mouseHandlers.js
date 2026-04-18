@@ -76,21 +76,21 @@ export function registerMouseHandlers(p, renderNodes, wires) {
         state.dragging.gate.setValue(!state.dragging.gate.output);
         evaluateAll(renderNodes, wires);
       } else if (state.dragging && state.dragging.gate.type === "clock") {
-        if (state.intervalId !== null) {
-          clearInterval(state.intervalId);
-          state.intervalId = null;
+        if (state.dragging.intervalId != null) {
+          clearInterval(state.dragging.intervalId);
+          state.dragging.intervalId = null;
           return;
         }
         const clockNode = state.dragging;
         const timeInterval = 1000 / (2 * FREQUENCY);
-        state.intervalId = setInterval(() => {
+        state.dragging.intervalId = setInterval(() => {
           clockNode.gate.tick();
           evaluateAll(renderNodes, wires);
         }, timeInterval);
 
         setTimeout(() => {
-          clearInterval(state.intervalId);
-          state.intervalId = null;
+          clearInterval(state.dragging.intervalId);
+          state.dragging.intervalId = null;
         }, CLOCK_TIMER);
       }
     } else if (state.mode === "placing") {

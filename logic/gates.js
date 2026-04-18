@@ -25,6 +25,7 @@ export class Clock extends Input {
   constructor(value) {
     super(value);
     this.type = "clock";
+    this.intervalId = null;
   }
 
   tick() {
