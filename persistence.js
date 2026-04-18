@@ -24,6 +24,9 @@ function getGateData(node) {
   if (node.gate.label) {
     data.label = node.gate.label;
   }
+  if (node.gate.type === "clock") {
+    data.label = "clk";
+  }
   return data;
 }
 
@@ -45,6 +48,8 @@ export function saveCompositeGate(name, renderNodes, wires) {
     const data = getGateData(node);
     if (node.gate.type === "composite") {
       data.compositeName = node.gate.label;
+    } else if (node.gate.type === "clock") {
+      data.type = "input";
     }
     gateData.push(data);
   });
