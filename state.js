@@ -8,6 +8,5 @@ export const state = {
   drawingWire: null,
   changingWayPoint: null,
   connectedWires: null,
-  intervalId: null,
   labelEditing: false,
 };
