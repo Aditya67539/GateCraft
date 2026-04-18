@@ -1,5 +1,6 @@
 export function evaluateAll(renderNodes, wires) {
-  const queue = new Set();
+  let currentDelta = new Set();
+  let nextDelta = new Set();
   const gateMap = {};
 
   for (const rn of renderNodes) {
@@ -12,16 +13,16 @@ export function evaluateAll(renderNodes, wires) {
       const newSignal = from.output;
       if (wi.wire.signal !== newSignal) {
         wi.wire.signal = newSignal;
-        queue.add(wi.wire.to.id);
+        currentDelta.add(wi.wire.to.id);
       }
     }
   }
 
-  const visited = new Set();
+  let iterations = 0;
 
-  while (queue.size > 0) {
-    const [gateId] = queue;
-    queue.delete(gateId);
+  while (currentDelta.size > 0 && iterations < 100) {
+    const [gateId] = currentDelta;
+    currentDelta.delete(gateId);
 
     const gate = gateMap[gateId];
     if (!gate || gate.type === "input" || gate.type === "clock") continue;
@@ -37,9 +38,7 @@ export function evaluateAll(renderNodes, wires) {
             wi.wire.signal = newOutput[wi.wire.fromOutputIndex];
             const downstreamId = wi.wire.to.id;
 
-            if (!visited.has(downstreamId)) {
-              queue.add(downstreamId);
-            }
+            nextDelta.add(downstreamId);
           }
         }
       }
@@ -50,15 +49,16 @@ export function evaluateAll(renderNodes, wires) {
             wi.wire.signal = newOutput;
             const downstreamId = wi.wire.to.id;
 
-            if (!visited.has(downstreamId)) {
-              queue.add(downstreamId);
-            }
+            nextDelta.add(downstreamId);
           }
         }
       }
     }
 
-    visited.add(gateId);
+    if (currentDelta.size == 0) {
+      [currentDelta, nextDelta] = [nextDelta, currentDelta];
+      iterations += 1;
+    }
   }
 }
 
