@@ -499,18 +499,19 @@ const graphiteTheme = {
 
 // ── Theme registry ─────────────────────────────────────────────
 export const themes = {
-  forge:    { label: "Forge",    theme: forgeTheme },
-  neon:     { label: "Neon",     theme: neonTheme },
-  terminal: { label: "Terminal", theme: terminalTheme },
-  molten:   { label: "Molten",   theme: moltenTheme },
-  ocean:    { label: "Ocean",    theme: oceanTheme },
-  voltage:  { label: "Voltage",  theme: voltageTheme },
-  retro:    { label: "Retro",    theme: retroTheme },
-  ghost:    { label: "Ghost",    theme: ghostTheme },
+  graphite:  { label: "Graphite",  theme: graphiteTheme },
+  forge:     { label: "Forge",    theme: forgeTheme },
+  terminal:  { label: "Terminal", theme: terminalTheme },
+  voltage:   { label: "Voltage",  theme: voltageTheme },
+  neon:      { label: "Neon",     theme: neonTheme },
+  ocean:     { label: "Ocean",    theme: oceanTheme },
+  molten:    { label: "Molten",   theme: moltenTheme },
+  retro:     { label: "Retro",    theme: retroTheme },
+  blueprint: { label: "Blueprint", theme: blueprintTheme },
 };
 
 const THEME_STORAGE_KEY = "gatecraft-theme";
-let _activeThemeId = localStorage.getItem(THEME_STORAGE_KEY) || "forge";
+let _activeThemeId = localStorage.getItem(THEME_STORAGE_KEY) || "graphite";
 
 export function getActiveTheme() {
   return themes[_activeThemeId].theme;
@@ -596,4 +597,14 @@ export function applyTheme(theme) {
   }
 }
 
-export { forgeTheme, neonTheme, terminalTheme, moltenTheme, oceanTheme, voltageTheme, retroTheme, ghostTheme };
+export {
+  graphiteTheme,
+  forgeTheme,
+  terminalTheme,
+  voltageTheme,
+  neonTheme,
+  oceanTheme,
+  moltenTheme,
+  retroTheme,
+  blueprintTheme,
+}
