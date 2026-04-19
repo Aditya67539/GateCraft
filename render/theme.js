@@ -389,46 +389,111 @@ const retroTheme = {
   },
 }
 
-// ── Ghost Palette & Theme ──────────────────────────────────────
-const ghostTheme = {
+
+// ── Blueprint Palette & Theme ────────────────────────────────
+const blueprintPalette = {
+  base:      { hex: "#dce8f5" }, // canvas background
+  mantle:    { hex: "#c5d8ef" }, // grid
+  surface:   { hex: "#1a3a5c" }, // gates
+  green:     { hex: "#0d7a3e" }, // high signals
+  red:       { hex: "#8a1a1a" }, // low signals
+  text:      { hex: "#0f2540" }, // primary text
+  blue:      { hex: "#2980b9" }, // accent
+}
+
+const blueprintTheme = {
   canvas: {
-    bg:     { hex: "#f8f9fa" },
-    grid:   { hex: "#e9ecef" },
+    bg:     blueprintPalette.base,
+    grid:   blueprintPalette.mantle,
   },
   gates: {
-    logic:  { hex: "#212529" },
+    logic:  blueprintPalette.surface,
     input:  {
-      high: { hex: "#000000" },
-      low:  { hex: "#dee2e6" },
+      high: blueprintPalette.green,
+      low:  blueprintPalette.red,
     },
     output: {
-      high: { hex: "#000000" },
-      low:  { hex: "#dee2e6" },
+      high: blueprintPalette.green,
+      low:  blueprintPalette.red,
     }
   },
   wires: {
-    high:   { hex: "#000000" },
-    low:    { hex: "#adb5bd" },
-    ghost:  { hex: "#e9ecef" },
+    high:   blueprintPalette.green,
+    low:    blueprintPalette.red,
+    ghost:  blueprintPalette.mantle,
   },
-  panel: { bg: { hex: "#ffffff" } },
-  surface: { bg: { hex: "#f8f9fa" } },
-  accent: { hex: "#343a40" },
-  danger: { hex: "#fa5252" },
+  panel:   { bg: blueprintPalette.base },
+  surface: { bg: blueprintPalette.base },
+  accent:  blueprintPalette.blue,
+  danger:  blueprintPalette.red,
   text: {
-    primary: { hex: "#212529" },
-    muted:   { hex: "#868e96" },
-    inverse: { hex: "#f8f9fa" },
+    primary: blueprintPalette.text,
+    muted:   { hex: "#4a6a8a" }, // desaturated blueprint ink
+    inverse: { hex: "#ffffff" },
   },
   font: {
-    family: "'DM Sans', 'Inter', sans-serif",
-    google: "DM+Sans:wght@400;500;600;700",
+    family: "'Inter', 'Segoe UI', sans-serif",
+    google: "Inter:wght@400;500;600;700",
   },
   ui: {
-    border:       { hex: "#000000", alpha: 0.10 },
-    borderHover:  { hex: "#000000", alpha: 0.20 },
-    overlay:      { hex: "#000000", alpha: 0.04 },
-    overlayHover: { hex: "#000000", alpha: 0.08 },
+    border:       { hex: "#0f2540", alpha: 0.12 },
+    borderHover:  { hex: "#0f2540", alpha: 0.24 },
+    overlay:      { hex: "#0f2540", alpha: 0.05 },
+    overlayHover: { hex: "#0f2540", alpha: 0.10 },
+  },
+}
+
+
+// ── Graphite Palette & Theme ────────────────────────────────
+const graphitePalette = {
+  base:      { hex: "#1c1c1c" }, // canvas background
+  mantle:    { hex: "#252525" }, // grid
+  surface:   { hex: "#3a3a3a" }, // gates
+  green:     { hex: "#00e676" }, // high signals
+  red:       { hex: "#ff1744" }, // low signals
+  text:      { hex: "#eeeeee" }, // primary text
+  blue:      { hex: "#40c4ff" }, // accent
+}
+
+const graphiteTheme = {
+  canvas: {
+    bg:     graphitePalette.base,
+    grid:   graphitePalette.mantle,
+  },
+  gates: {
+    logic:  graphitePalette.surface,
+    input:  {
+      high: graphitePalette.green,
+      low:  graphitePalette.red,
+    },
+    output: {
+      high: graphitePalette.green,
+      low:  graphitePalette.red,
+    }
+  },
+  wires: {
+    high:   graphitePalette.green,
+    low:    graphitePalette.red,
+    ghost:  graphitePalette.mantle,
+  },
+  panel:   { bg: graphitePalette.surface },
+  surface: { bg: graphitePalette.base },
+  accent:  graphitePalette.blue,
+  danger:  graphitePalette.red,
+  text: {
+    primary: graphitePalette.text,
+    muted:   { hex: "#b0b0b0" }, // neutral dimmed text
+    inverse: { hex: "#1c1c1c" },
+  },
+  font: {
+    family: "'Inter', 'Segoe UI', sans-serif",
+    google: "Inter:wght@400;500;600;700",
+  },
+  ui: {
+    border:       { hex: "#eeeeee", alpha: 0.08 },
+    borderHover:  { hex: "#eeeeee", alpha: 0.16 },
+    overlay:      { hex: "#eeeeee", alpha: 0.04 },
+    overlayHover: { hex: "#eeeeee", alpha: 0.08 },
   },
 }
 
