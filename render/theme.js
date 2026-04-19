@@ -340,8 +340,8 @@ const voltageTheme = {
 const retroPalette = {
   cream:    { hex: "#fbf1c7" },
   clay:     { hex: "#ebdbb2" },
-  rust:     { hex: "#af3a03" },
-  moss:     { hex: "#79740e" },
+  rust:     { hex: "#9d0006" },
+  moss:     { hex: "#427b58" },
   faded:    { hex: "#928374" },
   wood:     { hex: "#3c3836" },
   blood:    { hex: "#9d0006" },
