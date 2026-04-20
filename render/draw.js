@@ -133,3 +133,21 @@ export function drawInputPorts(renderNodes, p) {
   p.stroke(0);
   p.strokeWeight(1);
 }
+
+export function drawGhostWire(wire, p) {
+  const theme = getActiveTheme();
+  const node = wire.fromNode;
+  let start;
+  if (node.gate.type === "composite") {
+    const index = wire.fromOutputIndex;
+    const outputCount = node.gate.outputCount;
+    start = node.getOutputPortByIndex(index, outputCount);
+  } else {
+    start = node.getOutputPort();
+  }
+  p.stroke(theme.wires.ghost.hex);
+  p.strokeWeight(3);
+  p.line(start.x, start.y, p.mouseX, p.mouseY);
+  p.stroke(0);
+  p.strokeWeight(1);
+}
