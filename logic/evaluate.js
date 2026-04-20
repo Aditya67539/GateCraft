@@ -1,10 +1,19 @@
-export function evaluateAll(renderNodes, wires) {
+export function evaluateAll(renderNodes, wires, seedAll = false) {
   let currentDelta = new Set();
   let nextDelta = new Set();
   const gateMap = {};
 
   for (const rn of renderNodes) {
     gateMap[rn.gate.id] = rn.gate;
+  }
+
+  // Seed all non-input gates when called from a composite gate
+  if (seedAll) {
+    for (const rn of renderNodes) {
+      if (rn.gate.type !== "input" && rn.gate.type !== "clock") {
+        currentDelta.add(rn.gate.id);
+      }
+    }
   }
 
   for (const wi of wires) {

@@ -1,5 +1,5 @@
 import { Wire } from "./wire.js";
-import { evaluateAll } from "./evaluate.js";
+import { evaluateAll, settleCircuit } from "./evaluate.js";
 
 class Logic {
   static nextId = 1;
@@ -192,9 +192,8 @@ export class CompositeGate extends ConnectableGate {
     this.outputCount = this.internalOutputs.length;
     this.inputCount = this.internalInputs.length;
 
-    // Invalidate wire signals so the first evaluateAll detects changes
     for (const wi of this.circuitData.wires) {
-      wi.wire.signal = undefined;
+      wi.wire.signal = false;
     }
   }
 
@@ -210,7 +209,7 @@ export class CompositeGate extends ConnectableGate {
       this.internalInputs[i].setValue(resolvedInputs[i]);
     }
 
-    evaluateAll(this.circuitData.renderNodes, this.circuitData.wires);
+    evaluateAll(this.circuitData.renderNodes, this.circuitData.wires, true);
 
     // Assuming internalOutputs is array of output gates in the internal circuit
     for (let i = 0; i < this.internalOutputs.length; i++) {
