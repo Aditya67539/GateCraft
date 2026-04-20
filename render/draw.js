@@ -133,3 +133,10 @@ export function drawInputPorts(renderNodes, p) {
   p.stroke(0);
   p.strokeWeight(1);
 }
+
+export function drawWaypoint(wire_info, waypoint, p) {
+  const theme = getActiveTheme();
+  let color = wire_info.wire.signal ? theme.wires.high.hex : theme.wires.low.hex;
+  p.fill(color);
+  p.circle(waypoint.x, waypoint.y, 12);
+}
