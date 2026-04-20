@@ -216,7 +216,7 @@ function isNearPort(mouseX, mouseY, port, p) {
   return d < 15;
 }
 
-function isNearWaypoint(mx, my, waypoint, p) {
+export function isNearWaypoint(mx, my, waypoint, p) {
   const d = p.dist(mx, my, waypoint.x, waypoint.y);
   return d < 10;
 }
