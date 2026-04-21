@@ -194,7 +194,9 @@ export function registerMouseHandlers(p, renderNodes, wires) {
       if (state.changingWayPoint) {
         state.changingWayPoint.waypoint.x = p.mouseX;
         state.changingWayPoint.waypoint.y = p.mouseY;
-        state.changingWayPoint.otherWaypoint.x = state.changingWayPoint.waypoint.x;
+        if (state.changingWayPoint.otherWaypoint) {
+          state.changingWayPoint.otherWaypoint.x = state.changingWayPoint.waypoint.x;
+        }
       }
     }
   }
@@ -316,6 +318,7 @@ function findNearWaypoint(mx, my, p, wires) {
     const waypointCount = wires[i].waypoints.length;
     for (let j = 0; j < waypointCount; j++) {
       if (isNearWaypoint(mx, my, wires[i].waypoints[j], p)) {
+        if (wires[i].isCustomRouted) return { waypoint: wires[i].waypoints[j] };
         let otherWaypoint = null;
         if (waypointCount === 2) {
           otherWaypoint = wires[i].waypoints[j === 0 ? 1 : 0];
