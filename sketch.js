@@ -1,6 +1,6 @@
 import { state } from "./state.js";
-import { drawGate, drawGhostWire, drawInputPorts, drawOutputPorts, drawWire } from "./render/draw.js";
-import { registerMouseHandlers } from "./input/mouseHandlers.js";
+import { drawGate, drawWaypoint, drawGhostWire, drawInputPorts, drawOutputPorts, drawWire } from "./render/draw.js";
+import { registerMouseHandlers, isNearWaypoint } from "./input/mouseHandlers.js";
 import { initToolbar } from "./ui/toolbar.js";
 import { getActiveTheme, applyTheme } from "./render/theme.js";
 
@@ -34,6 +34,13 @@ const sketch = (p) => {
     drawInputPorts(renderNodes, p);
     for (let i = 0; i < wires.length; i++) {
       drawWire(renderNodes, wires[i], p);
+      if (state.mode === "edit") {
+        for (const waypoint of wires[i].waypoints) {
+          if (isNearWaypoint(mouse.x, mouse.y, waypoint, p)) {
+            drawWaypoint(wires[i], waypoint, p);
+          }
+        }
+      }
     }
     if (state.ghostNode) {
       drawGate(state.ghostNode, p);
