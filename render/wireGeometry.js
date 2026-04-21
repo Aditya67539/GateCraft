@@ -53,3 +53,26 @@ export function reComputeWayPoint(renderNodes, wire_info) {
   const waypointCount = newWayPoints.length;
   wire_info.waypoints[waypointCount - 1].y = newWayPoints[waypointCount - 1].y;
 }
+
+export function setCustomWaypoints(p) {
+  let waypoints = [];
+  function onKeyDown(e) {
+    if (e.key === " ") {
+      if (waypoints.length !== 0) {
+        const waypoint_count = waypoints.length;
+        if (!isNearWaypoint(p.mouseX, p.mouseY, waypoints[waypoint_count - 1], p)) {
+          waypoints.push({ x: p.mouseX, y: p.mouseY });
+        }
+      } else {
+        waypoints.push({ x: p.mouseX, y: p.mouseY });
+      }
+     }
+  }
+
+  function cleanup() {
+    document.removeEventListener("keydown", onKeyDown);
+  }
+
+  document.addEventListener("keydown", onKeyDown);
+  return { waypoints, cleanup };
+}
