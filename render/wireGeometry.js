@@ -1,6 +1,15 @@
-export function init_wire(renderNodes, wire) {
-  let waypoints = computeWayPoints(renderNodes, wire);
-  return { wire: wire, waypoints: waypoints };
+import { isNearWaypoint } from "../input/mouseHandlers.js";
+
+export function init_wire(renderNodes, wire, custom_waypoints) {
+  let waypoints;
+  let isCustomRouted = false;
+  if (custom_waypoints && custom_waypoints.length !== 0) {
+    waypoints = custom_waypoints;
+    isCustomRouted = true;
+  } else {
+    waypoints = computeWayPoints(renderNodes, wire);
+  }
+  return { wire: wire, waypoints: waypoints, isCustomRouted: isCustomRouted };
 }
 
 export function getWirePorts(renderNodes, wire) {
@@ -48,6 +57,7 @@ export function computeWayPoints(renderNodes, wire) {
 }
 
 export function reComputeWayPoint(renderNodes, wire_info) {
+  if (wire_info.isCustomRouted) return;
   if (wire_info.wire.to.type === "composite") return;
   let newWayPoints = computeWayPoints(renderNodes, wire_info.wire);
   const waypointCount = newWayPoints.length;
