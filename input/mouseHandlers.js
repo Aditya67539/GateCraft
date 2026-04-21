@@ -2,7 +2,15 @@ import { state } from "../state.js";
 import { Input } from "../logic/gates.js";
 import { settleCircuit, evaluateAll } from "../logic/evaluate.js";
 import { CLOCK_TIMER, FREQUENCY } from "../constants.js";
-import { reComputeWayPoint, init_wire, getWirePorts } from "../render/wireGeometry.js";
+import { reComputeWayPoint, init_wire, getWirePorts, setCustomWaypoints } from "../render/wireGeometry.js";
+
+function cleanupGhostWire() {
+  if (state.ghostWireCleanup) {
+    state.ghostWireCleanup();
+    state.ghostWireCleanup = null;
+  }
+  state.ghostWire = null;
+}
 import { modeText } from "../ui/toolbar.js";
 import { setNodeSize } from "../render/RenderPoint.js";
 
@@ -29,13 +37,15 @@ export function registerMouseHandlers(p, renderNodes, wires) {
           let wire = wireConnection.toNode.gate.connect(state.drawingWire.fromNode.gate, inputIndex, outputIndex);
           setNodeSize(wireConnection.toNode);
           if (wire === null) return;
-          let wire_info = init_wire(renderNodes, wire);
+          let wire_info = init_wire(renderNodes, wire, state.ghostWire);
           wires.push(wire_info);
           adjustWaypoints(renderNodes, wires, state.drawingWire.fromNode.gate.id);
           state.drawingWire = null;
+          cleanupGhostWire();
           settleCircuit(renderNodes, wires);
         } else {
           state.drawingWire = null;
+          cleanupGhostWire();
         }
       } else {
         state.drawingWire = findNearOutputPort(p.mouseX, p.mouseY, p, renderNodes);
@@ -69,6 +79,10 @@ export function registerMouseHandlers(p, renderNodes, wires) {
               });
             }
           }
+        } else if (state.drawingWire && !state.changingWayPoint && !state.dragging) {
+          const { waypoints, cleanup } = setCustomWaypoints(p);
+          state.ghostWire = waypoints;
+          state.ghostWireCleanup = cleanup;
         }
       }
     } else if (state.mode === "run") {
@@ -180,7 +194,9 @@ export function registerMouseHandlers(p, renderNodes, wires) {
       if (state.changingWayPoint) {
         state.changingWayPoint.waypoint.x = p.mouseX;
         state.changingWayPoint.waypoint.y = p.mouseY;
-        state.changingWayPoint.otherWaypoint.x = state.changingWayPoint.waypoint.x;
+        if (state.changingWayPoint.otherWaypoint) {
+          state.changingWayPoint.otherWaypoint.x = state.changingWayPoint.waypoint.x;
+        }
       }
     }
   }
@@ -302,6 +318,7 @@ function findNearWaypoint(mx, my, p, wires) {
     const waypointCount = wires[i].waypoints.length;
     for (let j = 0; j < waypointCount; j++) {
       if (isNearWaypoint(mx, my, wires[i].waypoints[j], p)) {
+        if (wires[i].isCustomRouted) return { waypoint: wires[i].waypoints[j] };
         let otherWaypoint = null;
         if (waypointCount === 2) {
           otherWaypoint = wires[i].waypoints[j === 0 ? 1 : 0];

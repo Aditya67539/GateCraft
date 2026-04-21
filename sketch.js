@@ -1,5 +1,5 @@
 import { state } from "./state.js";
-import { drawGate, drawWaypoint, drawInputPorts, drawOutputPorts, drawWire } from "./render/draw.js";
+import { drawGate, drawWaypoint, drawGhostWire, drawInputPorts, drawOutputPorts, drawWire } from "./render/draw.js";
 import { registerMouseHandlers, isNearWaypoint } from "./input/mouseHandlers.js";
 import { initToolbar } from "./ui/toolbar.js";
 import { getActiveTheme, applyTheme } from "./render/theme.js";
@@ -50,20 +50,7 @@ const sketch = (p) => {
       }
     }
     if (state.drawingWire) {
-      const node = state.drawingWire.fromNode;
-      let start;
-      if (node.gate.type === "composite") {
-        const index = state.drawingWire.fromOutputIndex;
-        const outputCount = node.gate.outputCount;
-        start = node.getOutputPortByIndex(index, outputCount);
-      } else {
-        start = state.drawingWire.fromNode.getOutputPort();
-      }
-      p.stroke(theme.wires.ghost.hex);
-      p.strokeWeight(3);
-      p.line(start.x, start.y, p.mouseX, p.mouseY);
-      p.stroke(0);
-      p.strokeWeight(1);
+      drawGhostWire(state.drawingWire, p);
     }
   }
 
