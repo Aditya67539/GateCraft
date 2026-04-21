@@ -31,13 +31,15 @@ function getGateData(node) {
 }
 
 function getWireData(w) {
-  return {
+  const data = {
     fromGateId: w.wire.from.id,
     toGateId: w.wire.to.id,
     toInputIndex: w.wire.toInputIndex,
     fromOutputIndex: w.wire.fromOutputIndex,
     waypoints: w.waypoints,
   };
+  if (w.isCustomRouted) data.isCustomRouted = true;
+  return data;
 }
 
 export function saveCompositeGate(name, renderNodes, wires) {
@@ -97,7 +99,9 @@ export function loadCompositeGate(name) {
     if (!fromNode || !toNode) return;
     const wire = toNode.gate.connect(fromNode.gate, w.toInputIndex, w.fromOutputIndex);
     if (wire === null) return;
-    wires.push({ wire, waypoints: w.waypoints });
+    const wire_info = { wire, waypoints: w.waypoints };
+    if (w.isCustomRouted) wire_info.isCustomRouted = true;
+    wires.push(wire_info);
   });
 
   return { renderNodes, wires };
