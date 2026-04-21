@@ -169,22 +169,8 @@ export class CompositeGate extends ConnectableGate {
       }
     });
 
-    // TODO: Change to better sorting algorithm
-    for (let i = 0; i < inputNodes.length; i++) {
-      let min_idx = i;
-      for (let j = i + 1; j < inputNodes.length; j++) {
-        if (inputNodes[j].y < inputNodes[min_idx].y) min_idx = j;
-      }
-      [inputNodes[i], inputNodes[min_idx]] = [inputNodes[min_idx], inputNodes[i]];
-    }
-
-    for (let i = 0; i < outputNodes.length; i++) {
-      let min_idx = i;
-      for (let j = i + 1; j < outputNodes.length; j++) {
-        if (outputNodes[j].y < outputNodes[min_idx].y) min_idx = j;
-      }
-      [outputNodes[i], outputNodes[min_idx]] = [outputNodes[min_idx], outputNodes[i]];
-    }
+    inputNodes.sort((a, b) => a.y - b.y);
+    outputNodes.sort((a, b) => a.y - b.y);
 
     this.internalInputs = inputNodes.map(node => node.gate);
     this.internalOutputs = outputNodes.map(node => node.gate);
