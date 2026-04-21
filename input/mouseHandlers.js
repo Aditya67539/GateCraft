@@ -2,7 +2,15 @@ import { state } from "../state.js";
 import { Input } from "../logic/gates.js";
 import { settleCircuit, evaluateAll } from "../logic/evaluate.js";
 import { CLOCK_TIMER, FREQUENCY } from "../constants.js";
-import { reComputeWayPoint, init_wire, getWirePorts } from "../render/wireGeometry.js";
+import { reComputeWayPoint, init_wire, getWirePorts, setCustomWaypoints } from "../render/wireGeometry.js";
+
+function cleanupGhostWire() {
+  if (state.ghostWireCleanup) {
+    state.ghostWireCleanup();
+    state.ghostWireCleanup = null;
+  }
+  state.ghostWire = null;
+}
 import { modeText } from "../ui/toolbar.js";
 import { setNodeSize } from "../render/RenderPoint.js";
 
@@ -29,13 +37,15 @@ export function registerMouseHandlers(p, renderNodes, wires) {
           let wire = wireConnection.toNode.gate.connect(state.drawingWire.fromNode.gate, inputIndex, outputIndex);
           setNodeSize(wireConnection.toNode);
           if (wire === null) return;
-          let wire_info = init_wire(renderNodes, wire);
+          let wire_info = init_wire(renderNodes, wire, state.ghostWire);
           wires.push(wire_info);
           adjustWaypoints(renderNodes, wires, state.drawingWire.fromNode.gate.id);
           state.drawingWire = null;
+          cleanupGhostWire();
           settleCircuit(renderNodes, wires);
         } else {
           state.drawingWire = null;
+          cleanupGhostWire();
         }
       } else {
         state.drawingWire = findNearOutputPort(p.mouseX, p.mouseY, p, renderNodes);
@@ -69,6 +79,10 @@ export function registerMouseHandlers(p, renderNodes, wires) {
               });
             }
           }
+        } else if (state.drawingWire && !state.changingWayPoint && !state.dragging) {
+          const { waypoints, cleanup } = setCustomWaypoints(p);
+          state.ghostWire = waypoints;
+          state.ghostWireCleanup = cleanup;
         }
       }
     } else if (state.mode === "run") {
@@ -216,7 +230,7 @@ function isNearPort(mouseX, mouseY, port, p) {
   return d < 15;
 }
 
-function isNearWaypoint(mx, my, waypoint, p) {
+export function isNearWaypoint(mx, my, waypoint, p) {
   const d = p.dist(mx, my, waypoint.x, waypoint.y);
   return d < 10;
 }
