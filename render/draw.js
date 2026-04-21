@@ -1,6 +1,7 @@
 import { FONT_SIZE, PORT_LABEL_SIZE } from "../constants.js";
 import { getActiveTheme } from "./theme.js";
 import { getWirePorts } from "./wireGeometry.js";
+import { state } from "../state.js";
 
 /**
  * Return "#ffffff" or "#1a1a2e" depending on which has better contrast
@@ -147,7 +148,16 @@ export function drawGhostWire(wire, p) {
   }
   p.stroke(theme.wires.ghost.hex);
   p.strokeWeight(3);
-  p.line(start.x, start.y, p.mouseX, p.mouseY);
+  if (state.ghostWire && state.ghostWire.length !== 0) {
+    p.line(start.x, start.y, state.ghostWire[0].x, state.ghostWire[0].y);
+    const waypoint_count = state.ghostWire.length;
+    for (let i = 0; i < waypoint_count - 1; i++) {
+      p.line(state.ghostWire[i].x, state.ghostWire[i].y, state.ghostWire[i + 1].x, state.ghostWire[i + 1].y);
+    }
+    p.line(state.ghostWire[waypoint_count - 1].x, state.ghostWire[waypoint_count - 1].y, p.mouseX, p.mouseY);
+  } else {
+    p.line(start.x, start.y, p.mouseX, p.mouseY);
+  }
   p.stroke(0);
   p.strokeWeight(1);
 }
