@@ -1,4 +1,4 @@
-import { initNode, initCompositeNode } from "./render/RenderPoint.js";
+import { createBasicNode, createCompositeNode } from "./render/RenderPoint.js";
 
 const STORAGE_KEY = "compositeGates";
 
@@ -83,9 +83,9 @@ export function loadCompositeGate(name) {
         console.error(`Error: Missing nested composite gate '${gate.compositeName}'`);
         return;
       }
-      newNode = initCompositeNode(gate.compositeName, circuitData, gate.x, gate.y);
+      newNode = createCompositeNode(gate.compositeName, circuitData, gate.x, gate.y);
     } else {
-      newNode = initNode(gate.type, gate.x, gate.y);
+      newNode = createBasicNode(gate.type, gate.x, gate.y);
     }
     idMap[gate.id] = newNode.gate.id;
     if (gate.signal !== undefined) newNode.gate.output = gate.signal;
