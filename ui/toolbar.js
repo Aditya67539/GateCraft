@@ -8,7 +8,7 @@ import {
 } from "../persistence.js";
 import { themes, getActiveThemeId, setActiveThemeId } from "../render/theme.js";
 
-export const modeText = document.getElementById("modeDisplay");
+
 
 // ─── Modal helpers ──────────────────────────────────────────────
 const modal = document.getElementById("save-gate-modal");
@@ -154,7 +154,6 @@ export function initToolbar(p, renderNodes, wires) {
       state.mode = btn.dataset.mode;
       document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
-      modeText.textContent = `Mode: ${state.mode.charAt(0).toUpperCase() + state.mode.slice(1)}`;
     });
   });
 

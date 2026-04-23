@@ -11,7 +11,7 @@ function cleanupGhostWire() {
   }
   state.ghostWire = null;
 }
-import { modeText } from "../ui/toolbar.js";
+
 import { setNodeSize } from "../render/RenderPoint.js";
 
 export function registerMouseHandlers(p, renderNodes, wires) {
@@ -111,7 +111,7 @@ export function registerMouseHandlers(p, renderNodes, wires) {
       state.mode = "edit";
       renderNodes.push(state.ghostNode);
       state.ghostNode = null;
-      modeText.textContent = "Mode: Edit";
+
       document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
       document.getElementById("btn-edit").classList.add("active");
     } else if (state.mode === "delete") {

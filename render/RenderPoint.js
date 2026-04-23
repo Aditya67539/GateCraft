@@ -1,7 +1,7 @@
 import { FONT_SIZE, PORT_LABEL_SIZE } from "../constants.js";
 import { Input, Output, Clock, Gate, CompositeGate } from "../logic/gates.js";
 import { state } from "../state.js";
-import { modeText } from "../ui/toolbar.js";
+
 
 export class RenderPoint {
   constructor(gate, x, y) {
@@ -141,7 +141,7 @@ export function createCompositeNode(name, circuitData, mouseX, mouseY) {
 export function spawnBasicNode(type, mouseX, mouseY) {
   state.ghostNode = createBasicNode(type, mouseX, mouseY);
   state.mode = "placing";
-  modeText.textContent = "Mode: Placing";
+
 }
 
 /**
@@ -157,7 +157,7 @@ export function spawnBasicNode(type, mouseX, mouseY) {
 export function spawnCompositeNode(name, circuitData, mouseX, mouseY) {
   state.ghostNode = createCompositeNode(name, circuitData, mouseX, mouseY);
   state.mode = "placing";
-  modeText.textContent = "Mode: Placing";
+
 }
 
 function computeSize(gate) {
