@@ -70,33 +70,94 @@ export class RenderPoint {
   }
 }
 
-export function initNode(type, x, y) {
-  const newGate = type === "input" ? new Input(false) : type === "output" ? new Output() : type === "clock" ? new Clock(false) : new Gate(type, []);
-  return new RenderPoint(newGate, x, y);
+
+/**
+ * Creates a basic gate instance based on the given type.
+ * 
+ * @param {string} type - The type of gate ("input", "output", "clock" or logic gate type)
+ * @returns {Input|Output|Clock|Gate} The instantiated gate object
+ */
+export function createBasicGate(type) {
+  return type === "input"
+    ? new Input(false)
+    : type === "output"
+    ? new Output()
+    : type === "clock"
+    ? new Clock(false)
+    : new Gate(type, []);
 }
 
-export function createNode(type, mouseX, mouseY) {
-  state.ghostNode = initNode(type, mouseX, mouseY);
-  state.mode = "placing";
-  modeText.textContent = "Mode: Placing";
+/**
+ * Creates a composite gate from saved circuit data. 
+ * 
+ * @param {string} name - The label/name of the composite gate
+ * @param {Object} circuitData - The circuit data used to construct the composite gate
+ * @returns {CompositeGate} The instantiated composite gate object 
+ */
+export function createCompositeGate(name, circuitData) {
+  const inputs = new Array(circuitData.renderNodes.filter(n => n.gate.type === "input").length);
+  const gate = new CompositeGate(inputs, circuitData);
+  gate.label = name;
+  gate.parseCircuitData();
+  return gate;
 }
 
+/**
+ * Creates a renderable node (RenderPoint) for a basic gate. 
+ * 
+ * @param {string} type - The type of gate to create
+ * @param {number} mouseX - The x-coordinate where the node will be placed
+ * @param {number} mouseY - The y-coordinate where the node will be placed
+ * @returns {RenderPoint} A renderable node containing the gate
+ */
+export function createBasicNode(type, mouseX, mouseY) {
+  const gate = createBasicGate(type);
+  return new RenderPoint(gate, mouseX, mouseY);
+}
+
+/**
+ * Creates a renderable node (RenderPoint) for a composite gate. 
+ * 
+ * @param {string} name - The label/name of the composite gate
+ * @param {Object} circuitData - The circuit data used to construct the composite gate
+ * @param {number} mouseX - The x-coordinate where the node will be placed
+ * @param {number} mouseY - The y-coordinate where the node will be placed
+ * @returns {RenderPoint} A renderable node containing the gate
+ */
 export function createCompositeNode(name, circuitData, mouseX, mouseY) {
-  const inputs = new Array(circuitData.renderNodes.filter(n => n.gate.type === "input").length);
-  const gate = new CompositeGate(inputs, circuitData);
-  gate.label = name;
-  gate.parseCircuitData();
-  state.ghostNode = new RenderPoint(gate, mouseX, mouseY);
+  const gate = createCompositeGate(name, circuitData);
+  return new RenderPoint(gate, mouseX, mouseY);
+}
+
+/**
+ * Spawns a basic node into the canvas
+ * Sets the mode to "placing"
+ * Sets the node as a ghost node for placement preview
+ * 
+ * @param {string} type - The type of gate to create
+ * @param {number} mouseX - The x-coordinate where the node will be placed
+ * @param {number} mouseY - The y-coordinate where the node will be placed
+ */
+export function spawnBasicNode(type, mouseX, mouseY) {
+  state.ghostNode = createBasicNode(type, mouseX, mouseY);
   state.mode = "placing";
   modeText.textContent = "Mode: Placing";
 }
 
-export function initCompositeNode(name, circuitData, x, y) {
-  const inputs = new Array(circuitData.renderNodes.filter(n => n.gate.type === "input").length);
-  const gate = new CompositeGate(inputs, circuitData);
-  gate.label = name;
-  gate.parseCircuitData();
-  return new RenderPoint(gate, x, y);
+/**
+ * Spawns a composite node into the canvas
+ * Sets the mode to "placing"
+ * Sets the node as a ghost node for placement preview
+ * 
+ * @param {string} name - The label/name of the composte gate
+ * @param {Object} circuitData - The circuit data used to construct the composite gate
+ * @param {number} mouseX - The x-coordinate where the node will be placed
+ * @param {number} mouseY - The y-coordinate where the node will be placed
+ */
+export function spawnCompositeNode(name, circuitData, mouseX, mouseY) {
+  state.ghostNode = createCompositeNode(name, circuitData, mouseX, mouseY);
+  state.mode = "placing";
+  modeText.textContent = "Mode: Placing";
 }
 
 function computeSize(gate) {
