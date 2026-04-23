@@ -1,4 +1,4 @@
-import { createNode, createCompositeNode } from "../render/RenderPoint.js";
+import { spawnBasicNode, spawnCompositeNode } from "../render/RenderPoint.js";
 import { state } from "../state.js";
 import {
   saveCompositeGate,
@@ -121,7 +121,7 @@ function refreshCompositeSection() {
       const circuitData = loadCompositeGate(name);
       if (!circuitData) return;
       state.justPlacedFromToolbar = true;
-      createCompositeNode(name, circuitData, 0, 0);
+      spawnCompositeNode(name, circuitData, 0, 0);
     });
 
     const del = document.createElement("button");
@@ -164,7 +164,7 @@ export function initToolbar(p, renderNodes, wires) {
       const type = button.dataset.type;
       if (!type) return;          // skip composite-btn clicks (no data-type)
       state.justPlacedFromToolbar = true;
-      createNode(type, p.mouseX, p.mouseY);
+      spawnBasicNode(type, p.mouseX, p.mouseY);
     });
   });
 
