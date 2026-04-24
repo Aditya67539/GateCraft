@@ -1,5 +1,5 @@
 import { FONT_SIZE, PORT_LABEL_SIZE } from "../constants.js";
-import { Input, Output, Clock, Gate, CompositeGate } from "../logic/gates.js";
+import { createBasicGate, createCompositeGate } from "../logic/gates.js";
 import { state } from "../state.js";
 
 
@@ -70,37 +70,6 @@ export class RenderPoint {
   }
 }
 
-
-/**
- * Creates a basic gate instance based on the given type.
- * 
- * @param {string} type - The type of gate ("input", "output", "clock" or logic gate type)
- * @returns {Input|Output|Clock|Gate} The instantiated gate object
- */
-export function createBasicGate(type) {
-  return type === "input"
-    ? new Input(false)
-    : type === "output"
-    ? new Output()
-    : type === "clock"
-    ? new Clock(false)
-    : new Gate(type, []);
-}
-
-/**
- * Creates a composite gate from saved circuit data. 
- * 
- * @param {string} name - The label/name of the composite gate
- * @param {Object} circuitData - The circuit data used to construct the composite gate
- * @returns {CompositeGate} The instantiated composite gate object 
- */
-export function createCompositeGate(name, circuitData) {
-  const inputs = new Array(circuitData.renderNodes.filter(n => n.gate.type === "input").length);
-  const gate = new CompositeGate(inputs, circuitData);
-  gate.label = name;
-  gate.parseCircuitData();
-  return gate;
-}
 
 /**
  * Creates a renderable node (RenderPoint) for a basic gate. 
