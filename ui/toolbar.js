@@ -19,11 +19,12 @@ const modalCancel = document.getElementById("modal-cancel-btn");
 let _renderNodes = null;
 let _wires = null;
 
-function clearCanvas() {
+function clearCanvas(circuit) {
   if (state.intervalId !== null) {
     clearInterval(state.intervalId);
     state.intervalId = null;
   }
+  circuit.clear();
   _renderNodes.splice(0, _renderNodes.length);
   _wires.splice(0, _wires.length);
 }
@@ -144,7 +145,7 @@ function refreshCompositeSection() {
 }
 
 // ─── Main init ──────────────────────────────────────────────────
-export function initToolbar(p, renderNodes, wires) {
+export function initToolbar(p, circuit, renderNodes, wires) {
   _renderNodes = renderNodes;
   _wires = wires;
 
@@ -179,7 +180,7 @@ export function initToolbar(p, renderNodes, wires) {
     if (!name) { modalInput.focus(); return; }
     saveCompositeGate(name, _renderNodes, _wires);
     closeSaveModal();
-    clearCanvas();
+    clearCanvas(circuit);
     refreshCompositeSection();
   });
 
@@ -195,7 +196,9 @@ export function initToolbar(p, renderNodes, wires) {
   });
 
   // ─── Clear canvas ─────────────────────────────────────────────
-  document.getElementById("btn-clear-canvas").addEventListener("click", clearCanvas);
+  document.getElementById("btn-clear-canvas").addEventListener("click", () => {
+    clearCanvas(circuit);
+  });
 
   // ─── Settings panel ────────────────────────────────────────────
   document.getElementById("btn-settings").addEventListener("click", openSettings);
