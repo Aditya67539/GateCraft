@@ -40,6 +40,15 @@ export class CircuitBuilder {
   }
 
   /**
+   * Registers an existing gate instance into the circuit.
+   *
+   * @param {Gate} gate - Gate instance
+   */
+  registerGate(gate) {
+    this.gates.set(gate.id, gate);
+  }
+
+  /**
    * Removes a gate and all associated wires from the circuit. 
    * Also updates the input indices of affected gates and settles the circuit. 
    * 
@@ -157,5 +166,14 @@ export class CircuitBuilder {
    */
   getWires() {
     return this.wires;
+  }
+
+  /**
+   * Clears the entire circuit.
+   * Removes all gates and wires, resetting the builder to an empty state.
+   */
+  clear() {
+    this.gates.clear();
+    this.wires = [];
   }
 }
