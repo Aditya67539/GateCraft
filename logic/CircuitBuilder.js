@@ -135,9 +135,8 @@ export class CircuitBuilder {
    * Evaluates the circuit by Delta-cycle
    */
   evaluate() {
-    const renderNodes = [...this.gates.values()].map(g => ({ gate: g }));
-    const wireInfos = this.wires.map(w => ({ wire: w }));
-    evaluateAll(renderNodes, wireInfos);
+    const gates = [...this.gates.values()];
+    evaluateAll(gates, this.wires);
   }
 
   /**
@@ -145,9 +144,8 @@ export class CircuitBuilder {
    * Used after structural changes. 
    */
   settle() {
-    const renderNodes = [...this.gates.values()].map(g => ({ gate: g }));
-    const wireInfos = this.wires.map(w => ({ wire: w }));
-    settleCircuit(renderNodes, wireInfos);
+    const gates = [...this.gates.values()];
+    settleCircuit(gates, this.wires);
   }
 
   /**

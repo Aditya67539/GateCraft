@@ -195,7 +195,10 @@ export class CompositeGate extends ConnectableGate {
       this.internalInputs[i].setValue(resolvedInputs[i]);
     }
 
-    evaluateAll(this.circuitData.renderNodes, this.circuitData.wires, true);
+    const gates = this.circuitData.renderNodes.map(node => node.gate);
+    const wires = this.circuitData.wires.map(w => w.wire);
+
+    evaluateAll(gates, wires, true);
 
     // Assuming internalOutputs is array of output gates in the internal circuit
     for (let i = 0; i < this.internalOutputs.length; i++) {
