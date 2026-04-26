@@ -5,17 +5,17 @@
  * re-evaluating gates whose inputs have changed. It uses a delta-cycle
  * approach to efficiently handle evaluation.
  * 
- * @param {Array<RenderPoint>} renderNodes - List of render nodes containing gate instances
+ * @param {Array<Gate>} gates - List of gate instances
  * @param {Array<Wire>} wires - List of wire objects connecting gates
  * @param {boolean} [seedAll=false] - If true, forces evaluation of every gate in the first delta cycle
  */
-export function evaluateAll(renderNodes, wires, seedAll = false) {
+export function evaluateAll(gates, wires, seedAll = false) {
   let currentDelta = new Set();
   let nextDelta = new Set();
   const gateMap = {};
 
-  for (const rn of renderNodes) {
-    gateMap[rn.gate.id] = rn.gate;
+  for (const gate of gates) {
+    gateMap[gate.id] = gate;
   }
 
   /**
@@ -26,21 +26,21 @@ export function evaluateAll(renderNodes, wires, seedAll = false) {
    * change-driven evaluation
    */
   if (seedAll) {
-    for (const rn of renderNodes) {
-      if (rn.gate.type !== "input" && rn.gate.type !== "clock") {
-        currentDelta.add(rn.gate.id);
+    for (const gate of gates) {
+      if (gate.type !== "input" && gate.type !== "clock") {
+        currentDelta.add(gate.id);
       }
     }
   }
 
   // Seed inputs and clocks if their state is changed
-  for (const wi of wires) {
-    const from = wi.wire.from;
+  for (const wire of wires) {
+    const from = wire.from;
     if (from.type === "input" || from.type === "clock") {
       const newSignal = from.output;
-      if (wi.wire.signal !== newSignal) {
-        wi.wire.signal = newSignal;
-        currentDelta.add(wi.wire.to.id);
+      if (wire.signal !== newSignal) {
+        wire.signal = newSignal;
+        currentDelta.add(wire.to.id);
       }
     }
   }
@@ -66,16 +66,16 @@ export function evaluateAll(renderNodes, wires, seedAll = false) {
     if (Array.isArray(newOutput)) {
       if (!arraysEqual(newOutput, oldOutput)) {
         // TODO: Replace O(n) scan with fanout adjacency list
-        for (const wi of wires) {
-          if (wi.wire.from.id === gate.id) {
+        for (const wire of wires) {
+          if (wire.from.id === gate.id) {
             /**
              * NOTE:
              * Currently this propagates all outputs of composite gate
              * even if only one output port changes. 
              * Future optimization: track per-port changes
              */
-            wi.wire.signal = newOutput[wi.wire.fromOutputIndex];
-            const downstreamId = wi.wire.to.id;
+            wire.signal = newOutput[wire.fromOutputIndex];
+            const downstreamId = wire.to.id;
 
             nextDelta.add(downstreamId);
           }
@@ -83,11 +83,11 @@ export function evaluateAll(renderNodes, wires, seedAll = false) {
       }
     } else {
       if (newOutput !== oldOutput) {
-        for (const wi of wires) {
+        for (const wire of wires) {
           // TODO: Replace O(n) scan with fanout adjacency list
-          if (wi.wire.from.id === gate.id) {
-            wi.wire.signal = newOutput;
-            const downstreamId = wi.wire.to.id;
+          if (wire.from.id === gate.id) {
+            wire.signal = newOutput;
+            const downstreamId = wire.to.id;
 
             nextDelta.add(downstreamId);
           }
@@ -115,37 +115,36 @@ function arraysEqual(a, b) {
  * It is simpler but unefficient, and is used in scenarios where
  * full evaluation is required (e.g., stabilization)
  * 
- * @param {Array<RenderPoint>} renderNodes - List of render nodes containing gate instances
+ * @param {Array<Gate>} gates - List of gate instances
  * @param {Array<Wire>} wires - List of wire objects connecting gates
  */
-export function evaluateOnce(renderNodes, wires) {
+export function evaluateOnce(gates, wires) {
   // Update signals from input and clock sources
-  for (const wi of wires) {
-    const from = wi.wire.from;
+  for (const wire of wires) {
+    const from = wire.from;
     if (from.type === "input" || from.type === "clock") {
-      wi.wire.signal = from.output;
+      wire.signal = from.output;
     }
   }
 
   // Evaluate every non-input and non-clock gate regardless of change
-  for (const rn of renderNodes) {
-    const gate = rn.gate;
+  for (const gate of gates) {
     if (gate.type === "input" || gate.type === "clock") continue;
     gate.output = gate.evaluate();
     let signal;
-    for (const wi of wires) {
+    for (const wire of wires) {
       /**
        * NOTE:
        * This computes signal before verifying ownership (wire source). 
        * This is inefficient and can lead to undefined access for basic gates
        * 
        * TODO:
-       * Check `wi.wire.from.id === gate.id` before signal computation
+       * Check `wire.from.id === gate.id` before signal computation
        */
-      if (Array.isArray(gate.output)) signal = gate.output[wi.wire.fromOutputIndex];
+      if (Array.isArray(gate.output)) signal = gate.output[wire.fromOutputIndex];
       else signal = gate.output;
-      if (wi.wire.from.id === gate.id) {
-        wi.wire.signal = signal;
+      if (wire.from.id === gate.id) {
+        wire.signal = signal;
       }
     }
   }
@@ -158,18 +157,18 @@ export function evaluateOnce(renderNodes, wires) {
  * It is required because structural changes are not detected by change-driven
  * evaluation. 
  * 
- * @param {Array<RenderPoint>} renderNodes - List of render nodes containing gate instances
+ * @param {Array<Gate>} gates - List of gate instances
  * @param {Array<Wire>} wires - List of wire objects connecting gates
  */
-export function settleCircuit(renderNodes, wires) {
+export function settleCircuit(gates, wires) {
   let stable = false;
   // Prevent inifinite loops in oscillating circuits
   let iterations = 0;
 
   while (!stable && iterations < 100) {
-    const before = wires.map(w => w.wire.signal);
-    evaluateOnce(renderNodes, wires);
-    const after = wires.map(w => w.wire.signal);
+    const before = wires.map(w => w.signal);
+    evaluateOnce(gates, wires);
+    const after = wires.map(w => w.signal);
     stable = before.every((v, i) => v === after[i]);
     iterations++;
   }
