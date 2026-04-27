@@ -84,12 +84,13 @@ export class CircuitBuilder {
    * @param {Gate} toGate - Destination gate
    * @param {?number} fromOutputIndex - Output index of source gate (if multi-output)
    * @param {?number} toInputIndex - Input index of destination gate
+   * @param {?Boolean} settle - Settles the circuit if true
    * @returns {Wire} The instantiated wire object
    */
-  connectGates(fromGate, toGate, fromOutputIndex = null, toInputIndex = null) {
+  connectGates(fromGate, toGate, fromOutputIndex = null, toInputIndex = null, settle = true) {
     const wire = toGate.connect(fromGate, toInputIndex, fromOutputIndex);
     this.wires.push(wire);
-    this.settle();
+    if (settle) this.settle();
     return wire;
   }
 
