@@ -5,6 +5,7 @@ import {
   loadCompositeGate,
   listCompositeGates,
   deleteCompositeGate,
+  buildCircuitFromData,
 } from "../persistence.js";
 import { themes, getActiveThemeId, setActiveThemeId } from "../render/theme.js";
 
@@ -19,11 +20,12 @@ const modalCancel = document.getElementById("modal-cancel-btn");
 let _renderNodes = null;
 let _wires = null;
 
-function clearCanvas() {
+function clearCanvas(circuit) {
   if (state.intervalId !== null) {
     clearInterval(state.intervalId);
     state.intervalId = null;
   }
+  circuit.clear();
   _renderNodes.splice(0, _renderNodes.length);
   _wires.splice(0, _wires.length);
 }
@@ -118,10 +120,11 @@ function refreshCompositeSection() {
     btn.title = `Place ${name}`;
     btn.textContent = name;
     btn.addEventListener("click", () => {
-      const circuitData = loadCompositeGate(name);
-      if (!circuitData) return;
+      const circuit = loadCompositeGate(name);
+      if (!circuit) return;
+      const compositeGate = buildCircuitFromData(circuit.circuitData);
       state.justPlacedFromToolbar = true;
-      spawnCompositeNode(name, circuitData, 0, 0);
+      spawnCompositeNode(name, compositeGate, 0, 0);
     });
 
     const del = document.createElement("button");
@@ -144,7 +147,7 @@ function refreshCompositeSection() {
 }
 
 // ─── Main init ──────────────────────────────────────────────────
-export function initToolbar(p, renderNodes, wires) {
+export function initToolbar(p, circuit, renderNodes, wires) {
   _renderNodes = renderNodes;
   _wires = wires;
 
@@ -179,7 +182,7 @@ export function initToolbar(p, renderNodes, wires) {
     if (!name) { modalInput.focus(); return; }
     saveCompositeGate(name, _renderNodes, _wires);
     closeSaveModal();
-    clearCanvas();
+    clearCanvas(circuit);
     refreshCompositeSection();
   });
 
@@ -195,7 +198,9 @@ export function initToolbar(p, renderNodes, wires) {
   });
 
   // ─── Clear canvas ─────────────────────────────────────────────
-  document.getElementById("btn-clear-canvas").addEventListener("click", clearCanvas);
+  document.getElementById("btn-clear-canvas").addEventListener("click", () => {
+    clearCanvas(circuit);
+  });
 
   // ─── Settings panel ────────────────────────────────────────────
   document.getElementById("btn-settings").addEventListener("click", openSettings);

@@ -3,6 +3,7 @@ import { drawGate, drawWaypoint, drawGhostWire, drawInputPorts, drawOutputPorts,
 import { registerMouseHandlers, isNearWaypoint } from "./input/mouseHandlers.js";
 import { initToolbar } from "./ui/toolbar.js";
 import { getActiveTheme, applyTheme } from "./render/theme.js";
+import { CircuitBuilder } from "./logic/CircuitBuilder.js";
 
 applyTheme(getActiveTheme());
 
@@ -14,12 +15,13 @@ const HEIGHT = canvasHost.clientHeight;
 
 let renderNodes = [];
 let wires = [];
+let circuit = new CircuitBuilder();
 
 const sketch = (p) => {
   p.setup = function () {
     const cnv = p.createCanvas(WIDTH, HEIGHT);
     cnv.parent(canvasHost);
-    initToolbar(p, renderNodes, wires);
+    initToolbar(p, circuit, renderNodes, wires);
   }
 
   p.draw = function () {
@@ -54,7 +56,7 @@ const sketch = (p) => {
     }
   }
 
-  registerMouseHandlers(p, renderNodes, wires);
+  registerMouseHandlers(p, circuit, renderNodes, wires);
 }
 
 new p5(sketch);

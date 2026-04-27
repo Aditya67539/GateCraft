@@ -1,6 +1,5 @@
 import { state } from "../state.js";
 import { Input } from "../logic/gates.js";
-import { settleCircuit, evaluateAll } from "../logic/evaluate.js";
 import { CLOCK_TIMER, FREQUENCY } from "../constants.js";
 import { reComputeWayPoint, init_wire, getWirePorts, setCustomWaypoints } from "../render/wireGeometry.js";
 
@@ -14,7 +13,7 @@ function cleanupGhostWire() {
 
 import { setNodeSize } from "../render/RenderPoint.js";
 
-export function registerMouseHandlers(p, renderNodes, wires) {
+export function registerMouseHandlers(p, circuit, renderNodes, wires) {
   p.mousePressed = function () {
     if (state.labelEditing) return;
     if (state.justPlacedFromToolbar) {
@@ -34,15 +33,16 @@ export function registerMouseHandlers(p, renderNodes, wires) {
             console.error("Invalid index!");
             return;
           }
-          let wire = wireConnection.toNode.gate.connect(state.drawingWire.fromNode.gate, inputIndex, outputIndex);
-          setNodeSize(wireConnection.toNode);
+          const fromGate = state.drawingWire.fromNode.gate;
+          const toGate = wireConnection.toNode.gate;
+          let wire = circuit.connectGates(fromGate, toGate, outputIndex, inputIndex);
           if (wire === null) return;
+          setNodeSize(wireConnection.toNode);
           let wire_info = init_wire(renderNodes, wire, state.ghostWire);
           wires.push(wire_info);
           adjustWaypoints(renderNodes, wires, state.drawingWire.fromNode.gate.id);
           state.drawingWire = null;
           cleanupGhostWire();
-          settleCircuit(renderNodes, wires);
         } else {
           state.drawingWire = null;
           cleanupGhostWire();
@@ -88,7 +88,7 @@ export function registerMouseHandlers(p, renderNodes, wires) {
     } else if (state.mode === "run") {
       if (state.dragging && state.dragging.gate.type === "input") {
         state.dragging.gate.setValue(!state.dragging.gate.output);
-        evaluateAll(renderNodes, wires);
+        circuit.evaluate();
       } else if (state.dragging && state.dragging.gate.type === "clock") {
         if (state.dragging.intervalId != null) {
           clearInterval(state.dragging.intervalId);
@@ -99,7 +99,7 @@ export function registerMouseHandlers(p, renderNodes, wires) {
         const timeInterval = 1000 / (2 * FREQUENCY);
         state.dragging.intervalId = setInterval(() => {
           clockNode.gate.tick();
-          evaluateAll(renderNodes, wires);
+          circuit.evaluate();
         }, timeInterval);
 
         setTimeout(() => {
@@ -109,6 +109,7 @@ export function registerMouseHandlers(p, renderNodes, wires) {
       }
     } else if (state.mode === "placing") {
       state.mode = "edit";
+      circuit.registerGate(state.ghostNode.gate);
       renderNodes.push(state.ghostNode);
       state.ghostNode = null;
 
@@ -116,44 +117,24 @@ export function registerMouseHandlers(p, renderNodes, wires) {
       document.getElementById("btn-edit").classList.add("active");
     } else if (state.mode === "delete") {
       if (state.dragging) {
-        // Disconnect wire inputs from the gate's connected nodes
-        for (let i = 0; i < wires.length; i++) {
-          if (wires[i].wire.from.id === state.dragging.gate.id) {
-            wires[i].wire.to.inputs = wires[i].wire.to.inputs.filter(
-              input => input.from.id !== state.dragging.gate.id
-            );
-          }
-        }
+        const nodeId = renderNodes.indexOf(state.dragging);
+        const gateId = state.dragging.gate.id;
+
+        circuit.removeGate(gateId);
+        renderNodes.splice(nodeId, 1);
+
+        const toRemove = wires.filter(n => n.wire.from.id === state.dragging.gate.id || n.wire.to.id === state.dragging.gate.id);
+        toRemove.forEach(w => wires.splice(wires.indexOf(w), 1));
 
         for (let i = 0; i < renderNodes.length; i++) setNodeSize(renderNodes[i]);
         adjustWaypoints(renderNodes, wires, state.dragging.gate.id);
         // Mutate arrays in-place so sketch.js references stay valid
-        const toRemove = wires.filter(n => n.wire.from.id === state.dragging.gate.id || n.wire.to.id === state.dragging.gate.id);
-        toRemove.forEach(w => wires.splice(wires.indexOf(w), 1));
-        const nodeIdx = renderNodes.indexOf(state.dragging);
-        if (nodeIdx !== -1) renderNodes.splice(nodeIdx, 1);
         state.dragging = null;
-        settleCircuit(renderNodes, wires);
       } else {
         const wire_info = getWireAtPoint(p.mouseX, p.mouseY, renderNodes, wires);
         if (wire_info) {
+          circuit.removeWire(wire_info.wire);
           const toGate = wire_info.wire.to;
-          const removedIndex = wire_info.wire.toInputIndex;
-
-          if (toGate.type === "composite") {
-            // Composite gates have fixed-size input arrays; just clear the slot
-            toGate.inputs[removedIndex] = undefined;
-          } else {
-            // Basic gates & output: splice the input out by its index
-            toGate.inputs.splice(removedIndex, 1);
-
-            // Update toInputIndex on all remaining wires whose index shifted
-            for (const w of wires) {
-              if (w.wire.to.id === toGate.id && w.wire.toInputIndex > removedIndex) {
-                w.wire.toInputIndex--;
-              }
-            }
-          }
 
           // Resize the destination node to reflect the reduced input count
           const toRenderNode = renderNodes.find(n => n.gate.id === toGate.id);
@@ -167,7 +148,6 @@ export function registerMouseHandlers(p, renderNodes, wires) {
           }
 
           wires.splice(wires.indexOf(wire_info), 1);
-          settleCircuit(renderNodes, wires);
         }
       }
     }
