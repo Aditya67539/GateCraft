@@ -1,6 +1,9 @@
 import { Wire } from "./wire.js";
 import { evaluateAll } from "./evaluate.js";
 
+/**
+ * Base class for generating unique gate IDs. 
+ */
 class Logic {
   static nextId = 1;
 }
@@ -159,27 +162,16 @@ export class CompositeGate extends ConnectableGate {
   }
 
   parseCircuitData() {
-    let inputNodes = [];
-    let outputNodes = [];
-    this.circuitData.renderNodes.forEach(node => {
-      if (node.gate.type === "input") {
-        inputNodes.push(node);
-      } else if (node.gate.type === "output") {
-        outputNodes.push(node);
-      }
-    });
+    const gates = this.circuitData.builder.gates;
 
-    inputNodes.sort((a, b) => a.y - b.y);
-    outputNodes.sort((a, b) => a.y - b.y);
+    this.internalInputs = this.circuitData.inputOrder.map(id => gates.get(id));
+    this.internalOutputs = this.circuitData.outputOrder.map(id => gates.get(id));
 
-    this.internalInputs = inputNodes.map(node => node.gate);
-    this.internalOutputs = outputNodes.map(node => node.gate);
-
-    this.outputCount = this.internalOutputs.length;
     this.inputCount = this.internalInputs.length;
+    this.outputCount = this.internalOutputs.length;
 
-    for (const wi of this.circuitData.wires) {
-      wi.wire.signal = false;
+    for (const wire of this.circuitData.builder.wires) {
+      wire.signal = false;
     }
   }
 
@@ -190,17 +182,15 @@ export class CompositeGate extends ConnectableGate {
       }
     });
 
-    // Assuming internalInputs is array of input gates in the internal circuit
     for (let i = 0; i < this.internalInputs.length; i++) {
       this.internalInputs[i].setValue(resolvedInputs[i]);
     }
 
-    const gates = this.circuitData.renderNodes.map(node => node.gate);
-    const wires = this.circuitData.wires.map(w => w.wire);
+    const gates = this.circuitData.builder.getGates();
+    const wires = this.circuitData.builder.wires;
 
     evaluateAll(gates, wires, true);
 
-    // Assuming internalOutputs is array of output gates in the internal circuit
     for (let i = 0; i < this.internalOutputs.length; i++) {
       this.tempOutput[i] = this.internalOutputs[i].output;
     }
@@ -234,7 +224,8 @@ export function createBasicGate(type) {
  * @returns {CompositeGate} The instantiated composite gate object 
  */
 export function createCompositeGate(name, circuitData) {
-  const inputs = new Array(circuitData.renderNodes.filter(n => n.gate.type === "input").length);
+  const gates = circuitData.builder.getGates();
+  const inputs = new Array(gates.filter(gate => gate.type === "input").length);
   const gate = new CompositeGate(inputs, circuitData);
   gate.label = name;
   gate.parseCircuitData();
