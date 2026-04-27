@@ -5,6 +5,7 @@ import {
   loadCompositeGate,
   listCompositeGates,
   deleteCompositeGate,
+  buildCircuitFromData,
 } from "../persistence.js";
 import { themes, getActiveThemeId, setActiveThemeId } from "../render/theme.js";
 
@@ -119,10 +120,11 @@ function refreshCompositeSection() {
     btn.title = `Place ${name}`;
     btn.textContent = name;
     btn.addEventListener("click", () => {
-      const circuitData = loadCompositeGate(name);
-      if (!circuitData) return;
+      const circuit = loadCompositeGate(name);
+      if (!circuit) return;
+      const compositeGate = buildCircuitFromData(circuit.circuitData);
       state.justPlacedFromToolbar = true;
-      spawnCompositeNode(name, circuitData, 0, 0);
+      spawnCompositeNode(name, compositeGate, 0, 0);
     });
 
     const del = document.createElement("button");
