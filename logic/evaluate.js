@@ -135,6 +135,7 @@ export function evaluateOnce(gates, wires) {
   // Evaluate every non-input and non-clock gate regardless of change
   for (const gate of gates) {
     if (gate.type === "input" || gate.type === "clock") continue;
+    if (!gate.hasAllInputsConnected()) continue;
     const result = gate.evaluate();
     if (!result.ok) {
       console.error(result.error);
