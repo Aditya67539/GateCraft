@@ -57,12 +57,13 @@ export function evaluateAll(gates, wires, seedAll = false) {
 
     // Composite gates use an array of outputs whereas basic gates only have one possible output
     const oldOutput = Array.isArray(gate.output) ? [...gate.output] : gate.output;
-    const newOutput = gate.evaluate();
-    if (!newOutput.ok) {
-      console.error(newOutput.error);
+    const result = gate.evaluate();
+    if (!result.ok) {
+      console.error(result.error);
       continue;
     }
-    gate.output = newOutput.output;
+    const newOutput = result.output;
+    gate.output = newOutput;
 
     /**
      * Propagate changes to downstream gates only if output changes
@@ -90,7 +91,7 @@ export function evaluateAll(gates, wires, seedAll = false) {
         for (const wire of wires) {
           // TODO: Replace O(n) scan with fanout adjacency list
           if (wire.from.id === gate.id) {
-            wire.signal = newOutput.output;
+            wire.signal = newOutput;
             const downstreamId = wire.to.id;
 
             nextDelta.add(downstreamId);
@@ -134,12 +135,13 @@ export function evaluateOnce(gates, wires) {
   // Evaluate every non-input and non-clock gate regardless of change
   for (const gate of gates) {
     if (gate.type === "input" || gate.type === "clock") continue;
-    const newOutput = gate.evaluate();
-    if (!newOutput.ok) {
-      console.error(newOutput.error);
+    const result = gate.evaluate();
+    if (!result.ok) {
+      console.error(result.error);
       continue;
     }
-    gate.output = newOutput.output;
+    const newOutput = result.output;
+    gate.output = newOutput;
     let signal;
     for (const wire of wires) {
       /**

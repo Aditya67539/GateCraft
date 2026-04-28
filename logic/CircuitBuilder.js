@@ -88,14 +88,15 @@ export class CircuitBuilder {
    * @returns {Wire} The instantiated wire object
    */
   connectGates(fromGate, toGate, fromOutputIndex = null, toInputIndex = null, settle = true) {
-    const newWire = toGate.connect(fromGate, toInputIndex, fromOutputIndex);
-    if (!newWire.ok) {
-      console.error(newWire.error);
+    const result = toGate.connect(fromGate, toInputIndex, fromOutputIndex);
+    if (!result.ok) {
+      console.error(result.error);
       return null;
     }
-    this.wires.push(newWire.wire);
+    const newWire = result.wire;
+    this.wires.push(newWire);
     if (settle) this.settle();
-    return newWire.wire;
+    return newWire;
   }
 
   /**
