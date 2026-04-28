@@ -36,6 +36,19 @@ export class Clock extends Input {
   }
 }
 
+/**
+ * Checks whether an array is sparse (i.e., contains "holes" / missing indices).
+ *
+ * @param {Array<any>} array - The array to check for sparsity.
+ * @returns {boolean} Returns `true` if the array is sparse otherwise `false`.
+ */
+function isSparse(array) {
+  for (let i = 0; i < array.length; i++) {
+    if (!(i in array)) return true;
+  }
+  return false;
+}
+
 class ConnectableGate {
   connect(fromGate, toInputIndex = null, fromOutputIndex = null) {
     if (toInputIndex === null) {
@@ -46,6 +59,29 @@ class ConnectableGate {
     const wire = new Wire(fromGate, this, toInputIndex, fromOutputIndex);
     this.inputs[toInputIndex] = wire;
     return { ok: true, wire };
+  }
+
+  /**
+   * Determines whether all input connections for the gate are properly connected.
+   *
+   * This method accounts for two types of gate input representations:
+   *
+   * - **Basic gates**:
+   *   - The `inputs` array is dynamic (grows as connections are added).
+   *   - If no inputs are connected, the array is empty (`length === 0`).
+   *
+   * - **Composite gates**:
+   *   - The `inputs` array has a fixed length.
+   *   - Unconnected inputs are represented as "holes" (sparse indices).
+   *
+   * A gate is considered "fully connected" if:
+   * - The `inputs` array is not sparse (i.e., no missing indices / holes), AND
+   * - The `inputs` array contains at least one element
+   *
+   * @returns {boolean} Returns `true` if all inputs are connected, otherwise `false`.
+   */
+  hasAllInputsConnected() {
+    return !isSparse(this.inputs) && this.inputs.length > 0;
   }
 }
 
