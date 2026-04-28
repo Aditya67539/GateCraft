@@ -20,7 +20,7 @@ export class Input {
   }
 
   evaluate() {
-    return this.output;
+    return { ok: true, output: this.output }; 
   }
 }
 
@@ -41,12 +41,11 @@ class ConnectableGate {
     if (toInputIndex === null) {
       toInputIndex = this.inputs.length;
     } else if (this.inputs[toInputIndex] !== undefined) {
-      console.error("Wire is already connected!\n");
-      return null;
+      return { ok: false, error: "Wire is already connected!" };
     }
     const wire = new Wire(fromGate, this, toInputIndex, fromOutputIndex);
     this.inputs[toInputIndex] = wire;
-    return wire;
+    return { ok: true, wire };
   }
 }
 
@@ -63,15 +62,13 @@ export class Output extends ConnectableGate {
   evaluate() {
     if (this.inputs) {
       if (this.inputs.length > 1) {
-        console.error("Output does not support multiple inputs!");
-        return false;
+        return { ok: false, error: "Output does not support multiple inputs!" };
       } else if (this.inputs.length === 0) {
-        console.error("No input connected!");
-        return false;
+        return { ok: false, error: "No input connected!" };
       }
     }
     this.tempOutput = this.inputs[0].signal;
-    return this.tempOutput;
+    return { ok: true, output: this.tempOutput };
   }
 }
 
@@ -106,11 +103,9 @@ export class Gate extends ConnectableGate {
         break;
       case "not":
         if (resolvedInputs.length > 1) {
-          console.error("NOT operator does not support multiple inputs!");
-          break;
+          return { ok: false, error: "NOT operator does not support multiple inputs!" };
         } else if (resolvedInputs.length === 0) {
-          console.error("No input connected!");
-          break;
+          return { ok: false, error: "No input connected!" };
         }
         this.tempOutput = !resolvedInputs[0];
         break;
@@ -143,9 +138,9 @@ export class Gate extends ConnectableGate {
         this.tempOutput = countXNOR % 2 ? false : true;
         break;
       default:
-        console.error("Invalid operation");
+        return { ok: false, error: "Invalid operation" };
     }
-    return this.tempOutput;
+    return { ok: true, output: this.tempOutput };
   }
 }
 
@@ -195,7 +190,7 @@ export class CompositeGate extends ConnectableGate {
       this.tempOutput[i] = this.internalOutputs[i].output;
     }
 
-    return this.tempOutput;
+    return { ok: true, output: this.tempOutput };
   }
 }
 
