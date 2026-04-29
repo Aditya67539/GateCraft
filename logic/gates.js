@@ -96,12 +96,11 @@ export class Output extends ConnectableGate {
   }
 
   evaluate() {
-    if (this.inputs) {
-      if (this.inputs.length > 1) {
-        return { ok: false, error: "Output does not support multiple inputs!" };
-      } else if (this.inputs.length === 0) {
-        return { ok: false, error: "No input connected!" };
-      }
+    if (!super.hasAllInputsConnected()) {
+      return { ok: false, error: "No input connected!" };
+    }
+    if (this.inputs.length > 1) {
+      return { ok: false, error: "Output does not support multiple inputs!" };
     }
     this.tempOutput = this.inputs[0].signal;
     return { ok: true, output: this.tempOutput };
@@ -119,6 +118,9 @@ export class Gate extends ConnectableGate {
   }
 
   evaluate() {
+    if (!super.hasAllInputsConnected()) {
+      return { ok: false, error: "Inputs not connected!" };
+    }
     const resolvedInputs = this.inputs.map(input => {
       if (input instanceof Wire) {
         return input.signal;
@@ -140,8 +142,6 @@ export class Gate extends ConnectableGate {
       case "not":
         if (resolvedInputs.length > 1) {
           return { ok: false, error: "NOT operator does not support multiple inputs!" };
-        } else if (resolvedInputs.length === 0) {
-          return { ok: false, error: "No input connected!" };
         }
         this.tempOutput = !resolvedInputs[0];
         break;
@@ -207,6 +207,9 @@ export class CompositeGate extends ConnectableGate {
   }
 
   evaluate() {
+    if (!super.hasAllInputsConnected()) {
+      return { ok: false, error: "Not all inputs connected!" };
+    }
     const resolvedInputs = this.inputs.map(input => {
       if (input instanceof Wire) {
         return input.signal;
