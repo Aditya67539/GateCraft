@@ -36,19 +36,6 @@ export class Clock extends Input {
   }
 }
 
-/**
- * Checks whether an array is sparse (i.e., contains "holes" / missing indices).
- *
- * @param {Array<any>} array - The array to check for sparsity.
- * @returns {boolean} Returns `true` if the array is sparse otherwise `false`.
- */
-function isSparse(array) {
-  for (let i = 0; i < array.length; i++) {
-    if (!(i in array)) return true;
-  }
-  return false;
-}
-
 class ConnectableGate {
   connect(fromGate, toInputIndex = null, fromOutputIndex = null) {
     if (toInputIndex === null) {
@@ -72,16 +59,16 @@ class ConnectableGate {
    *
    * - **Composite gates**:
    *   - The `inputs` array has a fixed length.
-   *   - Unconnected inputs are represented as "holes" (sparse indices).
+   *   - Unconnected inputs are represented as "undefined".
    *
    * A gate is considered "fully connected" if:
-   * - The `inputs` array is not sparse (i.e., no missing indices / holes), AND
+   * - The `inputs` array does not contain any undefined values, AND
    * - The `inputs` array contains at least one element
    *
    * @returns {boolean} Returns `true` if all inputs are connected, otherwise `false`.
    */
   hasAllInputsConnected() {
-    return !isSparse(this.inputs) && this.inputs.length > 0;
+    return this.inputs.length > 0 && this.inputs.every(n => n !== undefined);
   }
 }
 
@@ -259,7 +246,8 @@ export function createBasicGate(type) {
  */
 export function createCompositeGate(name, circuitData) {
   const gates = circuitData.builder.getGates();
-  const inputs = new Array(gates.filter(gate => gate.type === "input").length);
+  const inputCount = circuitData.inputOrder.length;
+  const inputs = new Array(inputCount).fill(undefined);
   const gate = new CompositeGate(inputs, circuitData);
   gate.label = name;
   gate.parseCircuitData();
