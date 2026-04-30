@@ -145,19 +145,13 @@ export function evaluateOnce(gates, wires) {
     gate.output = newOutput;
     let signal;
     for (const wire of wires) {
-      /**
-       * NOTE:
-       * This computes signal before verifying ownership (wire source). 
-       * This is inefficient and can lead to undefined access for basic gates
-       * 
-       * TODO:
-       * Check `wire.from.id === gate.id` before signal computation
-       */
-      if (Array.isArray(gate.output)) signal = gate.output[wire.fromOutputIndex];
-      else signal = gate.output;
-      if (wire.from.id === gate.id) {
-        wire.signal = signal;
-      }
+      if (wire.from.id !== gate.id) continue;
+
+      const signal = Array.isArray(gate.output)
+          ? gate.output[wire.fromOutputIndex]
+          : gate.output;
+
+      wire.signal = signal;
     }
   }
 }
