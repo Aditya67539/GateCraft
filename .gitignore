@@ -14,3 +14,6 @@ coverage/
 
 # Misc
 *.log
+
+# Benchmark output (transient — baseline.json is committed)
+bench-results.json
