@@ -13,6 +13,8 @@ export class CircuitBuilder {
     this.gates = new Map();
     /** @type {Array<Wire>} List of wire objects connecting gates */
     this.wires = [];
+    this.dirty = false;
+    this.fanout = this.buildFanout();
   }
 
   /**
@@ -95,6 +97,7 @@ export class CircuitBuilder {
     }
     const newWire = result.wire;
     this.wires.push(newWire);
+    this.dirty = true;
     if (settle) this.settle();
     return newWire;
   }
@@ -135,14 +138,30 @@ export class CircuitBuilder {
 
     this.wires = this.wires.filter(w => w !== wire);
     this.settle();
+    this.dirty = true;
+  }
+
+  buildFanout() {
+    const fanout = {};
+    for (const wire of this.wires) {
+      if (fanout[wire.from.id] === undefined) {
+        fanout[wire.from.id] = [];
+      }
+      fanout[wire.from.id].push({
+        wire,
+        toId: wire.to.id,
+      });
+    }
+    this.fanout = fanout;
+    this.dirty = false;
   }
 
   /**
    * Evaluates the circuit by Delta-cycle
    */
   evaluate() {
-    const gates = [...this.gates.values()];
-    evaluateAll(gates, this.wires);
+    if (this.dirty) this.buildFanout();
+    evaluateAll(this);
   }
 
   /**
@@ -150,8 +169,7 @@ export class CircuitBuilder {
    * Used after structural changes. 
    */
   settle() {
-    const gates = [...this.gates.values()];
-    settleCircuit(gates, this.wires);
+    settleCircuit(this);
   }
 
   /**
@@ -160,7 +178,7 @@ export class CircuitBuilder {
    * @returns {Array<Gate>} List of gate instances
    */
   getGates() {
-    return [...this.gates.values()];
+    return this.gates.values();
   }
 
   /**

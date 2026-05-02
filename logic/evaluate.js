@@ -1,3 +1,5 @@
+import { CircuitBuilder } from "./CircuitBuilder.js";
+
 /**
  * Performs change-driven (delta-cycle) evaluation of the circuit. 
  * 
@@ -5,27 +7,25 @@
  * re-evaluating gates whose inputs have changed. It uses a delta-cycle
  * approach to efficiently handle evaluation.
  * 
- * @param {Array<Gate>} gates - List of gate instances
- * @param {Array<Wire>} wires - List of wire objects connecting gates
+ * @param {CircuitBuilder} circuit - The circuit instance containing gates, wires, and fanout map
  * @param {boolean} [seedAll=false] - If true, forces evaluation of every gate in the first delta cycle
  */
-export function evaluateAll(gates, wires, seedAll = false) {
+export function evaluateAll(circuit, seedAll = false) {
   let currentDelta = new Set();
   let nextDelta = new Set();
-  const gateMap = {};
-
-  for (const gate of gates) {
-    gateMap[gate.id] = gate;
-  }
-
+  const gateMap = circuit.gates;
+  const wires = circuit.wires;
+  const fanout = circuit.fanout;
+  
   /**
    * Seeds all non-inputs gates to ensure a full evaluation pass.
    * 
    * This is necessary for composite gates with sequential logic (feedback wires)
    * where initial changes may not properly propagate correctly using purely
    * change-driven evaluation
-   */
-  if (seedAll) {
+  */
+ if (seedAll) {
+    const gates = circuit.getGates();
     for (const gate of gates) {
       if (gate.type !== "input" && gate.type !== "clock") {
         currentDelta.add(gate.id);
@@ -52,7 +52,7 @@ export function evaluateAll(gates, wires, seedAll = false) {
     const [gateId] = currentDelta;
     currentDelta.delete(gateId);
 
-    const gate = gateMap[gateId];
+    const gate = gateMap.get(gateId);
     if (!gate || gate.type === "input" || gate.type === "clock") continue;
 
     // Composite gates use an array of outputs whereas basic gates only have one possible output
@@ -70,31 +70,23 @@ export function evaluateAll(gates, wires, seedAll = false) {
      */
     if (Array.isArray(newOutput)) {
       if (!arraysEqual(newOutput, oldOutput)) {
-        // TODO: Replace O(n) scan with fanout adjacency list
-        for (const wire of wires) {
-          if (wire.from.id === gate.id) {
-            /**
-             * NOTE:
-             * Currently this propagates all outputs of composite gate
-             * even if only one output port changes. 
-             * Future optimization: track per-port changes
-             */
-            wire.signal = newOutput[wire.fromOutputIndex];
-            const downstreamId = wire.to.id;
-
-            nextDelta.add(downstreamId);
+        const connections = fanout[gate.id];
+        if (connections !== undefined) {
+          for (const { wire, toId } of connections) {
+            if (wire.signal !== newOutput[wire.fromOutputIndex]) {
+              wire.signal = newOutput[wire.fromOutputIndex];
+              nextDelta.add(toId);
+            }
           }
         }
       }
     } else {
       if (newOutput !== oldOutput) {
-        for (const wire of wires) {
-          // TODO: Replace O(n) scan with fanout adjacency list
-          if (wire.from.id === gate.id) {
+        const connections = fanout[gate.id];
+        if (connections !== undefined) {
+          for (const { wire, toId } of connections) {
             wire.signal = newOutput;
-            const downstreamId = wire.to.id;
-
-            nextDelta.add(downstreamId);
+            nextDelta.add(toId);
           }
         }
       }
@@ -120,10 +112,12 @@ function arraysEqual(a, b) {
  * It is simpler but unefficient, and is used in scenarios where
  * full evaluation is required (e.g., stabilization)
  * 
- * @param {Array<Gate>} gates - List of gate instances
- * @param {Array<Wire>} wires - List of wire objects connecting gates
+ * @param {CircuitBuilder} circuit - The circuit instance containing the gates, wires, and fanout map 
  */
-export function evaluateOnce(gates, wires) {
+export function evaluateOnce(ciruict) {
+  const wires = ciruict.wires;
+  const gates = ciruict.getGates();
+  let changed = false;
   // Update signals from input and clock sources
   for (const wire of wires) {
     const from = wire.from;
@@ -151,9 +145,13 @@ export function evaluateOnce(gates, wires) {
           ? gate.output[wire.fromOutputIndex]
           : gate.output;
 
-      wire.signal = signal;
+      if (wire.signal !== signal) {
+        wire.signal = signal;
+        changed = true;
+      }
     }
   }
+  return !changed;
 }
 
 /**
@@ -163,19 +161,15 @@ export function evaluateOnce(gates, wires) {
  * It is required because structural changes are not detected by change-driven
  * evaluation. 
  * 
- * @param {Array<Gate>} gates - List of gate instances
- * @param {Array<Wire>} wires - List of wire objects connecting gates
+ * @param {CircuitBuilder} circuit - The circuit instance containing gates, wires, and fanout map 
  */
-export function settleCircuit(gates, wires) {
+export function settleCircuit(circuit) {
   let stable = false;
   // Prevent inifinite loops in oscillating circuits
   let iterations = 0;
 
   while (!stable && iterations < 100) {
-    const before = wires.map(w => w.signal);
-    evaluateOnce(gates, wires);
-    const after = wires.map(w => w.signal);
-    stable = before.every((v, i) => v === after[i]);
+    stable = evaluateOnce(circuit);
     iterations++;
   }
 }
