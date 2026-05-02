@@ -71,11 +71,9 @@ export function evaluateAll(circuit, seedAll = false) {
     if (Array.isArray(newOutput)) {
       if (!arraysEqual(newOutput, oldOutput)) {
         const connections = fanout[gate.id];
-        console.log(connections);
         if (connections !== undefined) {
           for (const { wire, toId } of connections) {
             if (wire.signal !== newOutput[wire.fromOutputIndex]) {
-              console.log(wire);
               wire.signal = newOutput[wire.fromOutputIndex];
               nextDelta.add(toId);
             }
