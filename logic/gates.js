@@ -209,8 +209,11 @@ export class CompositeGate extends ConnectableGate {
 
     const gates = this.circuitData.builder.getGates();
     const wires = this.circuitData.builder.wires;
+    if (this.circuitData.builder.dirty) {
+      this.circuitData.builder.buildFanout();
+    }
 
-    evaluateAll(gates, wires, true);
+    evaluateAll(this.circuitData.builder, true);
 
     for (let i = 0; i < this.internalOutputs.length; i++) {
       this.tempOutput[i] = this.internalOutputs[i].output;
