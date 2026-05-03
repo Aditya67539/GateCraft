@@ -237,6 +237,153 @@ function buildDeepChain(depth) {
   return { builder: b, src, out };
 }
 
+/**
+ * Creates circuit-data for a half-adder (used to instantiate CompositeGate).
+ *
+ * Topology: 2 inputs → XOR (sum), AND (carry) → 2 outputs
+ */
+function halfAdderCircuitData() {
+  const inner = new CircuitBuilder();
+  const A = inner.addBasicGate("input");
+  const B = inner.addBasicGate("input");
+  const xor = inner.addBasicGate("xor");
+  const and = inner.addBasicGate("and");
+  const sum = inner.addBasicGate("output");
+  const carry = inner.addBasicGate("output");
+
+  inner.connectGates(A, xor, null, null, false);
+  inner.connectGates(B, xor, null, null, false);
+  inner.connectGates(xor, sum, null, null, false);
+  inner.connectGates(A, and, null, null, false);
+  inner.connectGates(B, and, null, null, false);
+  inner.connectGates(and, carry, null, null, false);
+  inner.buildFanout();
+
+  return {
+    builder: inner,
+    inputOrder: [A.id, B.id],
+    outputOrder: [sum.id, carry.id],
+  };
+}
+
+/**
+ * Creates circuit-data for a NOT gate (used to instantiate CompositeGate).
+ */
+function notCircuitData() {
+  const inner = new CircuitBuilder();
+  const A = inner.addBasicGate("input");
+  const not = inner.addBasicGate("not");
+  const Q = inner.addBasicGate("output");
+
+  inner.connectGates(A, not, null, null, false);
+  inner.connectGates(not, Q, null, null, false);
+  inner.buildFanout();
+
+  return {
+    builder: inner,
+    inputOrder: [A.id],
+    outputOrder: [Q.id],
+  };
+}
+
+/**
+ * Builds an outer circuit containing a single composite half-adder gate.
+ */
+function buildCompositeHalfAdder() {
+  const b = new CircuitBuilder();
+  const A = b.addBasicGate("input");
+  const B = b.addBasicGate("input");
+  const comp = b.addCompositeGate("half-adder", halfAdderCircuitData());
+  const sum = b.addBasicGate("output");
+  const carry = b.addBasicGate("output");
+
+  b.connectGates(A, comp, null, 0);
+  b.connectGates(B, comp, null, 1);
+  b.connectGates(comp, sum, 0);
+  b.connectGates(comp, carry, 1);
+
+  return { builder: b, A, B, sum, carry };
+}
+
+/**
+ * Builds a 4-bit ripple-carry adder using composite half-adder blocks.
+ * Each bit stage uses an OR gate to combine carries from two composite half-adders.
+ */
+function buildCompositeRCA4() {
+  const b = new CircuitBuilder();
+  const A = [];
+  const B = [];
+  for (let i = 0; i < 4; i++) {
+    A.push(b.addBasicGate("input"));
+    B.push(b.addBasicGate("input"));
+  }
+  const Cin = b.addBasicGate("input");
+
+  const S = [];
+  let prevCarry = Cin;
+
+  for (let i = 0; i < 4; i++) {
+    // First half-adder: A[i] + B[i]
+    const ha1 = b.addCompositeGate("ha", halfAdderCircuitData());
+    b.connectGates(A[i], ha1, null, 0);
+    b.connectGates(B[i], ha1, null, 1);
+
+    // Second half-adder: ha1.sum + Cin
+    const ha2 = b.addCompositeGate("ha", halfAdderCircuitData());
+    b.connectGates(ha1, ha2, 0, 0);     // ha1 sum → ha2 input 0
+    b.connectGates(prevCarry, ha2, null, 1);
+
+    const sum = b.addBasicGate("output");
+    b.connectGates(ha2, sum, 0);         // ha2 sum → output
+    S.push(sum);
+
+    // Carry = ha1.carry OR ha2.carry
+    const or = b.addBasicGate("or");
+    b.connectGates(ha1, or, 1);          // ha1 carry
+    b.connectGates(ha2, or, 1);          // ha2 carry
+    prevCarry = or;
+  }
+
+  const Cout = b.addBasicGate("output");
+  b.connectGates(prevCarry, Cout);
+
+  return { builder: b, A, B, Cin, S, Cout };
+}
+
+/**
+ * Builds a nested composite gate: double-NOT (identity).
+ */
+function buildNestedComposite() {
+  // Middle layer: two NOT composites chained
+  const middle = new CircuitBuilder();
+  const mA = middle.addBasicGate("input");
+  const not1 = middle.addCompositeGate("not", notCircuitData());
+  const not2 = middle.addCompositeGate("not", notCircuitData());
+  const mQ = middle.addBasicGate("output");
+
+  middle.connectGates(mA, not1, null, 0, false);
+  middle.connectGates(not1, not2, 0, 0, false);
+  middle.connectGates(not2, mQ, 0, null, false);
+  middle.buildFanout();
+
+  const doubleNotData = {
+    builder: middle,
+    inputOrder: [mA.id],
+    outputOrder: [mQ.id],
+  };
+
+  // Outer circuit using the nested composite
+  const b = new CircuitBuilder();
+  const A = b.addBasicGate("input");
+  const comp = b.addCompositeGate("double-not", doubleNotData);
+  const out = b.addBasicGate("output");
+
+  b.connectGates(A, comp, null, 0);
+  b.connectGates(comp, out, 0);
+
+  return { builder: b, A, out };
+}
+
 
 // ─── Benchmarks ──────────────────────────────────────────────────────────────
 
@@ -257,6 +404,10 @@ const fan256 = buildWideFanout(256);
 const chain16 = buildDeepChain(16);
 const chain64 = buildDeepChain(64);
 const chain256 = buildDeepChain(256);
+const compositeHA = buildCompositeHalfAdder();
+const compositeRCA4 = buildCompositeRCA4();
+const nestedComp = buildNestedComposite();
+const compositeHASettle = buildCompositeHalfAdder();
 
 // Primitive gate evaluation
 group("Primitive Gate Evaluation", () => {
@@ -390,6 +541,58 @@ group("Scaling — Chain Depth", () => {
 
   bench("256-deep NOT chain evaluate", () => {
     chain256.builder.evaluate();
+  });
+});
+
+
+// Composite gate evaluation
+group("Composite Gate Evaluation", () => {
+  bench("Composite Half Adder", () => {
+    compositeHA.A.setValue(true);
+    compositeHA.B.setValue(false);
+    compositeHA.builder.evaluate();
+  });
+
+  bench("Composite 4-bit Ripple-Carry Adder", () => {
+    compositeRCA4.A[0].setValue(true);
+    compositeRCA4.A[1].setValue(false);
+    compositeRCA4.A[2].setValue(true);
+    compositeRCA4.A[3].setValue(true);
+    compositeRCA4.B[0].setValue(true);
+    compositeRCA4.B[1].setValue(true);
+    compositeRCA4.B[2].setValue(false);
+    compositeRCA4.B[3].setValue(false);
+    compositeRCA4.Cin.setValue(false);
+    compositeRCA4.builder.evaluate();
+  });
+
+  bench("Nested Composite (double-NOT)", () => {
+    nestedComp.A.setValue(true);
+    nestedComp.builder.evaluate();
+  });
+});
+
+
+// Composite gate settling
+group("Composite Gate Settling", () => {
+  bench("settle Composite Half Adder", () => {
+    compositeHASettle.builder.settle();
+  });
+});
+
+
+// Composite gate construction
+group("Composite Gate Construction", () => {
+  bench("build Composite Half Adder", () => {
+    buildCompositeHalfAdder();
+  });
+
+  bench("build Composite 4-bit RCA", () => {
+    buildCompositeRCA4();
+  });
+
+  bench("build Nested Composite", () => {
+    buildNestedComposite();
   });
 });
 
