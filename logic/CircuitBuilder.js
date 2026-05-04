@@ -1,4 +1,4 @@
-import { evaluateAll, settleCircuit } from "./evaluate.js";
+import { evaluateAll, settleCircuit, evaluateFlat } from "./evaluate.js";
 import { CompositeGate, createBasicGate, createCompositeGate, Gate, Output } from "./gates.js";
 import { Wire } from "./wire.js";
 
@@ -14,7 +14,7 @@ export class CircuitBuilder {
     /** @type {Array<Wire>} List of wire objects connecting gates */
     this.wires = [];
     this.dirty = false;
-    this.fanout = this.buildFanout();
+    this.buildFanout();
   }
 
   /**
