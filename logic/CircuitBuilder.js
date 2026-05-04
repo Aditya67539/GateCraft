@@ -14,7 +14,7 @@ export class CircuitBuilder {
     /** @type {Array<Wire>} List of wire objects connecting gates */
     this.wires = [];
     this.dirty = false;
-    this.fanout = this.buildFanout();
+    this.buildFanout();
   }
 
   /**
