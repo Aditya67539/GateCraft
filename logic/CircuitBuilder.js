@@ -1,4 +1,4 @@
-import { evaluateAll, settleCircuit, evaluateFlat } from "./evaluate.js";
+import { evaluateAll, settleCircuit } from "./evaluate.js";
 import { CompositeGate, createBasicGate, createCompositeGate, Gate, Output } from "./gates.js";
 import { Wire } from "./wire.js";
 
