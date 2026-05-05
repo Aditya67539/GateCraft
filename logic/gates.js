@@ -177,6 +177,8 @@ export class CompositeGate extends ConnectableGate {
     this.output = [];
     this.tempOutput = [];
     this.circuitData = circuitData;
+    this.inputOrder = circuitData.inputOrder;
+    this.outputOrder = circuitData.outputOrder;
   }
 
   parseCircuitData() {
