@@ -24,7 +24,7 @@ export function evaluateAll(circuit, seedAll = false) {
    * where initial changes may not properly propagate correctly using purely
    * change-driven evaluation
   */
- if (seedAll) {
+  if (seedAll) {
     const gates = circuit.getGates();
     for (const gate of gates) {
       if (gate.type !== "input" && gate.type !== "clock") {
@@ -172,4 +172,297 @@ export function settleCircuit(circuit) {
     stable = evaluateOnce(circuit);
     iterations++;
   }
+}
+
+const Types = Object.freeze({
+  input: 0,
+  clock: 1,
+  output: 2,
+  and: 3,
+  or: 4,
+  not: 5,
+  nand: 6,
+  nor: 7,
+  xor: 8,
+  xnor: 9,
+  composite: 10,
+});
+
+function encodeType(type) {
+  return Types[type];
+}
+
+function createAccumulator() {
+  return {
+    gateTypes: [],
+    outputOffset: [],
+    outputCount: [],
+    allOutputs: [],
+    wireFrom: [],
+    wireTo: [],
+    wireSignal: [],
+    wireFromOutputIndex: [],
+    wireMap: new Map(),
+    gateMap: new Map(),
+  };
+}
+
+function flatten(circuit, acc, inputOrder = [], outputOrder = [], gateCount = 0) {
+  const indexMap = {};
+
+  // --- Pass 1: Assign indices, handle composite recursion ---
+
+  for (const gate of circuit.getGates()) {
+    if (gate.type !== "composite") {
+      indexMap[gate.id] = gateCount;
+      acc.gateMap.set(gate, gateCount);
+
+      acc.gateTypes.push(encodeType(gate.type));
+      acc.outputOffset.push(acc.allOutputs.length);
+      acc.outputCount.push(1);
+      acc.allOutputs.push(gate.output ? 1 : 0);
+
+      gateCount++;
+    } else {
+      const result = flatten(
+        gate.circuitData.builder,
+        acc,
+        gate.circuitData.inputOrder,
+        gate.circuitData.outputOrder,
+        gateCount
+      );
+
+      const compData = {
+        isComposite: true,
+        inputBoundary: result.boundaryMap.inputs,
+        outputBoundary: result.boundaryMap.outputs,
+      };
+
+      indexMap[gate.id] = compData;
+      acc.gateMap.set(gate, compData);
+
+      gateCount = result.nextGateCount;
+    }
+  }
+
+  // --- Pass 2: build boundary map for THIS circuit's Input/Output nodes ---
+  // Switch to Set for O(1) lookup
+  const inputNodes = [...circuit.getGates()]
+    .filter(g => inputOrder.includes(g.id))
+    .sort((a, b) => inputOrder.indexOf(a.id) - inputOrder.indexOf(b.id));
+  const outputNodes = [...circuit.getGates()]
+    .filter(g => outputOrder.includes(g.id))
+    .sort((a, b) => outputOrder.indexOf(a.id) - outputOrder.indexOf(b.id));
+
+  const boundaryMap = {
+    inputs: inputNodes.map(g => indexMap[g.id]),
+    outputs: outputNodes.map(g => indexMap[g.id]),
+  };
+
+
+  // --- Pass 3: process wires with boundary remapping ---
+  for (const wire of circuit.wires) {
+    let fromIndex;
+    if (indexMap[wire.from.id].isComposite) {
+      const portIndex = wire.fromOutputIndex;
+      fromIndex = indexMap[wire.from.id].outputBoundary[portIndex];
+
+      fromIndex = fromSourceOfOutputNode(fromIndex, acc);
+    } else {
+      fromIndex = indexMap[wire.from.id];
+    }
+
+    let toIndex;
+    if (indexMap[wire.to.id].isComposite) {
+      const portIndex = wire.toInputIndex;
+      toIndex = indexMap[wire.to.id].inputBoundary[portIndex];
+    } else {
+      toIndex = indexMap[wire.to.id];
+    }
+
+    acc.wireMap.set(wire, acc.wireSignal.length);
+    acc.wireFrom.push(fromIndex);
+    acc.wireTo.push(toIndex);
+    acc.wireSignal.push(wire.signal ? 1 : 0);
+    acc.wireFromOutputIndex.push(wire.fromOutputIndex);
+  }
+
+  return { indexMap, boundaryMap, nextGateCount: gateCount };
+}
+
+function fromSourceOfOutputNode(outputNodeIndex, acc) {
+  for (let i = 0; i < acc.wireTo.length; i++) {
+    if (outputNodeIndex === acc.wireTo[i]) {
+      return acc.wireFrom[i];
+    }
+  }
+  return outputNodeIndex; // fallback if nothing found
+}
+
+
+export function evaluateFlat(circuit) {
+  const wireIndexMap = new Map();
+  let i = 0;
+  for (const wire of circuit.wires) {
+    wireIndexMap.set(wire, i++);
+  }
+
+  const acc = createAccumulator();
+  const { indexMap } = flatten(circuit, acc);
+
+  const gateTypes = new Uint8Array(acc.gateTypes.length);
+  const outputOffset = new Uint16Array(acc.outputOffset.length);
+  const outputCount = new Uint8Array(acc.outputCount.length);
+  const allOutputs = new Uint8Array(acc.allOutputs.length);
+  const wireFrom = new Uint16Array(acc.wireFrom.length);
+  const wireTo = new Uint16Array(acc.wireTo.length);
+  const wireSignal = new Uint8Array(acc.wireSignal.length);
+  const wireFromOutputIndex = new Uint16Array(acc.wireFromOutputIndex.length);
+
+  gateTypes.set(acc.gateTypes);
+  outputOffset.set(acc.outputOffset);
+  outputCount.set(acc.outputCount);
+  allOutputs.set(acc.allOutputs);
+  wireFrom.set(acc.wireFrom);
+  wireTo.set(acc.wireTo);
+  wireSignal.set(acc.wireSignal);
+  wireFromOutputIndex.set(acc.wireFromOutputIndex);
+
+  let currentDelta = new Set();
+  let nextDelta = new Set();
+
+  for (let i = 0; i < wireSignal.length; i++) {
+    const gateType = gateTypes[wireFrom[i]];
+    if (gateType === Types["input"] || gateType === Types["clock"]) {
+      if (allOutputs[outputOffset[wireFrom[i]]] !== wireSignal[i]) {
+        wireSignal[i] = allOutputs[outputOffset[wireFrom[i]]];
+        currentDelta.add(wireTo[i]);
+      }
+    }
+  }
+
+  let iterations = 0;
+
+  while (currentDelta.size > 0 && iterations < 100) {
+    const [gateIndex] = currentDelta;
+    currentDelta.delete(gateIndex);
+
+    if (gateTypes[gateIndex] === Types.input || gateTypes[gateIndex] === Types.clock) {
+      let newVal = allOutputs[outputOffset[gateIndex]];
+      for (let i = 0; i < wireTo.length; i++) {
+        if (wireTo[i] === gateIndex) {
+          newVal = wireSignal[i];
+          break;
+        }
+      }
+      const oldVal = allOutputs[outputOffset[gateIndex]];
+      allOutputs[outputOffset[gateIndex]] = newVal;
+
+      if (newVal !== oldVal) {
+        for (let i = 0; i < wireFrom.length; i++) {
+          if (wireFrom[i] === gateIndex) {
+            wireSignal[i] = newVal;
+            nextDelta.add(wireTo[i]);
+          }
+        }
+      }
+    } else {
+
+      const inputSignals = new Array();
+
+      // TODO: Add fanin list for O(1) access
+      for (let i = 0; i < wireTo.length; i++) {
+        if (wireTo[i] === gateIndex) {
+          inputSignals.push(wireSignal[i]);
+        }
+      }
+
+      const oldOutput = allOutputs[outputOffset[gateIndex]];
+      const newOutput = evaluateGate(gateTypes[gateIndex], inputSignals);
+
+      allOutputs[outputOffset[gateIndex]] = newOutput;
+
+      if (newOutput !== oldOutput) {
+        // TODO: Add fanout list for O(1) access
+        for (let i = 0; i < wireFrom.length; i++) {
+          if (wireFrom[i] === gateIndex) {
+            wireSignal[i] = newOutput;
+            nextDelta.add(wireTo[i]);
+          }
+        }
+      }
+    }
+
+    if (currentDelta.size === 0) {
+      [currentDelta, nextDelta] = [nextDelta, currentDelta];
+      iterations += 1;
+    }
+  }
+
+  for (const [gate, entry] of acc.gateMap.entries()) {
+    if (gate.type !== "composite") {
+      gate.output = allOutputs[outputOffset[entry]] === 1;
+    } else {
+      gate.output = entry.outputBoundary.map(
+        nodeIndex => allOutputs[outputOffset[nodeIndex]] === 1
+      );
+    }
+  }
+
+  for (const [wire, idx] of acc.wireMap.entries()) {
+    wire.signal = wireSignal[acc.wireMap.get(wire)] === 1;
+  }
+}
+
+function evaluateGate(type, inputs) {
+  let output;
+
+  switch (type) {
+    case Types.and:
+      output = 1;
+      inputs.forEach(input => {
+        output = output & input;
+      });
+      break;
+    case Types.or:
+      output = 0;
+      inputs.forEach(input => {
+        output = output | input;
+      });
+      break;
+    case Types.not:
+      output = inputs[0] === 0 ? 1 : 0;
+      break;
+    case Types.nand:
+      output = 1;
+      inputs.forEach(input => {
+        output = output & input;
+      });
+      output = output === 0 ? 1 : 0;
+      break;
+    case Types.nor:
+      output = 0;
+      inputs.forEach(input => {
+        output = output | input;
+      });
+      output = output === 0 ? 1 : 0;
+      break;
+    case Types.xor:
+      output = 0;
+      inputs.forEach(input => {
+        output = output ^ input;
+      });
+      break;
+    case Types.xnor:
+      output = 0;
+      inputs.forEach(input => {
+        output = output ^ input;
+      });
+      output = output === 0 ? 1 : 0;
+      break;
+    case Types.output:
+      output = inputs[0];
+      break;
+  }
+  return output;
 }
