@@ -192,7 +192,7 @@ function encodeType(type) {
   return Types[type];
 }
 
-function createAccumulator() {
+export function createAccumulator() {
   return {
     gateTypes: [],
     outputOffset: [],
@@ -207,7 +207,7 @@ function createAccumulator() {
   };
 }
 
-function flatten(circuit, acc, inputOrder = [], outputOrder = [], gateCount = 0) {
+export function flatten(circuit, acc, inputOrder = [], outputOrder = [], gateCount = 0) {
   const indexMap = {};
 
   // --- Pass 1: Assign indices, handle composite recursion ---
@@ -300,15 +300,12 @@ function fromSourceOfOutputNode(outputNodeIndex, acc) {
 }
 
 
-export function evaluateFlat(circuit) {
+export function evaluateFlat(circuit, acc, indexMap) {
   const wireIndexMap = new Map();
   let i = 0;
   for (const wire of circuit.wires) {
     wireIndexMap.set(wire, i++);
   }
-
-  const acc = createAccumulator();
-  const { indexMap } = flatten(circuit, acc);
 
   const gateTypes = new Uint8Array(acc.gateTypes.length);
   const outputOffset = new Uint16Array(acc.outputOffset.length);
@@ -327,6 +324,12 @@ export function evaluateFlat(circuit) {
   wireTo.set(acc.wireTo);
   wireSignal.set(acc.wireSignal);
   wireFromOutputIndex.set(acc.wireFromOutputIndex);
+
+  for (const [gate, entry] of acc.gateMap.entries()) {
+    if (gate.type === "input" || gate.type === "clock") {
+      allOutputs[outputOffset[entry]] = gate.output ? 1 : 0;
+    }
+  }
 
   let currentDelta = new Set();
   let nextDelta = new Set();
@@ -410,7 +413,14 @@ export function evaluateFlat(circuit) {
   }
 
   for (const [wire, idx] of acc.wireMap.entries()) {
-    wire.signal = wireSignal[acc.wireMap.get(wire)] === 1;
+    wire.signal = wireSignal[idx] === 1;
+  }
+
+  for (let i = 0; i < allOutputs.length; i++) {
+    acc.allOutputs[i] = allOutputs[i];
+  }
+  for (let i = 0; i < wireSignal.length; i++) {
+    acc.wireSignal[i] = wireSignal[i];
   }
 }
 
