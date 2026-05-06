@@ -192,6 +192,14 @@ function encodeType(type) {
   return Types[type];
 }
 
+/**
+ * Creates an empty accumulator object to store the flattened circuit state.
+ * 
+ * The accumulator holds array-based representations of the circuit's gates,
+ * wires, and their connections, optimized for fast evaluation.
+ * 
+ * @returns {Object} An empty accumulator object with initialized arrays and maps.
+ */
 export function createAccumulator() {
   return {
     gateTypes: [],
@@ -204,9 +212,25 @@ export function createAccumulator() {
     wireFromOutputIndex: [],
     wireMap: new Map(),
     gateMap: new Map(),
+    fanout: new Map(),
+    fanin: new Map(),
   };
 }
 
+/**
+ * Flattens a hierarchical circuit into a linear array-based representation.
+ * 
+ * This function traverses the circuit and its composite gates recursively,
+ * populating the accumulator with a flattened graph of nodes (gates) and edges (wires).
+ * It translates object references into array indices for efficient evaluation.
+ * 
+ * @param {CircuitBuilder} circuit - The circuit to flatten.
+ * @param {Object} acc - The accumulator object to populate.
+ * @param {Array<string>} [inputOrder=[]] - Ordered list of input gate IDs (used for composites).
+ * @param {Array<string>} [outputOrder=[]] - Ordered list of output gate IDs (used for composites).
+ * @param {number} [gateCount=0] - The current global gate index count.
+ * @returns {Object} An object containing the index map, boundary map, and next gate count.
+ */
 export function flatten(circuit, acc, inputOrder = [], outputOrder = [], gateCount = 0) {
   const indexMap = {};
 
@@ -280,16 +304,35 @@ export function flatten(circuit, acc, inputOrder = [], outputOrder = [], gateCou
       toIndex = indexMap[wire.to.id];
     }
 
-    acc.wireMap.set(wire, acc.wireSignal.length);
+    const wireIndex = acc.wireSignal.length;
+
+    acc.wireMap.set(wire, wireIndex);
     acc.wireFrom.push(fromIndex);
     acc.wireTo.push(toIndex);
     acc.wireSignal.push(wire.signal ? 1 : 0);
     acc.wireFromOutputIndex.push(wire.fromOutputIndex);
+
+    if (!acc.fanout.has(fromIndex)) {
+      acc.fanout.set(fromIndex, []);
+    }
+    acc.fanout.get(fromIndex).push(wireIndex);
+
+    if (!acc.fanin.has(toIndex)) {
+      acc.fanin.set(toIndex, []);
+    }
+    acc.fanin.get(toIndex).push(wireIndex);
   }
 
   return { indexMap, boundaryMap, nextGateCount: gateCount };
 }
 
+/**
+ * Helper function to trace back the source of a composite gate's output node.
+ * 
+ * @param {number} outputNodeIndex - The index of the output node.
+ * @param {Object} acc - The accumulator containing circuit connection data.
+ * @returns {number} The index of the source gate driving the output node.
+ */
 function fromSourceOfOutputNode(outputNodeIndex, acc) {
   for (let i = 0; i < acc.wireTo.length; i++) {
     if (outputNodeIndex === acc.wireTo[i]) {
@@ -299,14 +342,16 @@ function fromSourceOfOutputNode(outputNodeIndex, acc) {
   return outputNodeIndex; // fallback if nothing found
 }
 
-
-export function evaluateFlat(circuit, acc, indexMap) {
-  const wireIndexMap = new Map();
-  let i = 0;
-  for (const wire of circuit.wires) {
-    wireIndexMap.set(wire, i++);
-  }
-
+/**
+ * Converts standard arrays in the accumulator to TypedArrays.
+ * 
+ * TypedArrays provide better performance and memory efficiency during
+ * the high-frequency evaluation loops in `evaluateFlat`.
+ * 
+ * @param {Object} acc - The populated accumulator object.
+ * @returns {Object} An object containing the typed array equivalents of the accumulator data.
+ */
+export function buildTypedArrays(acc) {
   const gateTypes = new Uint8Array(acc.gateTypes.length);
   const outputOffset = new Uint16Array(acc.outputOffset.length);
   const outputCount = new Uint8Array(acc.outputCount.length);
@@ -324,6 +369,42 @@ export function evaluateFlat(circuit, acc, indexMap) {
   wireTo.set(acc.wireTo);
   wireSignal.set(acc.wireSignal);
   wireFromOutputIndex.set(acc.wireFromOutputIndex);
+
+  return {
+    gateTypes,
+    outputOffset,
+    outputCount,
+    allOutputs,
+    wireFrom,
+    wireTo,
+    wireSignal,
+    wireFromOutputIndex,
+  };
+}
+
+
+/**
+ * Evaluates the flattened circuit using TypedArrays for high performance.
+ * 
+ * This function performs a change-driven (delta-cycle) evaluation on the
+ * flattened array-based representation of the circuit. It synchronizes the
+ * simulation state from object instances to arrays, evaluates the logic,
+ * and then writes the results back to the object instances.
+ * 
+ * @param {CircuitBuilder} circuit - The original circuit object.
+ * @param {Object} acc - The accumulator containing mapping and topology data.
+ * @param {Object} typedArrays - The typed arrays containing the current simulation state.
+ */
+export function evaluateFlat(circuit, acc, typedArrays) {
+  let {
+    gateTypes,
+    outputOffset,
+    outputCount,
+    allOutputs,
+    wireFrom,
+    wireTo,
+    wireSignal,
+  } = typedArrays;
 
   for (const [gate, entry] of acc.gateMap.entries()) {
     if (gate.type === "input" || gate.type === "clock") {
@@ -351,13 +432,9 @@ export function evaluateFlat(circuit, acc, indexMap) {
     currentDelta.delete(gateIndex);
 
     if (gateTypes[gateIndex] === Types.input || gateTypes[gateIndex] === Types.clock) {
-      let newVal = allOutputs[outputOffset[gateIndex]];
-      for (let i = 0; i < wireTo.length; i++) {
-        if (wireTo[i] === gateIndex) {
-          newVal = wireSignal[i];
-          break;
-        }
-      }
+      const faninWires = acc.fanin.get(gateIndex) ?? [];
+      const newVal = faninWires.length > 0 ? wireSignal[faninWires[0]] : allOutputs[outputOffset[gateIndex]];
+
       const oldVal = allOutputs[outputOffset[gateIndex]];
       allOutputs[outputOffset[gateIndex]] = newVal;
 
@@ -370,15 +447,8 @@ export function evaluateFlat(circuit, acc, indexMap) {
         }
       }
     } else {
-
-      const inputSignals = new Array();
-
-      // TODO: Add fanin list for O(1) access
-      for (let i = 0; i < wireTo.length; i++) {
-        if (wireTo[i] === gateIndex) {
-          inputSignals.push(wireSignal[i]);
-        }
-      }
+      const faninWires = acc.fanin.get(gateIndex) ?? [];
+      const inputSignals = faninWires.map(wireIdx => wireSignal[wireIdx]);
 
       const oldOutput = allOutputs[outputOffset[gateIndex]];
       const newOutput = evaluateGate(gateTypes[gateIndex], inputSignals);
@@ -386,12 +456,10 @@ export function evaluateFlat(circuit, acc, indexMap) {
       allOutputs[outputOffset[gateIndex]] = newOutput;
 
       if (newOutput !== oldOutput) {
-        // TODO: Add fanout list for O(1) access
-        for (let i = 0; i < wireFrom.length; i++) {
-          if (wireFrom[i] === gateIndex) {
-            wireSignal[i] = newOutput;
-            nextDelta.add(wireTo[i]);
-          }
+        const fanoutWires = acc.fanout.get(gateIndex) ?? [];
+        for (const wireIdx of fanoutWires) {
+          wireSignal[wireIdx] = newOutput;
+          nextDelta.add(wireTo[wireIdx]);
         }
       }
     }
@@ -424,6 +492,13 @@ export function evaluateFlat(circuit, acc, indexMap) {
   }
 }
 
+/**
+ * Evaluates a single logic gate primitive based on its type and inputs.
+ * 
+ * @param {number} type - The numeric type identifier of the gate (from Types enum).
+ * @param {Array<number>} inputs - An array of numeric input values (0 or 1).
+ * @returns {number} The resulting output value (0 or 1).
+ */
 function evaluateGate(type, inputs) {
   let output;
 
