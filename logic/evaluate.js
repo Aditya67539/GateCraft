@@ -204,12 +204,10 @@ export function createAccumulator() {
   return {
     gateTypes: [],
     outputOffset: [],
-    outputCount: [],
     allOutputs: [],
     wireFrom: [],
     wireTo: [],
     wireSignal: [],
-    wireFromOutputIndex: [],
     wireMap: new Map(),
     gateMap: new Map(),
     fanout: new Map(),
@@ -243,7 +241,6 @@ export function flatten(circuit, acc, inputOrder = [], outputOrder = [], gateCou
 
       acc.gateTypes.push(encodeType(gate.type));
       acc.outputOffset.push(acc.allOutputs.length);
-      acc.outputCount.push(1);
       acc.allOutputs.push(gate.output ? 1 : 0);
 
       gateCount++;
@@ -310,7 +307,6 @@ export function flatten(circuit, acc, inputOrder = [], outputOrder = [], gateCou
     acc.wireFrom.push(fromIndex);
     acc.wireTo.push(toIndex);
     acc.wireSignal.push(wire.signal ? 1 : 0);
-    acc.wireFromOutputIndex.push(wire.fromOutputIndex);
 
     if (!acc.fanout.has(fromIndex)) {
       acc.fanout.set(fromIndex, []);
@@ -354,31 +350,25 @@ function fromSourceOfOutputNode(outputNodeIndex, acc) {
 export function buildTypedArrays(acc) {
   const gateTypes = new Uint8Array(acc.gateTypes.length);
   const outputOffset = new Uint16Array(acc.outputOffset.length);
-  const outputCount = new Uint8Array(acc.outputCount.length);
   const allOutputs = new Uint8Array(acc.allOutputs.length);
   const wireFrom = new Uint16Array(acc.wireFrom.length);
   const wireTo = new Uint16Array(acc.wireTo.length);
   const wireSignal = new Uint8Array(acc.wireSignal.length);
-  const wireFromOutputIndex = new Uint16Array(acc.wireFromOutputIndex.length);
 
   gateTypes.set(acc.gateTypes);
   outputOffset.set(acc.outputOffset);
-  outputCount.set(acc.outputCount);
   allOutputs.set(acc.allOutputs);
   wireFrom.set(acc.wireFrom);
   wireTo.set(acc.wireTo);
   wireSignal.set(acc.wireSignal);
-  wireFromOutputIndex.set(acc.wireFromOutputIndex);
 
   return {
     gateTypes,
     outputOffset,
-    outputCount,
     allOutputs,
     wireFrom,
     wireTo,
     wireSignal,
-    wireFromOutputIndex,
   };
 }
 
@@ -399,7 +389,6 @@ export function evaluateFlat(circuit, acc, typedArrays) {
   let {
     gateTypes,
     outputOffset,
-    outputCount,
     allOutputs,
     wireFrom,
     wireTo,
