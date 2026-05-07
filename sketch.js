@@ -1,5 +1,5 @@
 import { state } from "./state.js";
-import { drawGate, drawWaypoint, drawGhostWire, drawInputPorts, drawOutputPorts, drawWire } from "./render/draw.js";
+import { drawGate, drawWaypoint, drawGhostWire, drawInputPorts, drawOutputPorts, drawWire, setFont } from "./render/draw.js";
 import { registerMouseHandlers, isNearWaypoint } from "./input/mouseHandlers.js";
 import { initToolbar } from "./ui/toolbar.js";
 import { getActiveTheme, applyTheme } from "./render/theme.js";
@@ -29,6 +29,7 @@ const sketch = (p) => {
     mouse.y = p.mouseY;
     const theme = getActiveTheme();
     p.background(theme.canvas.bg.hex);
+    setFont(theme, p);
     for (let i = 0; i < renderNodes.length; i++) {
       drawGate(renderNodes[i], p);
     }
