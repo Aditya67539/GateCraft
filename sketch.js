@@ -4,6 +4,7 @@ import { registerMouseHandlers, isNearWaypoint } from "./input/mouseHandlers.js"
 import { initToolbar } from "./ui/toolbar.js";
 import { getActiveTheme, applyTheme } from "./render/theme.js";
 import { CircuitBuilder } from "./logic/CircuitBuilder.js";
+import { nodeMap } from "./input/mouseHandlers.js";
 
 applyTheme(getActiveTheme());
 
@@ -36,7 +37,7 @@ const sketch = (p) => {
     drawOutputPorts(renderNodes, p);
     drawInputPorts(renderNodes, p);
     for (let i = 0; i < wires.length; i++) {
-      drawWire(renderNodes, wires[i], p);
+      drawWire(renderNodes, wires[i], nodeMap, p);
       if (state.mode === "edit") {
         for (const waypoint of wires[i].waypoints) {
           if (isNearWaypoint(mouse.x, mouse.y, waypoint, p)) {

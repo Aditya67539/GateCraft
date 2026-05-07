@@ -11,7 +11,9 @@ function cleanupGhostWire() {
   state.ghostWire = null;
 }
 
-import { setNodeSize } from "../render/RenderPoint.js";
+import { reBuildNodeMap, setNodeSize } from "../render/RenderPoint.js";
+
+export const nodeMap = new Map();
 
 export function registerMouseHandlers(p, circuit, renderNodes, wires) {
   p.mousePressed = function () {
@@ -38,7 +40,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
           let wire = circuit.connectGates(fromGate, toGate, outputIndex, inputIndex);
           if (wire === null) return;
           setNodeSize(wireConnection.toNode);
-          let wire_info = init_wire(renderNodes, wire, state.ghostWire);
+          let wire_info = init_wire(renderNodes, wire, state.ghostWire, nodeMap);
           wires.push(wire_info);
           adjustWaypoints(renderNodes, wires, state.drawingWire.fromNode.gate.id);
           state.drawingWire = null;
@@ -111,6 +113,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
       state.mode = "edit";
       circuit.registerGate(state.ghostNode.gate);
       renderNodes.push(state.ghostNode);
+      reBuildNodeMap(renderNodes, nodeMap);
       state.ghostNode = null;
 
       document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
@@ -130,6 +133,8 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
         adjustWaypoints(renderNodes, wires, state.dragging.gate.id);
         // Mutate arrays in-place so sketch.js references stay valid
         state.dragging = null;
+
+        reBuildNodeMap(renderNodes, nodeMap);
       } else {
         const wire_info = getWireAtPoint(p.mouseX, p.mouseY, renderNodes, wires);
         if (wire_info) {
@@ -143,7 +148,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
           // Re-compute waypoints for all remaining wires going into this gate
           for (const w of wires) {
             if (w.wire.to.id === toGate.id) {
-              reComputeWayPoint(renderNodes, w);
+              reComputeWayPoint(renderNodes, w, nodeMap);
             }
           }
 
@@ -324,7 +329,7 @@ function adjustWaypoints(renderNodes, wires, fromGateId) {
       // Only re-compute waypoints for gates which are connected to toGate
       for (let j = 0; j < wires.length; j++) {
         if (wires[j].wire.to.id === toGate) {
-          reComputeWayPoint(renderNodes, wires[j]);
+          reComputeWayPoint(renderNodes, wires[j], nodeMap);
         }
       }
       break;

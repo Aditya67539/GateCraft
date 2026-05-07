@@ -47,9 +47,9 @@ export function drawGate(renderNode, p) {
   p.strokeWeight(1);
 }
 
-export function drawWire(renderNodes, wire_info, p) {
+export function drawWire(renderNodes, wire_info, nodeMap, p) {
   const theme = getActiveTheme();
-  const ports = getWirePorts(renderNodes, wire_info.wire);
+  const ports = getWirePorts(renderNodes, wire_info.wire, nodeMap);
   p.strokeWeight(3);
 
   let color = wire_info.wire.signal ? theme.wires.high.hex : theme.wires.low.hex;
