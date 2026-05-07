@@ -110,7 +110,6 @@ export function createCompositeNode(name, circuitData, mouseX, mouseY) {
 export function spawnBasicNode(type, mouseX, mouseY) {
   state.ghostNode = createBasicNode(type, mouseX, mouseY);
   state.mode = "placing";
-
 }
 
 /**
@@ -126,7 +125,6 @@ export function spawnBasicNode(type, mouseX, mouseY) {
 export function spawnCompositeNode(name, circuitData, mouseX, mouseY) {
   state.ghostNode = createCompositeNode(name, circuitData, mouseX, mouseY);
   state.mode = "placing";
-
 }
 
 function computeSize(gate) {
@@ -174,4 +172,12 @@ export function setNodeSize(node) {
   const { width, height } = computeSize(node.gate);
   node.width = width;
   node.height = height;
+}
+
+export function reBuildNodeMap(renderNodes, nodeMap) {
+  nodeMap.clear();
+
+  for (const node of renderNodes) {
+    nodeMap.set(node.gate.id, node);
+  }
 }

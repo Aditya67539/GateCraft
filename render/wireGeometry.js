@@ -1,21 +1,20 @@
 import { isNearWaypoint } from "../input/mouseHandlers.js";
 
-export function init_wire(renderNodes, wire, custom_waypoints) {
+export function init_wire(renderNodes, wire, custom_waypoints, nodeMap) {
   let waypoints;
   let isCustomRouted = false;
   if (custom_waypoints && custom_waypoints.length !== 0) {
     waypoints = custom_waypoints;
     isCustomRouted = true;
   } else {
-    waypoints = computeWayPoints(renderNodes, wire);
+    waypoints = computeWayPoints(renderNodes, wire, nodeMap);
   }
   return { wire: wire, waypoints: waypoints, isCustomRouted: isCustomRouted };
 }
 
-export function getWirePorts(renderNodes, wire) {
-  const fromNode = renderNodes.find(n => n.gate.id === wire.from.id);
-  const toNode = renderNodes.find(n => n.gate.id === wire.to.id);
-
+export function getWirePorts(renderNodes, wire, nodeMap) {
+  const fromNode = nodeMap.get(wire.from.id);
+  const toNode = nodeMap.get(wire.to.id);
   let start, end;
 
   if (wire.fromOutputIndex !== null) {
@@ -36,8 +35,8 @@ export function getWirePorts(renderNodes, wire) {
   return { start: start, end: end };
 }
 
-export function computeWayPoints(renderNodes, wire) {
-  let ports = getWirePorts(renderNodes, wire);
+export function computeWayPoints(renderNodes, wire, nodeMap) {
+  let ports = getWirePorts(renderNodes, wire, nodeMap);
   let spacing = wire.to.type === "composite" ? (wire.toInputIndex + 2) * 8 : (wire.to.inputs.length + 1) * 8;
   let waypoints = [];
   if (ports.start.x <= ports.end.x) {
@@ -56,10 +55,10 @@ export function computeWayPoints(renderNodes, wire) {
   return waypoints;
 }
 
-export function reComputeWayPoint(renderNodes, wire_info) {
+export function reComputeWayPoint(renderNodes, wire_info, nodeMap) {
   if (wire_info.isCustomRouted) return;
   if (wire_info.wire.to.type === "composite") return;
-  let newWayPoints = computeWayPoints(renderNodes, wire_info.wire);
+  let newWayPoints = computeWayPoints(renderNodes, wire_info.wire, nodeMap);
   const waypointCount = newWayPoints.length;
   wire_info.waypoints[waypointCount - 1].y = newWayPoints[waypointCount - 1].y;
 }

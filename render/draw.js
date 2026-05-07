@@ -39,11 +39,6 @@ export function drawGate(renderNode, p) {
   p.noStroke();
   p.textAlign(p.CENTER, p.CENTER);
   p.textSize(FONT_SIZE);
-  if (theme.font && theme.font.family) {
-    // Strip quotes for p5 textFont
-    const fontName = theme.font.family.split(",")[0].replace(/'/g, "").trim();
-    p.textFont(fontName);
-  }
   const label = gate.label || gate.type;
   p.text(label, renderNode.x + renderNode.width / 2, renderNode.y + renderNode.height / 2);
 
@@ -52,9 +47,9 @@ export function drawGate(renderNode, p) {
   p.strokeWeight(1);
 }
 
-export function drawWire(renderNodes, wire_info, p) {
+export function drawWire(renderNodes, wire_info, nodeMap, p) {
   const theme = getActiveTheme();
-  const ports = getWirePorts(renderNodes, wire_info.wire);
+  const ports = getWirePorts(renderNodes, wire_info.wire, nodeMap);
   p.strokeWeight(3);
 
   let color = wire_info.wire.signal ? theme.wires.high.hex : theme.wires.low.hex;
@@ -167,4 +162,12 @@ export function drawWaypoint(wire_info, waypoint, p) {
   let color = wire_info.wire.signal ? theme.wires.high.hex : theme.wires.low.hex;
   p.fill(color);
   p.circle(waypoint.x, waypoint.y, 12);
+}
+
+export function setFont(theme, p) {
+  if (theme.font && theme.font.family) {
+    // Strip quotes for p5 textFont
+    const fontName = theme.font.family.split(",")[0].replace(/'/g, "").trim();
+    p.textFont(fontName);
+  }
 }
