@@ -4,6 +4,7 @@
   "description": "A browser-based digital logic circuit simulator built with [p5.js](https://p5js.org/). Place logic gates, wire them together, toggle inputs, and watch signals propagate in real time — including support for sequential circuits like SR latches and T flip-flops.",
   "type": "module",
   "scripts": {
+    "build:wasm": "emcc logic/evaluate.c -O3 --no-entry -s IMPORTED_MEMORY=1 -s EXPORTED_FUNCTIONS=\"['_init', '_evaluateFlat']\" -o logic/evaluate.wasm",
     "test": "vitest",
     "test:ci": "vitest run",
     "bench": "node tests/performance/logic.bench.js bench-results.json",
