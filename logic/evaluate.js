@@ -1,4 +1,5 @@
-import { CircuitBuilder } from "./CircuitBuilder.js";
+export var wasmMemory = null;
+export var wasmInstance = null;
 
 /**
  * Performs change-driven (delta-cycle) evaluation of the circuit. 
@@ -16,7 +17,7 @@ export function evaluateAll(circuit, seedAll = false) {
   const gateMap = circuit.gates;
   const wires = circuit.wires;
   const fanout = circuit.fanout;
-  
+
   /**
    * Seeds all non-inputs gates to ensure a full evaluation pass.
    * 
@@ -142,8 +143,8 @@ export function evaluateOnce(ciruict) {
       if (wire.from.id !== gate.id) continue;
 
       const signal = Array.isArray(gate.output)
-          ? gate.output[wire.fromOutputIndex]
-          : gate.output;
+        ? gate.output[wire.fromOutputIndex]
+        : gate.output;
 
       if (wire.signal !== signal) {
         wire.signal = signal;
@@ -213,6 +214,19 @@ export function createAccumulator() {
     fanout: new Map(),
     fanin: new Map(),
   };
+}
+
+export function clearAccumulator(acc) {
+  acc.gateTypes.length = 0;
+  acc.outputOffset.length = 0;
+  acc.allOutputs.length = 0;
+  acc.wireFrom.length = 0;
+  acc.wireTo.length = 0;
+  acc.wireSignal.length = 0;
+  acc.wireMap.clear();
+  acc.gateMap.clear();
+  acc.fanout.clear();
+  acc.fanin.clear();
 }
 
 /**
@@ -339,28 +353,150 @@ function fromSourceOfOutputNode(outputNodeIndex, acc) {
 }
 
 /**
- * Converts standard arrays in the accumulator to TypedArrays.
- * 
- * TypedArrays provide better performance and memory efficiency during
- * the high-frequency evaluation loops in `evaluateFlat`.
+ * Converts standard arrays in the accumulator to TypedArrays allocated in the WASM shared memory buffer.
  * 
  * @param {Object} acc - The populated accumulator object.
  * @returns {Object} An object containing the typed array equivalents of the accumulator data.
  */
 export function buildTypedArrays(acc) {
-  const gateTypes = new Uint8Array(acc.gateTypes.length);
-  const outputOffset = new Uint16Array(acc.outputOffset.length);
-  const allOutputs = new Uint8Array(acc.allOutputs.length);
-  const wireFrom = new Uint16Array(acc.wireFrom.length);
-  const wireTo = new Uint16Array(acc.wireTo.length);
-  const wireSignal = new Uint8Array(acc.wireSignal.length);
+  if (!wasmMemory) {
+    throw new Error("WASM not initialized. Call initWasm() first.");
+  }
 
+  let ptr = 0;
+
+  // 1-byte arrays
+  const gateTypes = new Uint8Array(wasmMemory.buffer, ptr, acc.gateTypes.length);
   gateTypes.set(acc.gateTypes);
-  outputOffset.set(acc.outputOffset);
+  ptr += gateTypes.byteLength;
+
+  const allOutputs = new Uint8Array(wasmMemory.buffer, ptr, acc.allOutputs.length);
   allOutputs.set(acc.allOutputs);
-  wireFrom.set(acc.wireFrom);
-  wireTo.set(acc.wireTo);
+  ptr += allOutputs.byteLength;
+
+  const wireSignal = new Uint8Array(wasmMemory.buffer, ptr, acc.wireSignal.length);
   wireSignal.set(acc.wireSignal);
+  ptr += wireSignal.byteLength;
+
+  // Align to 2 bytes for Uint16Array
+  if (ptr % 2 !== 0) ptr += 1;
+
+  // 2-byte arrays
+  const outputOffset = new Uint16Array(wasmMemory.buffer, ptr, acc.outputOffset.length);
+  outputOffset.set(acc.outputOffset);
+  ptr += outputOffset.byteLength;
+
+  const wireFrom = new Uint16Array(wasmMemory.buffer, ptr, acc.wireFrom.length);
+  wireFrom.set(acc.wireFrom);
+  ptr += wireFrom.byteLength;
+
+  const wireTo = new Uint16Array(wasmMemory.buffer, ptr, acc.wireTo.length);
+  wireTo.set(acc.wireTo);
+  ptr += wireTo.byteLength;
+
+  // Auxiliary arrays for WASM evaluation loops
+  const maxGates = Math.max(1024, acc.gateTypes.length * 2);
+  const currentDelta = new Uint16Array(wasmMemory.buffer, ptr, maxGates);
+  ptr += currentDelta.byteLength;
+
+  const nextDelta = new Uint16Array(wasmMemory.buffer, ptr, maxGates);
+  ptr += nextDelta.byteLength;
+
+  const inDelta = new Uint16Array(wasmMemory.buffer, ptr, maxGates);
+  ptr += inDelta.byteLength;
+
+  // Serialize fanin arrays
+  let totalFanin = 0;
+  for (let i = 0; i < acc.gateTypes.length; i++) {
+    totalFanin += (acc.fanin.get(i) || []).length;
+  }
+  
+  // Serialize fanout arrays
+  let totalFanout = 0;
+  for (let i = 0; i < acc.gateTypes.length; i++) {
+    totalFanout += (acc.fanout.get(i) || []).length;
+  }
+
+  const faninCounts = new Uint8Array(wasmMemory.buffer, ptr, acc.gateTypes.length);
+  ptr += faninCounts.byteLength;
+
+  const fanoutCounts = new Uint8Array(wasmMemory.buffer, ptr, acc.gateTypes.length);
+  ptr += fanoutCounts.byteLength;
+
+  if (ptr % 2 !== 0) ptr += 1;
+
+  const faninOffsets = new Uint16Array(wasmMemory.buffer, ptr, acc.gateTypes.length);
+  ptr += faninOffsets.byteLength;
+
+  const fanoutOffsets = new Uint16Array(wasmMemory.buffer, ptr, acc.gateTypes.length);
+  ptr += fanoutOffsets.byteLength;
+
+  const faninWires = new Uint16Array(wasmMemory.buffer, ptr, totalFanin);
+  ptr += faninWires.byteLength;
+
+  const fanoutWires = new Uint16Array(wasmMemory.buffer, ptr, totalFanout);
+  ptr += fanoutWires.byteLength;
+
+  let faninPtr = 0;
+  let fanoutPtr = 0;
+  for (let i = 0; i < acc.gateTypes.length; i++) {
+    const inWires = acc.fanin.get(i) || [];
+    faninCounts[i] = inWires.length;
+    faninOffsets[i] = faninPtr;
+    for (const w of inWires) faninWires[faninPtr++] = w;
+
+    const outWires = acc.fanout.get(i) || [];
+    fanoutCounts[i] = outWires.length;
+    fanoutOffsets[i] = fanoutPtr;
+    for (const w of outWires) fanoutWires[fanoutPtr++] = w;
+  }
+
+  if (wasmInstance && wasmInstance.exports.init) {
+    wasmInstance.exports.init(
+      gateTypes.byteOffset,
+      outputOffset.byteOffset,
+      allOutputs.byteOffset,
+      wireFrom.byteOffset,
+      wireTo.byteOffset,
+      wireSignal.byteOffset,
+      currentDelta.byteOffset,
+      nextDelta.byteOffset,
+      inDelta.byteOffset,
+      acc.gateTypes.length,
+      acc.wireSignal.length,
+      faninCounts.byteOffset,
+      faninOffsets.byteOffset,
+      faninWires.byteOffset,
+      fanoutCounts.byteOffset,
+      fanoutOffsets.byteOffset,
+      fanoutWires.byteOffset
+    );
+  }
+
+  // Precompute flat arrays for fast JS <-> WASM state synchronization
+  acc.inputGates = [];
+  acc.inputOffsets = [];
+  acc.syncGates = [];
+  acc.syncOffsets = [];
+  acc.compositeGates = [];
+  acc.compositeBoundaries = [];
+
+  for (const [gate, entry] of acc.gateMap.entries()) {
+    if (gate.type === "input" || gate.type === "clock") {
+      acc.inputGates.push(gate);
+      acc.inputOffsets.push(acc.outputOffset[entry]);
+    }
+    if (gate.type !== "composite") {
+      acc.syncGates.push(gate);
+      acc.syncOffsets.push(acc.outputOffset[entry]);
+    } else {
+      acc.compositeGates.push(gate);
+      acc.compositeBoundaries.push(entry.outputBoundary);
+    }
+  }
+
+  acc.syncWires = Array.from(acc.wireMap.keys());
+  acc.syncWireIndices = Array.from(acc.wireMap.values());
 
   return {
     gateTypes,
@@ -539,4 +675,108 @@ function evaluateGate(type, inputs) {
       break;
   }
   return output;
+}
+
+/**
+ * Initializes the WebAssembly module and allocates shared memory.
+ * @param {string} wasmUrl - Path to the WASM file.
+ */
+export async function initWasm() {
+  if (wasmInstance) return;
+
+  wasmMemory = new WebAssembly.Memory({ initial: 256, maximum: 256 }); // 16MB
+
+  const env = { memory: wasmMemory };
+
+  try {
+    let wasmBuffer;
+    const wasmUrl = new URL('./evaluate.wasm', import.meta.url);
+
+    if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+      // Node.js fallback
+      const fs = await import('fs');
+      wasmBuffer = fs.readFileSync(wasmUrl);
+    } else {
+      // Browser environment
+      const response = await fetch(wasmUrl);
+      wasmBuffer = await response.arrayBuffer();
+    }
+
+    const { instance } = await WebAssembly.instantiate(wasmBuffer, { env });
+    wasmInstance = instance;
+
+    if (instance.exports._initialize) {
+      instance.exports._initialize();
+    }
+  } catch (error) {
+    console.error("Failed to load or instantiate WebAssembly module:", error);
+  }
+}
+
+/**
+ * Evaluates the flattened circuit using the WebAssembly module for maximum performance.
+ * 
+ * @param {CircuitBuilder} circuit - The original circuit object.
+ * @param {Object} acc - The accumulator containing mapping and topology data.
+ * @param {Object} typedArrays - The typed arrays containing the current simulation state.
+ */
+export function evaluateWasm(circuit, acc, typedArrays) {
+  let {
+    outputOffset,
+    allOutputs,
+    wireSignal,
+  } = typedArrays;
+
+  // Copy input/clock states from JS objects to WASM memory
+  if (acc.inputGates) {
+    for (let i = 0; i < acc.inputGates.length; i++) {
+      allOutputs[acc.inputOffsets[i]] = acc.inputGates[i].output ? 1 : 0;
+    }
+  } else {
+    // Fallback if not built yet
+    for (const [gate, entry] of acc.gateMap.entries()) {
+      if (gate.type === "input" || gate.type === "clock") {
+        allOutputs[outputOffset[entry]] = gate.output ? 1 : 0;
+      }
+    }
+  }
+
+  // Run the core evaluation logic in WebAssembly
+  if (wasmInstance && wasmInstance.exports.evaluateFlat) {
+    wasmInstance.exports.evaluateFlat();
+  } else {
+    console.error("WASM evaluateFlat not found");
+    return;
+  }
+
+  // Copy state from WASM memory back to JS objects
+  if (acc.syncGates) {
+    for (let i = 0; i < acc.syncGates.length; i++) {
+      acc.syncGates[i].output = allOutputs[acc.syncOffsets[i]] === 1;
+    }
+    for (let i = 0; i < acc.syncWires.length; i++) {
+      acc.syncWires[i].signal = wireSignal[acc.syncWireIndices[i]] === 1;
+    }
+    // Handle composite gates
+    if (acc.compositeGates) {
+      for (let i = 0; i < acc.compositeGates.length; i++) {
+        acc.compositeGates[i].output = acc.compositeBoundaries[i].map(
+          nodeIndex => allOutputs[outputOffset[nodeIndex]] === 1
+        );
+      }
+    }
+  } else {
+    for (const [gate, entry] of acc.gateMap.entries()) {
+      if (gate.type !== "composite") {
+        gate.output = allOutputs[outputOffset[entry]] === 1;
+      } else {
+        gate.output = entry.outputBoundary.map(
+          nodeIndex => allOutputs[outputOffset[nodeIndex]] === 1
+        );
+      }
+    }
+    for (const [wire, idx] of acc.wireMap.entries()) {
+      wire.signal = wireSignal[idx] === 1;
+    }
+  }
 }
