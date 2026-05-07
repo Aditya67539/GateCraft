@@ -1,4 +1,5 @@
-import { CircuitBuilder } from "./CircuitBuilder.js";
+export var wasmMemory = null;
+export var wasmInstance = null;
 
 /**
  * Performs change-driven (delta-cycle) evaluation of the circuit. 
@@ -16,7 +17,7 @@ export function evaluateAll(circuit, seedAll = false) {
   const gateMap = circuit.gates;
   const wires = circuit.wires;
   const fanout = circuit.fanout;
-  
+
   /**
    * Seeds all non-inputs gates to ensure a full evaluation pass.
    * 
@@ -24,7 +25,7 @@ export function evaluateAll(circuit, seedAll = false) {
    * where initial changes may not properly propagate correctly using purely
    * change-driven evaluation
   */
- if (seedAll) {
+  if (seedAll) {
     const gates = circuit.getGates();
     for (const gate of gates) {
       if (gate.type !== "input" && gate.type !== "clock") {
@@ -142,8 +143,8 @@ export function evaluateOnce(ciruict) {
       if (wire.from.id !== gate.id) continue;
 
       const signal = Array.isArray(gate.output)
-          ? gate.output[wire.fromOutputIndex]
-          : gate.output;
+        ? gate.output[wire.fromOutputIndex]
+        : gate.output;
 
       if (wire.signal !== signal) {
         wire.signal = signal;
@@ -171,5 +172,611 @@ export function settleCircuit(circuit) {
   while (!stable && iterations < 100) {
     stable = evaluateOnce(circuit);
     iterations++;
+  }
+}
+
+const Types = Object.freeze({
+  input: 0,
+  clock: 1,
+  output: 2,
+  and: 3,
+  or: 4,
+  not: 5,
+  nand: 6,
+  nor: 7,
+  xor: 8,
+  xnor: 9,
+  composite: 10,
+});
+
+function encodeType(type) {
+  return Types[type];
+}
+
+/**
+ * Creates an empty accumulator object to store the flattened circuit state.
+ * 
+ * The accumulator holds array-based representations of the circuit's gates,
+ * wires, and their connections, optimized for fast evaluation.
+ * 
+ * @returns {Object} An empty accumulator object with initialized arrays and maps.
+ */
+export function createAccumulator() {
+  return {
+    gateTypes: [],
+    outputOffset: [],
+    allOutputs: [],
+    wireFrom: [],
+    wireTo: [],
+    wireSignal: [],
+    wireMap: new Map(),
+    gateMap: new Map(),
+    fanout: new Map(),
+    fanin: new Map(),
+  };
+}
+
+export function clearAccumulator(acc) {
+  acc.gateTypes.length = 0;
+  acc.outputOffset.length = 0;
+  acc.allOutputs.length = 0;
+  acc.wireFrom.length = 0;
+  acc.wireTo.length = 0;
+  acc.wireSignal.length = 0;
+  acc.wireMap.clear();
+  acc.gateMap.clear();
+  acc.fanout.clear();
+  acc.fanin.clear();
+}
+
+/**
+ * Flattens a hierarchical circuit into a linear array-based representation.
+ * 
+ * This function traverses the circuit and its composite gates recursively,
+ * populating the accumulator with a flattened graph of nodes (gates) and edges (wires).
+ * It translates object references into array indices for efficient evaluation.
+ * 
+ * @param {CircuitBuilder} circuit - The circuit to flatten.
+ * @param {Object} acc - The accumulator object to populate.
+ * @param {Array<string>} [inputOrder=[]] - Ordered list of input gate IDs (used for composites).
+ * @param {Array<string>} [outputOrder=[]] - Ordered list of output gate IDs (used for composites).
+ * @param {number} [gateCount=0] - The current global gate index count.
+ * @returns {Object} An object containing the index map, boundary map, and next gate count.
+ */
+export function flatten(circuit, acc, inputOrder = [], outputOrder = [], gateCount = 0) {
+  const indexMap = {};
+
+  // --- Pass 1: Assign indices, handle composite recursion ---
+
+  for (const gate of circuit.getGates()) {
+    if (gate.type !== "composite") {
+      indexMap[gate.id] = gateCount;
+      acc.gateMap.set(gate, gateCount);
+
+      acc.gateTypes.push(encodeType(gate.type));
+      acc.outputOffset.push(acc.allOutputs.length);
+      acc.allOutputs.push(gate.output ? 1 : 0);
+
+      gateCount++;
+    } else {
+      const result = flatten(
+        gate.circuitData.builder,
+        acc,
+        gate.circuitData.inputOrder,
+        gate.circuitData.outputOrder,
+        gateCount
+      );
+
+      const compData = {
+        isComposite: true,
+        inputBoundary: result.boundaryMap.inputs,
+        outputBoundary: result.boundaryMap.outputs,
+      };
+
+      indexMap[gate.id] = compData;
+      acc.gateMap.set(gate, compData);
+
+      gateCount = result.nextGateCount;
+    }
+  }
+
+  // --- Pass 2: build boundary map for THIS circuit's Input/Output nodes ---
+  // Switch to Set for O(1) lookup
+  const inputNodes = [...circuit.getGates()]
+    .filter(g => inputOrder.includes(g.id))
+    .sort((a, b) => inputOrder.indexOf(a.id) - inputOrder.indexOf(b.id));
+  const outputNodes = [...circuit.getGates()]
+    .filter(g => outputOrder.includes(g.id))
+    .sort((a, b) => outputOrder.indexOf(a.id) - outputOrder.indexOf(b.id));
+
+  const boundaryMap = {
+    inputs: inputNodes.map(g => indexMap[g.id]),
+    outputs: outputNodes.map(g => indexMap[g.id]),
+  };
+
+
+  // --- Pass 3: process wires with boundary remapping ---
+  for (const wire of circuit.wires) {
+    let fromIndex;
+    if (indexMap[wire.from.id].isComposite) {
+      const portIndex = wire.fromOutputIndex;
+      fromIndex = indexMap[wire.from.id].outputBoundary[portIndex];
+
+      fromIndex = fromSourceOfOutputNode(fromIndex, acc);
+    } else {
+      fromIndex = indexMap[wire.from.id];
+    }
+
+    let toIndex;
+    if (indexMap[wire.to.id].isComposite) {
+      const portIndex = wire.toInputIndex;
+      toIndex = indexMap[wire.to.id].inputBoundary[portIndex];
+    } else {
+      toIndex = indexMap[wire.to.id];
+    }
+
+    const wireIndex = acc.wireSignal.length;
+
+    acc.wireMap.set(wire, wireIndex);
+    acc.wireFrom.push(fromIndex);
+    acc.wireTo.push(toIndex);
+    acc.wireSignal.push(wire.signal ? 1 : 0);
+
+    if (!acc.fanout.has(fromIndex)) {
+      acc.fanout.set(fromIndex, []);
+    }
+    acc.fanout.get(fromIndex).push(wireIndex);
+
+    if (!acc.fanin.has(toIndex)) {
+      acc.fanin.set(toIndex, []);
+    }
+    acc.fanin.get(toIndex).push(wireIndex);
+  }
+
+  return { indexMap, boundaryMap, nextGateCount: gateCount };
+}
+
+/**
+ * Helper function to trace back the source of a composite gate's output node.
+ * 
+ * @param {number} outputNodeIndex - The index of the output node.
+ * @param {Object} acc - The accumulator containing circuit connection data.
+ * @returns {number} The index of the source gate driving the output node.
+ */
+function fromSourceOfOutputNode(outputNodeIndex, acc) {
+  for (let i = 0; i < acc.wireTo.length; i++) {
+    if (outputNodeIndex === acc.wireTo[i]) {
+      return acc.wireFrom[i];
+    }
+  }
+  return outputNodeIndex; // fallback if nothing found
+}
+
+/**
+ * Converts standard arrays in the accumulator to TypedArrays allocated in the WASM shared memory buffer.
+ * 
+ * @param {Object} acc - The populated accumulator object.
+ * @returns {Object} An object containing the typed array equivalents of the accumulator data.
+ */
+export function buildTypedArrays(acc) {
+  if (!wasmMemory) {
+    throw new Error("WASM not initialized. Call initWasm() first.");
+  }
+
+  let ptr = 0;
+
+  // 1-byte arrays
+  const gateTypes = new Uint8Array(wasmMemory.buffer, ptr, acc.gateTypes.length);
+  gateTypes.set(acc.gateTypes);
+  ptr += gateTypes.byteLength;
+
+  const allOutputs = new Uint8Array(wasmMemory.buffer, ptr, acc.allOutputs.length);
+  allOutputs.set(acc.allOutputs);
+  ptr += allOutputs.byteLength;
+
+  const wireSignal = new Uint8Array(wasmMemory.buffer, ptr, acc.wireSignal.length);
+  wireSignal.set(acc.wireSignal);
+  ptr += wireSignal.byteLength;
+
+  // Align to 2 bytes for Uint16Array
+  if (ptr % 2 !== 0) ptr += 1;
+
+  // 2-byte arrays
+  const outputOffset = new Uint16Array(wasmMemory.buffer, ptr, acc.outputOffset.length);
+  outputOffset.set(acc.outputOffset);
+  ptr += outputOffset.byteLength;
+
+  const wireFrom = new Uint16Array(wasmMemory.buffer, ptr, acc.wireFrom.length);
+  wireFrom.set(acc.wireFrom);
+  ptr += wireFrom.byteLength;
+
+  const wireTo = new Uint16Array(wasmMemory.buffer, ptr, acc.wireTo.length);
+  wireTo.set(acc.wireTo);
+  ptr += wireTo.byteLength;
+
+  // Auxiliary arrays for WASM evaluation loops
+  const maxGates = Math.max(1024, acc.gateTypes.length * 2);
+  const currentDelta = new Uint16Array(wasmMemory.buffer, ptr, maxGates);
+  ptr += currentDelta.byteLength;
+
+  const nextDelta = new Uint16Array(wasmMemory.buffer, ptr, maxGates);
+  ptr += nextDelta.byteLength;
+
+  const inDelta = new Uint16Array(wasmMemory.buffer, ptr, maxGates);
+  ptr += inDelta.byteLength;
+
+  // Serialize fanin arrays
+  let totalFanin = 0;
+  for (let i = 0; i < acc.gateTypes.length; i++) {
+    totalFanin += (acc.fanin.get(i) || []).length;
+  }
+  
+  // Serialize fanout arrays
+  let totalFanout = 0;
+  for (let i = 0; i < acc.gateTypes.length; i++) {
+    totalFanout += (acc.fanout.get(i) || []).length;
+  }
+
+  const faninCounts = new Uint8Array(wasmMemory.buffer, ptr, acc.gateTypes.length);
+  ptr += faninCounts.byteLength;
+
+  const fanoutCounts = new Uint8Array(wasmMemory.buffer, ptr, acc.gateTypes.length);
+  ptr += fanoutCounts.byteLength;
+
+  if (ptr % 2 !== 0) ptr += 1;
+
+  const faninOffsets = new Uint16Array(wasmMemory.buffer, ptr, acc.gateTypes.length);
+  ptr += faninOffsets.byteLength;
+
+  const fanoutOffsets = new Uint16Array(wasmMemory.buffer, ptr, acc.gateTypes.length);
+  ptr += fanoutOffsets.byteLength;
+
+  const faninWires = new Uint16Array(wasmMemory.buffer, ptr, totalFanin);
+  ptr += faninWires.byteLength;
+
+  const fanoutWires = new Uint16Array(wasmMemory.buffer, ptr, totalFanout);
+  ptr += fanoutWires.byteLength;
+
+  let faninPtr = 0;
+  let fanoutPtr = 0;
+  for (let i = 0; i < acc.gateTypes.length; i++) {
+    const inWires = acc.fanin.get(i) || [];
+    faninCounts[i] = inWires.length;
+    faninOffsets[i] = faninPtr;
+    for (const w of inWires) faninWires[faninPtr++] = w;
+
+    const outWires = acc.fanout.get(i) || [];
+    fanoutCounts[i] = outWires.length;
+    fanoutOffsets[i] = fanoutPtr;
+    for (const w of outWires) fanoutWires[fanoutPtr++] = w;
+  }
+
+  if (wasmInstance && wasmInstance.exports.init) {
+    wasmInstance.exports.init(
+      gateTypes.byteOffset,
+      outputOffset.byteOffset,
+      allOutputs.byteOffset,
+      wireFrom.byteOffset,
+      wireTo.byteOffset,
+      wireSignal.byteOffset,
+      currentDelta.byteOffset,
+      nextDelta.byteOffset,
+      inDelta.byteOffset,
+      acc.gateTypes.length,
+      acc.wireSignal.length,
+      faninCounts.byteOffset,
+      faninOffsets.byteOffset,
+      faninWires.byteOffset,
+      fanoutCounts.byteOffset,
+      fanoutOffsets.byteOffset,
+      fanoutWires.byteOffset
+    );
+  }
+
+  // Precompute flat arrays for fast JS <-> WASM state synchronization
+  acc.inputGates = [];
+  acc.inputOffsets = [];
+  acc.syncGates = [];
+  acc.syncOffsets = [];
+  acc.compositeGates = [];
+  acc.compositeBoundaries = [];
+
+  for (const [gate, entry] of acc.gateMap.entries()) {
+    if (gate.type === "input" || gate.type === "clock") {
+      acc.inputGates.push(gate);
+      acc.inputOffsets.push(acc.outputOffset[entry]);
+    }
+    if (gate.type !== "composite") {
+      acc.syncGates.push(gate);
+      acc.syncOffsets.push(acc.outputOffset[entry]);
+    } else {
+      acc.compositeGates.push(gate);
+      acc.compositeBoundaries.push(entry.outputBoundary);
+    }
+  }
+
+  acc.syncWires = Array.from(acc.wireMap.keys());
+  acc.syncWireIndices = Array.from(acc.wireMap.values());
+
+  return {
+    gateTypes,
+    outputOffset,
+    allOutputs,
+    wireFrom,
+    wireTo,
+    wireSignal,
+  };
+}
+
+
+/**
+ * Evaluates the flattened circuit using TypedArrays for high performance.
+ * 
+ * This function performs a change-driven (delta-cycle) evaluation on the
+ * flattened array-based representation of the circuit. It synchronizes the
+ * simulation state from object instances to arrays, evaluates the logic,
+ * and then writes the results back to the object instances.
+ * 
+ * @param {CircuitBuilder} circuit - The original circuit object.
+ * @param {Object} acc - The accumulator containing mapping and topology data.
+ * @param {Object} typedArrays - The typed arrays containing the current simulation state.
+ */
+export function evaluateFlat(circuit, acc, typedArrays) {
+  let {
+    gateTypes,
+    outputOffset,
+    allOutputs,
+    wireFrom,
+    wireTo,
+    wireSignal,
+  } = typedArrays;
+
+  for (const [gate, entry] of acc.gateMap.entries()) {
+    if (gate.type === "input" || gate.type === "clock") {
+      allOutputs[outputOffset[entry]] = gate.output ? 1 : 0;
+    }
+  }
+
+  let currentDelta = new Set();
+  let nextDelta = new Set();
+
+  for (let i = 0; i < wireSignal.length; i++) {
+    const gateType = gateTypes[wireFrom[i]];
+    if (gateType === Types["input"] || gateType === Types["clock"]) {
+      if (allOutputs[outputOffset[wireFrom[i]]] !== wireSignal[i]) {
+        wireSignal[i] = allOutputs[outputOffset[wireFrom[i]]];
+        currentDelta.add(wireTo[i]);
+      }
+    }
+  }
+
+  let iterations = 0;
+
+  while (currentDelta.size > 0 && iterations < 100) {
+    const [gateIndex] = currentDelta;
+    currentDelta.delete(gateIndex);
+
+    if (gateTypes[gateIndex] === Types.input || gateTypes[gateIndex] === Types.clock) {
+      const faninWires = acc.fanin.get(gateIndex) ?? [];
+      const newVal = faninWires.length > 0 ? wireSignal[faninWires[0]] : allOutputs[outputOffset[gateIndex]];
+
+      const oldVal = allOutputs[outputOffset[gateIndex]];
+      allOutputs[outputOffset[gateIndex]] = newVal;
+
+      if (newVal !== oldVal) {
+        for (let i = 0; i < wireFrom.length; i++) {
+          if (wireFrom[i] === gateIndex) {
+            wireSignal[i] = newVal;
+            nextDelta.add(wireTo[i]);
+          }
+        }
+      }
+    } else {
+      const faninWires = acc.fanin.get(gateIndex) ?? [];
+      const inputSignals = faninWires.map(wireIdx => wireSignal[wireIdx]);
+
+      const oldOutput = allOutputs[outputOffset[gateIndex]];
+      const newOutput = evaluateGate(gateTypes[gateIndex], inputSignals);
+
+      allOutputs[outputOffset[gateIndex]] = newOutput;
+
+      if (newOutput !== oldOutput) {
+        const fanoutWires = acc.fanout.get(gateIndex) ?? [];
+        for (const wireIdx of fanoutWires) {
+          wireSignal[wireIdx] = newOutput;
+          nextDelta.add(wireTo[wireIdx]);
+        }
+      }
+    }
+
+    if (currentDelta.size === 0) {
+      [currentDelta, nextDelta] = [nextDelta, currentDelta];
+      iterations += 1;
+    }
+  }
+
+  for (const [gate, entry] of acc.gateMap.entries()) {
+    if (gate.type !== "composite") {
+      gate.output = allOutputs[outputOffset[entry]] === 1;
+    } else {
+      gate.output = entry.outputBoundary.map(
+        nodeIndex => allOutputs[outputOffset[nodeIndex]] === 1
+      );
+    }
+  }
+
+  for (const [wire, idx] of acc.wireMap.entries()) {
+    wire.signal = wireSignal[idx] === 1;
+  }
+
+  for (let i = 0; i < allOutputs.length; i++) {
+    acc.allOutputs[i] = allOutputs[i];
+  }
+  for (let i = 0; i < wireSignal.length; i++) {
+    acc.wireSignal[i] = wireSignal[i];
+  }
+}
+
+/**
+ * Evaluates a single logic gate primitive based on its type and inputs.
+ * 
+ * @param {number} type - The numeric type identifier of the gate (from Types enum).
+ * @param {Array<number>} inputs - An array of numeric input values (0 or 1).
+ * @returns {number} The resulting output value (0 or 1).
+ */
+function evaluateGate(type, inputs) {
+  let output;
+
+  switch (type) {
+    case Types.and:
+      output = 1;
+      inputs.forEach(input => {
+        output = output & input;
+      });
+      break;
+    case Types.or:
+      output = 0;
+      inputs.forEach(input => {
+        output = output | input;
+      });
+      break;
+    case Types.not:
+      output = inputs[0] === 0 ? 1 : 0;
+      break;
+    case Types.nand:
+      output = 1;
+      inputs.forEach(input => {
+        output = output & input;
+      });
+      output = output === 0 ? 1 : 0;
+      break;
+    case Types.nor:
+      output = 0;
+      inputs.forEach(input => {
+        output = output | input;
+      });
+      output = output === 0 ? 1 : 0;
+      break;
+    case Types.xor:
+      output = 0;
+      inputs.forEach(input => {
+        output = output ^ input;
+      });
+      break;
+    case Types.xnor:
+      output = 0;
+      inputs.forEach(input => {
+        output = output ^ input;
+      });
+      output = output === 0 ? 1 : 0;
+      break;
+    case Types.output:
+      output = inputs[0];
+      break;
+  }
+  return output;
+}
+
+/**
+ * Initializes the WebAssembly module and allocates shared memory.
+ * @param {string} wasmUrl - Path to the WASM file.
+ */
+export async function initWasm() {
+  if (wasmInstance) return;
+
+  wasmMemory = new WebAssembly.Memory({ initial: 256, maximum: 256 }); // 16MB
+
+  const env = { memory: wasmMemory };
+
+  try {
+    let wasmBuffer;
+    const wasmUrl = new URL('./evaluate.wasm', import.meta.url);
+
+    if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+      // Node.js fallback
+      const fs = await import('fs');
+      wasmBuffer = fs.readFileSync(wasmUrl);
+    } else {
+      // Browser environment
+      const response = await fetch(wasmUrl);
+      wasmBuffer = await response.arrayBuffer();
+    }
+
+    const { instance } = await WebAssembly.instantiate(wasmBuffer, { env });
+    wasmInstance = instance;
+
+    if (instance.exports._initialize) {
+      instance.exports._initialize();
+    }
+  } catch (error) {
+    console.error("Failed to load or instantiate WebAssembly module:", error);
+  }
+}
+
+/**
+ * Evaluates the flattened circuit using the WebAssembly module for maximum performance.
+ * 
+ * @param {CircuitBuilder} circuit - The original circuit object.
+ * @param {Object} acc - The accumulator containing mapping and topology data.
+ * @param {Object} typedArrays - The typed arrays containing the current simulation state.
+ */
+export function evaluateWasm(circuit, acc, typedArrays) {
+  let {
+    outputOffset,
+    allOutputs,
+    wireSignal,
+  } = typedArrays;
+
+  // Copy input/clock states from JS objects to WASM memory
+  if (acc.inputGates) {
+    for (let i = 0; i < acc.inputGates.length; i++) {
+      allOutputs[acc.inputOffsets[i]] = acc.inputGates[i].output ? 1 : 0;
+    }
+  } else {
+    // Fallback if not built yet
+    for (const [gate, entry] of acc.gateMap.entries()) {
+      if (gate.type === "input" || gate.type === "clock") {
+        allOutputs[outputOffset[entry]] = gate.output ? 1 : 0;
+      }
+    }
+  }
+
+  // Run the core evaluation logic in WebAssembly
+  if (wasmInstance && wasmInstance.exports.evaluateFlat) {
+    wasmInstance.exports.evaluateFlat();
+  } else {
+    console.error("WASM evaluateFlat not found");
+    return;
+  }
+
+  // Copy state from WASM memory back to JS objects
+  if (acc.syncGates) {
+    for (let i = 0; i < acc.syncGates.length; i++) {
+      acc.syncGates[i].output = allOutputs[acc.syncOffsets[i]] === 1;
+    }
+    for (let i = 0; i < acc.syncWires.length; i++) {
+      acc.syncWires[i].signal = wireSignal[acc.syncWireIndices[i]] === 1;
+    }
+    // Handle composite gates
+    if (acc.compositeGates) {
+      for (let i = 0; i < acc.compositeGates.length; i++) {
+        acc.compositeGates[i].output = acc.compositeBoundaries[i].map(
+          nodeIndex => allOutputs[outputOffset[nodeIndex]] === 1
+        );
+      }
+    }
+  } else {
+    for (const [gate, entry] of acc.gateMap.entries()) {
+      if (gate.type !== "composite") {
+        gate.output = allOutputs[outputOffset[entry]] === 1;
+      } else {
+        gate.output = entry.outputBoundary.map(
+          nodeIndex => allOutputs[outputOffset[nodeIndex]] === 1
+        );
+      }
+    }
+    for (const [wire, idx] of acc.wireMap.entries()) {
+      wire.signal = wireSignal[idx] === 1;
+    }
   }
 }

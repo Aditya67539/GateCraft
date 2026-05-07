@@ -1,4 +1,6 @@
-import { evaluateAll, settleCircuit } from "./evaluate.js";
+import { evaluateAll, evaluateFlat, evaluateWasm, settleCircuit, createAccumulator, flatten, buildTypedArrays, initWasm, clearAccumulator } from "./evaluate.js";
+
+await initWasm();
 import { CompositeGate, createBasicGate, createCompositeGate, Gate, Output } from "./gates.js";
 import { Wire } from "./wire.js";
 
@@ -14,6 +16,10 @@ export class CircuitBuilder {
     /** @type {Array<Wire>} List of wire objects connecting gates */
     this.wires = [];
     this.dirty = false;
+    this.accumulator = createAccumulator();
+    const { indexMap } = flatten(this, this.accumulator);
+    this.typedArrays = buildTypedArrays(this.accumulator);
+    this.indexMap = indexMap;
     this.buildFanout();
   }
 
@@ -160,8 +166,14 @@ export class CircuitBuilder {
    * Evaluates the circuit by Delta-cycle
    */
   evaluate() {
-    if (this.dirty) this.buildFanout();
-    evaluateAll(this);
+    if (this.dirty) {
+      this.buildFanout();
+      clearAccumulator(this.accumulator);
+      const { indexMap } = flatten(this, this.accumulator);
+      this.indexMap = indexMap;
+      this.typedArrays = buildTypedArrays(this.accumulator);
+    }
+    evaluateWasm(this, this.accumulator, this.typedArrays);
   }
 
   /**
