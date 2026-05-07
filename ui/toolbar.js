@@ -171,10 +171,16 @@ export function initToolbar(p, circuit, renderNodes, wires) {
   });
 
   // Save-as-composite button
-  document.getElementById("btn-save-gate").addEventListener("click", openSaveModal);
+  document.getElementById("btn-save-gate").addEventListener("click", () => {
+    openSaveModal();
+    p.noLoop();
+  });
 
   // Modal cancel
-  modalCancel.addEventListener("click", closeSaveModal);
+  modalCancel.addEventListener("click", () => {
+    closeSaveModal();
+    p.loop();
+  });
 
   // Modal save
   modalSave.addEventListener("click", () => {
@@ -182,6 +188,7 @@ export function initToolbar(p, circuit, renderNodes, wires) {
     if (!name) { modalInput.focus(); return; }
     saveCompositeGate(name, _renderNodes, _wires);
     closeSaveModal();
+    p.loop();
     clearCanvas(circuit);
     refreshCompositeSection();
   });
