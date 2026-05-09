@@ -1,9 +1,8 @@
-import { evaluateAll, settleCircuit, createAccumulator, flatten, buildTypedArrays, initWasm, clearAccumulator } from "./evaluate.js";
-
-await initWasm();
+import { settleCircuit, createAccumulator, flatten, buildTypedArrays, initWasm, clearAccumulator, evaluateWasm } from "./evaluate.js";
 import { CompositeGate, createBasicGate, createCompositeGate, Gate, Output } from "./gates.js";
 import { Wire } from "./wire.js";
 
+await initWasm();
 
 /**
  * Builder class for constructing and managing a digital logic circuit. 
@@ -174,8 +173,8 @@ export class CircuitBuilder {
    * Evaluates the circuit by Delta-cycle
    */
   evaluate() {
-    if (this.dirty) this.buildFanout();
-    evaluateAll(this);
+    if (this.dirty) this.buildTypedData();
+    evaluateWasm(this, this.accumulator, this.typedArrays);
   }
 
   /**
