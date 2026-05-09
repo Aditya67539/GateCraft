@@ -434,15 +434,24 @@ const compositeHASettle = buildCompositeHalfAdder();
 
 // Primitive gate evaluation
 group("Primitive Gate Evaluation", () => {
+  let andToggle = false;
   bench("AND gate", () => {
+    andToggle = !andToggle;
+    andCircuit.A.setValue(andToggle);
     andCircuit.builder.evaluate();
   });
 
+  let notToggle = false;
   bench("NOT gate", () => {
+    notToggle = !notToggle;
+    notCircuit.A.setValue(notToggle);
     notCircuit.builder.evaluate();
   });
 
+  let xorToggle = false;
   bench("XOR gate", () => {
+    xorToggle = !xorToggle;
+    xorCircuit.A.setValue(xorToggle);
     xorCircuit.builder.evaluate();
   });
 });
@@ -497,7 +506,11 @@ group("Combinational Circuit Evaluation", () => {
 
 // Sequential circuit evaluation
 group("Sequential Circuit Evaluation", () => {
+  let srToggle = false;
   bench("SR Latch", () => {
+    srToggle = !srToggle;
+    srLatch.S.setValue(srToggle);
+    srLatch.R.setValue(!srToggle);
     srLatch.builder.evaluate();
   });
 
@@ -509,7 +522,11 @@ group("Sequential Circuit Evaluation", () => {
     srLatch.builder.evaluate();
   });
 
+  let dToggle = false;
   bench("D Latch", () => {
+    dToggle = !dToggle;
+    dLatch.E.setValue(true);
+    dLatch.D.setValue(dToggle);
     dLatch.builder.evaluate();
   });
 
@@ -627,14 +644,18 @@ group("Scaling — Chain Depth", () => {
 
 // Composite gate evaluation
 group("Composite Gate Evaluation", () => {
+  let compHAToggle = false;
   bench("Composite Half Adder", () => {
-    compositeHA.A.setValue(true);
+    compHAToggle = !compHAToggle;
+    compositeHA.A.setValue(compHAToggle);
     compositeHA.B.setValue(false);
     compositeHA.builder.evaluate();
   });
 
+  let compRCAToggle = false;
   bench("Composite 4-bit Ripple-Carry Adder", () => {
-    compositeRCA4.A[0].setValue(true);
+    compRCAToggle = !compRCAToggle;
+    compositeRCA4.A[0].setValue(compRCAToggle);
     compositeRCA4.A[1].setValue(false);
     compositeRCA4.A[2].setValue(true);
     compositeRCA4.A[3].setValue(true);
@@ -646,8 +667,10 @@ group("Composite Gate Evaluation", () => {
     compositeRCA4.builder.evaluate();
   });
 
+  let nestedToggle = false;
   bench("Nested Composite (double-NOT)", () => {
-    nestedComp.A.setValue(true);
+    nestedToggle = !nestedToggle;
+    nestedComp.A.setValue(nestedToggle);
     nestedComp.builder.evaluate();
   });
 });
