@@ -136,7 +136,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
 
         reBuildNodeMap(renderNodes, nodeMap);
       } else {
-        const wire_info = getWireAtPoint(p.mouseX, p.mouseY, renderNodes, wires);
+        const wire_info = getWireAtPoint(p.mouseX, p.mouseY, renderNodes, wires, nodeMap);
         if (wire_info) {
           circuit.removeWire(wire_info.wire);
           const toGate = wire_info.wire.to;
@@ -278,9 +278,9 @@ function isOnWireSegment(A, B, O, threshold) {
   return d <= Math.pow(threshold, 2);
 }
 
-function getWireAtPoint(mx, my, renderNodes, wires) {
+function getWireAtPoint(mx, my, renderNodes, wires, nodeMap) {
   for (const wire_info of wires) {
-    const port = getWirePorts(renderNodes, wire_info.wire);
+    const port = getWirePorts(renderNodes, wire_info.wire, nodeMap);
     const points = [];
     points.push(port.start);
     for (const waypoint of wire_info.waypoints) {
