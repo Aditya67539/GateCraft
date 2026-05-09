@@ -116,7 +116,7 @@ uint8_t evalauteGate(uint8_t type, uint8_t *inputs, uint8_t inputCount) {
 }
 
 
-void evaluateFlat() {
+int evaluateFlat() {
     int currentCount = 0;
     int nextCount = 0;
 
@@ -131,6 +131,8 @@ void evaluateFlat() {
             }
         }
     }
+
+    if (currentCount == 0) return 0; // No changes detected — early exit
 
     int iterations = 0;
 
@@ -197,4 +199,5 @@ void evaluateFlat() {
         }
     }
     // JS handles readback to the gate instances
+    return 1;
 }
