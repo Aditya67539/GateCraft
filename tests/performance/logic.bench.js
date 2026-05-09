@@ -4,7 +4,7 @@ import { CircuitBuilder } from "../../logic/CircuitBuilder.js";
 
 // ─── Builder Helpers ─────────────────────────────────────────────────────────
 
-function buildANDGate() {
+function buildANDGate(withWasm = true) {
   const b = new CircuitBuilder();
   const A = b.addBasicGate("input");
   const B = b.addBasicGate("input");
@@ -15,10 +15,11 @@ function buildANDGate() {
   b.connectGates(gate, out);
   A.setValue(true);
   B.setValue(true);
+  if (withWasm) b.buildTypedData();
   return { builder: b, A, B, out };
 }
 
-function buildNOTGate() {
+function buildNOTGate(withWasm = true) {
   const b = new CircuitBuilder();
   const A = b.addBasicGate("input");
   const gate = b.addBasicGate("not");
@@ -26,10 +27,11 @@ function buildNOTGate() {
   b.connectGates(A, gate);
   b.connectGates(gate, out);
   A.setValue(true);
+  if (withWasm) b.buildTypedData();
   return { builder: b, A, out };
 }
 
-function buildXORGate() {
+function buildXORGate(withWasm = true) {
   const b = new CircuitBuilder();
   const A = b.addBasicGate("input");
   const B = b.addBasicGate("input");
@@ -40,10 +42,11 @@ function buildXORGate() {
   b.connectGates(gate, out);
   A.setValue(true);
   B.setValue(false);
+  if (withWasm) b.buildTypedData();
   return { builder: b, A, B, out };
 }
 
-function buildHalfAdder() {
+function buildHalfAdder(withWasm = true) {
   const b = new CircuitBuilder();
   const A = b.addBasicGate("input");
   const B = b.addBasicGate("input");
@@ -59,10 +62,11 @@ function buildHalfAdder() {
   b.connectGates(B, and);
   b.connectGates(and, carry);
 
+  if (withWasm) b.buildTypedData();
   return { builder: b, A, B, sum, carry };
 }
 
-function buildFullAdder() {
+function buildFullAdder(withWasm = true) {
   const b = new CircuitBuilder();
   const A = b.addBasicGate("input");
   const B = b.addBasicGate("input");
@@ -91,10 +95,11 @@ function buildFullAdder() {
   b.connectGates(and2, or2);
   b.connectGates(or2, carry);
 
+  if (withWasm) b.buildTypedData();
   return { builder: b, A, B, C, sum, carry };
 }
 
-function buildSRLatch() {
+function buildSRLatch(withWasm = true) {
   const b = new CircuitBuilder();
   const S = b.addBasicGate("input");
   const R = b.addBasicGate("input");
@@ -114,10 +119,11 @@ function buildSRLatch() {
   b.connectGates(nand1, Q);
   b.connectGates(nand2, notQ);
 
+  if (withWasm) b.buildTypedData();
   return { builder: b, S, R, Q, notQ };
 }
 
-function buildDLatch() {
+function buildDLatch(withWasm = true) {
   const b = new CircuitBuilder();
   const D = b.addBasicGate("input");
   const E = b.addBasicGate("input");
@@ -141,6 +147,7 @@ function buildDLatch() {
   b.connectGates(nor1, Q);
   b.connectGates(nor2, notQ);
 
+  if (withWasm) b.buildTypedData();
   return { builder: b, D, E, Q, notQ };
 }
 
@@ -148,12 +155,12 @@ function buildDLatch() {
  * Builds a 4-bit ripple-carry adder from four full-adder stages.
  * Uses 20 logic gates + 8 inputs + 5 outputs = 33 gates, ~52 wires.
  */
-function buildRippleCarryAdder4Bit() {
+function buildRippleCarryAdder(bits, withWasm = true) {
   const b = new CircuitBuilder();
 
   const A = [];
   const B = [];
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < bits; i++) {
     A.push(b.addBasicGate("input"));
     B.push(b.addBasicGate("input"));
   }
@@ -162,7 +169,7 @@ function buildRippleCarryAdder4Bit() {
   const S = [];
   let prevCarry = Cin;
 
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < bits; i++) {
     const xor = b.addBasicGate("xor");
     const and1 = b.addBasicGate("and");
     const and2 = b.addBasicGate("and");
@@ -170,30 +177,30 @@ function buildRippleCarryAdder4Bit() {
     const or2 = b.addBasicGate("or");
     const sum = b.addBasicGate("output");
 
-    b.connectGates(A[i], xor);
-    b.connectGates(B[i], xor);
-    b.connectGates(prevCarry, xor);
-    b.connectGates(xor, sum);
+    b.connectGates(A[i], xor, null, null, false);
+    b.connectGates(B[i], xor, null, null, false);
+    b.connectGates(prevCarry, xor, null, null, false);
+    b.connectGates(xor, sum, null, null, false);
 
-    b.connectGates(A[i], and1);
-    b.connectGates(B[i], and1);
+    b.connectGates(A[i], and1, null, null, false);
+    b.connectGates(B[i], and1, null, null, false);
 
-    b.connectGates(A[i], or1);
-    b.connectGates(B[i], or1);
+    b.connectGates(A[i], or1, null, null, false);
+    b.connectGates(B[i], or1, null, null, false);
 
-    b.connectGates(and1, or2);
-    b.connectGates(or1, and2);
-    b.connectGates(prevCarry, and2);
-    b.connectGates(and2, or2);
+    b.connectGates(and1, or2, null, null, false);
+    b.connectGates(or1, and2, null, null, false);
+    b.connectGates(prevCarry, and2, null, null, false);
+    b.connectGates(and2, or2, null, null, false);
 
     S.push(sum);
 
-    // or2 is the carry-out for this stage; use a gate node as carry wire
     prevCarry = or2;
   }
 
   const Cout = b.addBasicGate("output");
-  b.connectGates(prevCarry, Cout);
+  b.connectGates(prevCarry, Cout, null, null, false);
+  if (withWasm) b.buildTypedData();
 
   return { builder: b, A, B, Cin, S, Cout };
 }
@@ -201,7 +208,7 @@ function buildRippleCarryAdder4Bit() {
 /**
  * Builds a wide fan-out circuit: one input driving N OR gates.
  */
-function buildWideFanout(width) {
+function buildWideFanout(width, withWasm = true) {
   const b = new CircuitBuilder();
   const src = b.addBasicGate("input");
   src.setValue(true);
@@ -209,9 +216,11 @@ function buildWideFanout(width) {
   for (let i = 0; i < width; i++) {
     const gate = b.addBasicGate("or");
     const out = b.addBasicGate("output");
-    b.connectGates(src, gate);
-    b.connectGates(gate, out);
+    b.connectGates(src, gate, null, null, false);
+    b.connectGates(gate, out, null, null, false);
   }
+
+  if (withWasm) b.buildTypedData();
 
   return { builder: b, src };
 }
@@ -219,7 +228,7 @@ function buildWideFanout(width) {
 /**
  * Builds a deep chain: input → NOT → NOT → ... → output (N stages).
  */
-function buildDeepChain(depth) {
+function buildDeepChain(depth, withWasm = true) {
   const b = new CircuitBuilder();
   const src = b.addBasicGate("input");
   src.setValue(true);
@@ -227,12 +236,14 @@ function buildDeepChain(depth) {
   let prev = src;
   for (let i = 0; i < depth; i++) {
     const not = b.addBasicGate("not");
-    b.connectGates(prev, not);
+    b.connectGates(prev, not, null, null, false);
     prev = not;
   }
 
   const out = b.addBasicGate("output");
-  b.connectGates(prev, out);
+  b.connectGates(prev, out, null, null, false);
+
+  if (withWasm) b.buildTypedData();
 
   return { builder: b, src, out };
 }
@@ -242,7 +253,7 @@ function buildDeepChain(depth) {
  *
  * Topology: 2 inputs → XOR (sum), AND (carry) → 2 outputs
  */
-function halfAdderCircuitData() {
+function halfAdderCircuitData(withWasm = true) {
   const inner = new CircuitBuilder();
   const A = inner.addBasicGate("input");
   const B = inner.addBasicGate("input");
@@ -259,6 +270,8 @@ function halfAdderCircuitData() {
   inner.connectGates(and, carry, null, null, false);
   inner.buildFanout();
 
+  if (withWasm) inner.buildTypedData();
+
   return {
     builder: inner,
     inputOrder: [A.id, B.id],
@@ -269,7 +282,7 @@ function halfAdderCircuitData() {
 /**
  * Creates circuit-data for a NOT gate (used to instantiate CompositeGate).
  */
-function notCircuitData() {
+function notCircuitData(withWasm = true) {
   const inner = new CircuitBuilder();
   const A = inner.addBasicGate("input");
   const not = inner.addBasicGate("not");
@@ -278,6 +291,8 @@ function notCircuitData() {
   inner.connectGates(A, not, null, null, false);
   inner.connectGates(not, Q, null, null, false);
   inner.buildFanout();
+
+  if (withWasm) inner.buildTypedData();
 
   return {
     builder: inner,
@@ -289,7 +304,7 @@ function notCircuitData() {
 /**
  * Builds an outer circuit containing a single composite half-adder gate.
  */
-function buildCompositeHalfAdder() {
+function buildCompositeHalfAdder(withWasm = true) {
   const b = new CircuitBuilder();
   const A = b.addBasicGate("input");
   const B = b.addBasicGate("input");
@@ -302,6 +317,8 @@ function buildCompositeHalfAdder() {
   b.connectGates(comp, sum, 0);
   b.connectGates(comp, carry, 1);
 
+  if (withWasm) b.buildTypedData();
+
   return { builder: b, A, B, sum, carry };
 }
 
@@ -309,11 +326,11 @@ function buildCompositeHalfAdder() {
  * Builds a 4-bit ripple-carry adder using composite half-adder blocks.
  * Each bit stage uses an OR gate to combine carries from two composite half-adders.
  */
-function buildCompositeRCA4() {
+function buildCompositeRCA(bits, withWasm = true) {
   const b = new CircuitBuilder();
   const A = [];
   const B = [];
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < bits; i++) {
     A.push(b.addBasicGate("input"));
     B.push(b.addBasicGate("input"));
   }
@@ -322,30 +339,28 @@ function buildCompositeRCA4() {
   const S = [];
   let prevCarry = Cin;
 
-  for (let i = 0; i < 4; i++) {
-    // First half-adder: A[i] + B[i]
-    const ha1 = b.addCompositeGate("ha", halfAdderCircuitData());
-    b.connectGates(A[i], ha1, null, 0);
-    b.connectGates(B[i], ha1, null, 1);
+  for (let i = 0; i < bits; i++) {
+    const ha1 = b.addCompositeGate("ha", halfAdderCircuitData(false));
+    b.connectGates(A[i], ha1, null, 0, false);
+    b.connectGates(B[i], ha1, null, 1, false);
 
-    // Second half-adder: ha1.sum + Cin
-    const ha2 = b.addCompositeGate("ha", halfAdderCircuitData());
-    b.connectGates(ha1, ha2, 0, 0);     // ha1 sum → ha2 input 0
-    b.connectGates(prevCarry, ha2, null, 1);
+    const ha2 = b.addCompositeGate("ha", halfAdderCircuitData(false));
+    b.connectGates(ha1, ha2, 0, 0, false);
+    b.connectGates(prevCarry, ha2, null, 1, false);
 
     const sum = b.addBasicGate("output");
-    b.connectGates(ha2, sum, 0);         // ha2 sum → output
+    b.connectGates(ha2, sum, 0, null, false);
     S.push(sum);
 
-    // Carry = ha1.carry OR ha2.carry
     const or = b.addBasicGate("or");
-    b.connectGates(ha1, or, 1);          // ha1 carry
-    b.connectGates(ha2, or, 1);          // ha2 carry
+    b.connectGates(ha1, or, 1, null, false);
+    b.connectGates(ha2, or, 1, null, false);
     prevCarry = or;
   }
 
   const Cout = b.addBasicGate("output");
-  b.connectGates(prevCarry, Cout);
+  b.connectGates(prevCarry, Cout, null, null, false);
+  if (withWasm) b.buildTypedData();
 
   return { builder: b, A, B, Cin, S, Cout };
 }
@@ -353,7 +368,7 @@ function buildCompositeRCA4() {
 /**
  * Builds a nested composite gate: double-NOT (identity).
  */
-function buildNestedComposite() {
+function buildNestedComposite(withWasm = true) {
   // Middle layer: two NOT composites chained
   const middle = new CircuitBuilder();
   const mA = middle.addBasicGate("input");
@@ -381,6 +396,8 @@ function buildNestedComposite() {
   b.connectGates(A, comp, null, 0);
   b.connectGates(comp, out, 0);
 
+  if (withWasm) b.buildTypedData();
+
   return { builder: b, A, out };
 }
 
@@ -393,7 +410,9 @@ const notCircuit = buildNOTGate();
 const xorCircuit = buildXORGate();
 const halfAdder = buildHalfAdder();
 const fullAdder = buildFullAdder();
-const rca4 = buildRippleCarryAdder4Bit();
+const rca4 = buildRippleCarryAdder(4);
+const rca16 = buildRippleCarryAdder(16);
+const rca32 = buildRippleCarryAdder(32);
 const srLatch = buildSRLatch();
 const dLatch = buildDLatch();
 const srLatchSettle = buildSRLatch();
@@ -401,25 +420,38 @@ const fullAdderSettle = buildFullAdder();
 const fan16 = buildWideFanout(16);
 const fan64 = buildWideFanout(64);
 const fan256 = buildWideFanout(256);
+const fan1024 = buildWideFanout(1024);
+const fan4096 = buildWideFanout(4096);
 const chain16 = buildDeepChain(16);
 const chain64 = buildDeepChain(64);
 const chain256 = buildDeepChain(256);
+const chain1024 = buildDeepChain(1024);
+const chain4096 = buildDeepChain(4096);
 const compositeHA = buildCompositeHalfAdder();
-const compositeRCA4 = buildCompositeRCA4();
+const compositeRCA4 = buildCompositeRCA(4);
 const nestedComp = buildNestedComposite();
 const compositeHASettle = buildCompositeHalfAdder();
 
 // Primitive gate evaluation
 group("Primitive Gate Evaluation", () => {
+  let andToggle = false;
   bench("AND gate", () => {
+    andToggle = !andToggle;
+    andCircuit.A.setValue(andToggle);
     andCircuit.builder.evaluate();
   });
 
+  let notToggle = false;
   bench("NOT gate", () => {
+    notToggle = !notToggle;
+    notCircuit.A.setValue(notToggle);
     notCircuit.builder.evaluate();
   });
 
+  let xorToggle = false;
   bench("XOR gate", () => {
+    xorToggle = !xorToggle;
+    xorCircuit.A.setValue(xorToggle);
     xorCircuit.builder.evaluate();
   });
 });
@@ -427,37 +459,58 @@ group("Primitive Gate Evaluation", () => {
 
 // Combinational circuit evaluation
 group("Combinational Circuit Evaluation", () => {
+  let haToggle = false;
+  bench("warmup", () => { let w = false; for (let i = 0; i < 1000; i++) { w = !w; halfAdder.A.setValue(w); halfAdder.B.setValue(false); halfAdder.builder.evaluate(); } });
+
   bench("Half Adder", () => {
-    halfAdder.A.setValue(true);
+    haToggle = !haToggle;
+    halfAdder.A.setValue(haToggle);
     halfAdder.B.setValue(false);
     halfAdder.builder.evaluate();
   });
 
+  let faToggle = false;
   bench("Full Adder", () => {
-    fullAdder.A.setValue(true);
+    faToggle = !faToggle;
+    fullAdder.A.setValue(faToggle);
     fullAdder.B.setValue(true);
     fullAdder.C.setValue(false);
     fullAdder.builder.evaluate();
   });
 
+  let rca4Toggle = false;
   bench("4-bit Ripple-Carry Adder", () => {
-    rca4.A[0].setValue(true);
+    rca4Toggle = !rca4Toggle;
+    rca4.A[0].setValue(rca4Toggle);
     rca4.A[1].setValue(false);
-    rca4.A[2].setValue(true);
-    rca4.A[3].setValue(true);
-    rca4.B[0].setValue(true);
-    rca4.B[1].setValue(true);
-    rca4.B[2].setValue(false);
-    rca4.B[3].setValue(false);
-    rca4.Cin.setValue(false);
     rca4.builder.evaluate();
+  });
+
+  let rca16Toggle = false;
+  bench("16-bit Ripple-Carry Adder", () => {
+    rca16Toggle = !rca16Toggle;
+    rca16.A[0].setValue(rca16Toggle);
+    rca16.A[15].setValue(false);
+    rca16.builder.evaluate();
+  });
+
+  let rca32Toggle = false;
+  bench("32-bit Ripple-Carry Adder", () => {
+    rca32Toggle = !rca32Toggle;
+    rca32.A[0].setValue(rca32Toggle);
+    rca32.A[31].setValue(false);
+    rca32.builder.evaluate();
   });
 });
 
 
 // Sequential circuit evaluation
 group("Sequential Circuit Evaluation", () => {
+  let srToggle = false;
   bench("SR Latch", () => {
+    srToggle = !srToggle;
+    srLatch.S.setValue(srToggle);
+    srLatch.R.setValue(!srToggle);
     srLatch.builder.evaluate();
   });
 
@@ -469,7 +522,11 @@ group("Sequential Circuit Evaluation", () => {
     srLatch.builder.evaluate();
   });
 
+  let dToggle = false;
   bench("D Latch", () => {
+    dToggle = !dToggle;
+    dLatch.E.setValue(true);
+    dLatch.D.setValue(dToggle);
     dLatch.builder.evaluate();
   });
 
@@ -496,65 +553,109 @@ group("Circuit Settling", () => {
 
 
 // Circuit construction (building from scratch each iteration)
-group("Circuit Construction", () => {
-  bench("build Half Adder", () => {
-    buildHalfAdder();
-  });
+group("Circuit Construction (JS only)", () => {
+  bench("build Half Adder (JS)", () => { buildHalfAdder(false); });
+  bench("build Full Adder (JS)", () => { buildFullAdder(false); });
+  bench("build SR Latch (JS)", () => { buildSRLatch(false); });
+  bench("build 4-bit RCA (JS)", () => { buildRippleCarryAdder(4, false); });
+  bench("build 32-bit RCA (JS)", () => { buildRippleCarryAdder(32, false); });
+});
 
-  bench("build Full Adder", () => {
-    buildFullAdder();
-  });
-
-  bench("build SR Latch", () => {
-    buildSRLatch();
-  });
-
-  bench("build 4-bit Ripple-Carry Adder", () => {
-    buildRippleCarryAdder4Bit();
-  });
+group("Circuit Construction (WASM + TypedData)", () => {
+  bench("build Half Adder (WASM)", () => { buildHalfAdder(true); });
+  bench("build Full Adder (WASM)", () => { buildFullAdder(true); });
+  bench("build SR Latch (WASM)", () => { buildSRLatch(true); });
+  bench("build 4-bit RCA (WASM)", () => { buildRippleCarryAdder(4, true); });
+  bench("build 32-bit RCA (WASM)", () => { buildRippleCarryAdder(32, true); });
 });
 
 
 // Scaling: fan-out and depth
 group("Scaling — Fan-out", () => {
+  let fan16Toggle = false;
   bench("16-wide fan-out evaluate", () => {
+    fan16Toggle = !fan16Toggle;
+    fan16.src.setValue(fan16Toggle);
     fan16.builder.evaluate();
   });
 
+  let fan64Toggle = false;
   bench("64-wide fan-out evaluate", () => {
+    fan64Toggle = !fan64Toggle;
+    fan64.src.setValue(fan64Toggle);
     fan64.builder.evaluate();
   });
 
+  let fan256Toggle = false;
   bench("256-wide fan-out evaluate", () => {
+    fan256Toggle = !fan256Toggle;
+    fan256.src.setValue(fan256Toggle);
     fan256.builder.evaluate();
+  });
+  let fan1024Toggle = false;
+  bench("1024-wide fan-out evaluate", () => {
+    fan1024Toggle = !fan1024Toggle;
+    fan1024.src.setValue(fan1024Toggle);
+    fan1024.builder.evaluate();
+  });
+  let fan4096Toggle = false;
+  bench("4096-wide fan-out evaluate", () => {
+    fan4096Toggle = !fan4096Toggle;
+    fan4096.src.setValue(fan4096Toggle);
+    fan4096.builder.evaluate();
   });
 });
 
 group("Scaling — Chain Depth", () => {
+  let chain16Toggle = false;
   bench("16-deep NOT chain evaluate", () => {
+    chain16Toggle = !chain16Toggle;
+    chain16.src.setValue(chain16Toggle);
     chain16.builder.evaluate();
   });
 
+  let chain64Toggle = false;
   bench("64-deep NOT chain evaluate", () => {
+    chain64Toggle = !chain64Toggle;
+    chain64.src.setValue(chain64Toggle);
     chain64.builder.evaluate();
   });
 
+  let chain256Toggle = false;
   bench("256-deep NOT chain evaluate", () => {
+    chain256Toggle = !chain256Toggle;
+    chain256.src.setValue(chain256Toggle);
     chain256.builder.evaluate();
+  });
+  let chain1024Toggle = false;
+  bench("1024-deep NOT chain evaluate", () => {
+    chain1024Toggle = !chain1024Toggle;
+    chain1024.src.setValue(chain1024Toggle);
+    chain1024.builder.evaluate();
+  });
+  let chain4096Toggle = false;
+  bench("4096-deep NOT chain evaluate", () => {
+    chain4096Toggle = !chain4096Toggle;
+    chain4096.src.setValue(chain4096Toggle);
+    chain4096.builder.evaluate();
   });
 });
 
 
 // Composite gate evaluation
 group("Composite Gate Evaluation", () => {
+  let compHAToggle = false;
   bench("Composite Half Adder", () => {
-    compositeHA.A.setValue(true);
+    compHAToggle = !compHAToggle;
+    compositeHA.A.setValue(compHAToggle);
     compositeHA.B.setValue(false);
     compositeHA.builder.evaluate();
   });
 
+  let compRCAToggle = false;
   bench("Composite 4-bit Ripple-Carry Adder", () => {
-    compositeRCA4.A[0].setValue(true);
+    compRCAToggle = !compRCAToggle;
+    compositeRCA4.A[0].setValue(compRCAToggle);
     compositeRCA4.A[1].setValue(false);
     compositeRCA4.A[2].setValue(true);
     compositeRCA4.A[3].setValue(true);
@@ -566,8 +667,10 @@ group("Composite Gate Evaluation", () => {
     compositeRCA4.builder.evaluate();
   });
 
+  let nestedToggle = false;
   bench("Nested Composite (double-NOT)", () => {
-    nestedComp.A.setValue(true);
+    nestedToggle = !nestedToggle;
+    nestedComp.A.setValue(nestedToggle);
     nestedComp.builder.evaluate();
   });
 });
@@ -582,18 +685,16 @@ group("Composite Gate Settling", () => {
 
 
 // Composite gate construction
-group("Composite Gate Construction", () => {
-  bench("build Composite Half Adder", () => {
-    buildCompositeHalfAdder();
-  });
+group("Composite Gate Construction (JS only)", () => {
+  bench("build Composite Half Adder (JS)", () => { buildCompositeHalfAdder(false); });
+  bench("build Composite 4-bit RCA (JS)", () => { buildCompositeRCA(4, false); });
+  bench("build Nested Composite (JS)", () => { buildNestedComposite(false); });
+});
 
-  bench("build Composite 4-bit RCA", () => {
-    buildCompositeRCA4();
-  });
-
-  bench("build Nested Composite", () => {
-    buildNestedComposite();
-  });
+group("Composite Gate Construction (WASM + TypedData)", () => {
+  bench("build Composite Half Adder (WASM)", () => { buildCompositeHalfAdder(true); });
+  bench("build Composite 4-bit RCA (WASM)", () => { buildCompositeRCA(4, true); });
+  bench("build Nested Composite (WASM)", () => { buildNestedComposite(true); });
 });
 
 

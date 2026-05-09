@@ -174,11 +174,11 @@ export class CompositeGate extends ConnectableGate {
     this.id = Logic.nextId++;
     this.type = "composite";
     this.inputs = inputs;
-    this.output = [];
-    this.tempOutput = [];
     this.circuitData = circuitData;
     this.inputOrder = circuitData.inputOrder;
     this.outputOrder = circuitData.outputOrder;
+    this.output = new Array(this.outputOrder.length).fill(false);
+    this.tempOutput = new Array(this.outputOrder.length).fill(false);
   }
 
   parseCircuitData() {

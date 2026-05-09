@@ -57,7 +57,7 @@ export function evaluateAll(circuit, seedAll = false) {
     if (!gate || gate.type === "input" || gate.type === "clock") continue;
 
     // Composite gates use an array of outputs whereas basic gates only have one possible output
-    const oldOutput = Array.isArray(gate.output) ? [...gate.output] : gate.output;
+    const oldOutput = gate.type === "composite" ? gate.output.slice() : gate.output;
     const result = gate.evaluate();
     if (!result.ok) {
       console.error(result.error);
@@ -69,7 +69,7 @@ export function evaluateAll(circuit, seedAll = false) {
     /**
      * Propagate changes to downstream gates only if output changes
      */
-    if (Array.isArray(newOutput)) {
+    if (gate.type === "composite") {
       if (!arraysEqual(newOutput, oldOutput)) {
         const connections = fanout[gate.id];
         if (connections !== undefined) {
@@ -142,7 +142,7 @@ export function evaluateOnce(ciruict) {
     for (const wire of wires) {
       if (wire.from.id !== gate.id) continue;
 
-      const signal = Array.isArray(gate.output)
+      const signal = gate.type === "composite"
         ? gate.output[wire.fromOutputIndex]
         : gate.output;
 
@@ -599,9 +599,10 @@ export function evaluateFlat(circuit, acc, typedArrays) {
     if (gate.type !== "composite") {
       gate.output = allOutputs[outputOffset[entry]] === 1;
     } else {
-      gate.output = entry.outputBoundary.map(
-        nodeIndex => allOutputs[outputOffset[nodeIndex]] === 1
-      );
+      const boundary = entry.outputBoundary;
+      for (let j = 0; j < boundary.length; j++) {
+        gate.output[j] = allOutputs[outputOffset[boundary[j]]] === 1;
+      }
     }
   }
 
@@ -743,7 +744,8 @@ export function evaluateWasm(circuit, acc, typedArrays) {
 
   // Run the core evaluation logic in WebAssembly
   if (wasmInstance && wasmInstance.exports.evaluateFlat) {
-    wasmInstance.exports.evaluateFlat();
+    const changed = wasmInstance.exports.evaluateFlat();
+    if (!changed) return; // Nothing changed — skip sync-back
   } else {
     console.error("WASM evaluateFlat not found");
     return;
@@ -760,9 +762,11 @@ export function evaluateWasm(circuit, acc, typedArrays) {
     // Handle composite gates
     if (acc.compositeGates) {
       for (let i = 0; i < acc.compositeGates.length; i++) {
-        acc.compositeGates[i].output = acc.compositeBoundaries[i].map(
-          nodeIndex => allOutputs[outputOffset[nodeIndex]] === 1
-        );
+        const boundary = acc.compositeBoundaries[i];
+        const outArray = acc.compositeGates[i].output;
+        for (let j = 0; j < boundary.length; j++) {
+          outArray[j] = allOutputs[outputOffset[boundary[j]]] === 1;
+        }
       }
     }
   } else {
@@ -770,9 +774,10 @@ export function evaluateWasm(circuit, acc, typedArrays) {
       if (gate.type !== "composite") {
         gate.output = allOutputs[outputOffset[entry]] === 1;
       } else {
-        gate.output = entry.outputBoundary.map(
-          nodeIndex => allOutputs[outputOffset[nodeIndex]] === 1
-        );
+        const boundary = entry.outputBoundary;
+        for (let j = 0; j < boundary.length; j++) {
+          gate.output[j] = allOutputs[outputOffset[boundary[j]]] === 1;
+        }
       }
     }
     for (const [wire, idx] of acc.wireMap.entries()) {
