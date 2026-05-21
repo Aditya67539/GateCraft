@@ -34,6 +34,10 @@ const sketch = (p) => {
     mouse.y = p.mouseY;
     const theme = getActiveTheme();
     p.background(theme.canvas.bg.hex);
+    if (state.gridDirty) {
+      gridBuffer = createGrid(WIDTH, HEIGHT, theme, GRID_OFFSET, GRID_SIZE, p);
+      state.gridDirty = false;
+    }
     p.image(gridBuffer, 0, 0);
     setFont(theme, p);
     for (let i = 0; i < renderNodes.length; i++) {
