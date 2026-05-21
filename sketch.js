@@ -1,11 +1,12 @@
 import { state } from "./state.js";
-import { drawGate, drawWaypoint, drawGhostWire, drawInputPorts, drawOutputPorts, drawWire, setFont } from "./render/draw.js";
+import { drawGate, drawWaypoint, drawGhostWire, drawInputPorts, drawOutputPorts, drawWire, setFont, createGrid } from "./render/draw.js";
 import { registerMouseHandlers, isNearWaypoint } from "./input/mouseHandlers.js";
 import { initToolbar } from "./ui/toolbar.js";
 import { getActiveTheme, applyTheme } from "./render/theme.js";
 import { CircuitBuilder } from "./logic/CircuitBuilder.js";
 import { nodeMap } from "./input/mouseHandlers.js";
 
+let gridBuffer;
 applyTheme(getActiveTheme());
 
 let mouse = { x: 0, y: 0 };
@@ -23,6 +24,9 @@ const sketch = (p) => {
     const cnv = p.createCanvas(WIDTH, HEIGHT);
     cnv.parent(canvasHost);
     initToolbar(p, circuit, renderNodes, wires);
+
+    const theme = getActiveTheme();    
+    gridBuffer = createGrid(WIDTH, HEIGHT, theme, GRID_OFFSET, GRID_SIZE, p);
   }
 
   p.draw = function () {
@@ -30,6 +34,7 @@ const sketch = (p) => {
     mouse.y = p.mouseY;
     const theme = getActiveTheme();
     p.background(theme.canvas.bg.hex);
+    p.image(gridBuffer, 0, 0);
     setFont(theme, p);
     for (let i = 0; i < renderNodes.length; i++) {
       drawGate(renderNodes[i], p);
