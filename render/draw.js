@@ -171,3 +171,31 @@ export function setFont(theme, p) {
     p.textFont(fontName);
   }
 }
+
+
+/**
+ * Creates and returns a grid texture using a p5.Graphics buffer. 
+ * 
+ * @param {number} width - Width of the grid buffer in pixels. 
+ * @param {number} height - Height of the grid buffer in pixels. 
+ * @param {Object} theme - Theme configuration object. 
+ * @param {number} offset - Starting offset for the grid buffer.
+ * @param {number} size - Distance between grid points. 
+ * @param {Object} p - The p5 instance used to create the graphics buffer. 
+ * @returns A p5.Graphics buffer containing the rendered grid. 
+ */
+export function createGrid(width, height, theme, offset, size, p) {
+  const buffer = p.createGraphics(width, height);
+
+  buffer.background(theme.canvas.bg.hex);
+  buffer.stroke(theme.canvas.grid.hex);
+  buffer.strokeWeight(3);
+
+  for (let i = offset; i < width; i += size) {
+    for (let j = offset; j < height; j += size) {
+      buffer.point(i, j);
+    }
+  }
+
+  return buffer;
+}
