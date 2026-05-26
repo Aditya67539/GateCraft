@@ -51,7 +51,7 @@ void init(
 }
 
 
-uint8_t evalauteGate(uint8_t type, uint8_t *inputs, uint8_t inputCount) {
+uint8_t evaluateGate(uint8_t type, uint8_t *inputs, uint8_t inputCount) {
     uint8_t output;
 
     switch (type)
@@ -173,7 +173,7 @@ int evaluateFlat() {
             }
 
             const uint8_t oldOutput = allOutputs[outputOffset[gateIndex]];
-            const uint8_t newOutput = evalauteGate(gateTypes[gateIndex], inputSignals, count);
+            const uint8_t newOutput = evaluateGate(gateTypes[gateIndex], inputSignals, count);
 
             allOutputs[outputOffset[gateIndex]] = newOutput;
 

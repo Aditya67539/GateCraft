@@ -115,9 +115,9 @@ function arraysEqual(a, b) {
  * 
  * @param {CircuitBuilder} circuit - The circuit instance containing the gates, wires, and fanout map 
  */
-export function evaluateOnce(ciruict) {
-  const wires = ciruict.wires;
-  const gates = ciruict.getGates();
+export function evaluateOnce(circuit) {
+  const wires = circuit.wires;
+  const gates = circuit.getGates();
   let changed = false;
   // Update signals from input and clock sources
   for (const wire of wires) {
@@ -138,7 +138,6 @@ export function evaluateOnce(ciruict) {
     }
     const newOutput = result.output;
     gate.output = newOutput;
-    let signal;
     for (const wire of wires) {
       if (wire.from.id !== gate.id) continue;
 
