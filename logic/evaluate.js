@@ -138,7 +138,6 @@ export function evaluateOnce(circuit) {
     }
     const newOutput = result.output;
     gate.output = newOutput;
-    let signal;
     for (const wire of wires) {
       if (wire.from.id !== gate.id) continue;
 
