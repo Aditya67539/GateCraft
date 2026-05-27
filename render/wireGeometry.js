@@ -55,7 +55,7 @@ export function computeWayPoints(renderNodes, wire, nodeMap) {
   return waypoints;
 }
 
-export function reComputeWayPoint(renderNodes, wireInfo, nodeMap) {
+export function recomputeWayPoint(renderNodes, wireInfo, nodeMap) {
   if (wireInfo.isCustomRouted) return;
   if (wireInfo.wire.to.type === "composite") return;
   let newWayPoints = computeWayPoints(renderNodes, wireInfo.wire, nodeMap);
