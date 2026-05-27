@@ -94,7 +94,7 @@ export function evaluateAll(circuit, seedAll = false) {
     }
 
     // Move to the next delta cycle
-    if (currentDelta.size == 0) {
+    if (currentDelta.size === 0) {
       [currentDelta, nextDelta] = [nextDelta, currentDelta];
       iterations += 1;
     }
