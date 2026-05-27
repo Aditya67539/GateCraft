@@ -1,7 +1,7 @@
 import { state } from "../state.js";
 import { Input } from "../logic/gates.js";
 import { CLOCK_TIMER, FREQUENCY } from "../constants.js";
-import { reComputeWayPoint, init_wire, getWirePorts, setCustomWaypoints } from "../render/wireGeometry.js";
+import { reComputeWayPoint, initWire, getWirePorts, setCustomWaypoints } from "../render/wireGeometry.js";
 
 function cleanupGhostWire() {
   if (state.ghostWireCleanup) {
@@ -40,8 +40,8 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
           let wire = circuit.connectGates(fromGate, toGate, outputIndex, inputIndex);
           if (wire === null) return;
           setNodeSize(wireConnection.toNode);
-          let wire_info = init_wire(renderNodes, wire, state.ghostWire, nodeMap);
-          wires.push(wire_info);
+          let wireInfo = initWire(renderNodes, wire, state.ghostWire, nodeMap);
+          wires.push(wireInfo);
           adjustWaypoints(renderNodes, wires, state.drawingWire.fromNode.gate.id);
           state.drawingWire = null;
           cleanupGhostWire();
@@ -136,10 +136,10 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
 
         reBuildNodeMap(renderNodes, nodeMap);
       } else {
-        const wire_info = getWireAtPoint(p.mouseX, p.mouseY, renderNodes, wires, nodeMap);
-        if (wire_info) {
-          circuit.removeWire(wire_info.wire);
-          const toGate = wire_info.wire.to;
+        const wireInfo = getWireAtPoint(p.mouseX, p.mouseY, renderNodes, wires, nodeMap);
+        if (wireInfo) {
+          circuit.removeWire(wireInfo.wire);
+          const toGate = wireInfo.wire.to;
 
           // Resize the destination node to reflect the reduced input count
           const toRenderNode = renderNodes.find(n => n.gate.id === toGate.id);
@@ -152,7 +152,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
             }
           }
 
-          wires.splice(wires.indexOf(wire_info), 1);
+          wires.splice(wires.indexOf(wireInfo), 1);
         }
       }
     }
@@ -279,18 +279,18 @@ function isOnWireSegment(A, B, O, threshold) {
 }
 
 function getWireAtPoint(mx, my, renderNodes, wires, nodeMap) {
-  for (const wire_info of wires) {
-    const port = getWirePorts(renderNodes, wire_info.wire, nodeMap);
+  for (const wireInfo of wires) {
+    const port = getWirePorts(renderNodes, wireInfo.wire, nodeMap);
     const points = [];
     points.push(port.start);
-    for (const waypoint of wire_info.waypoints) {
+    for (const waypoint of wireInfo.waypoints) {
       points.push(waypoint);
     }
     points.push(port.end);
 
     for (let i = 0; i < points.length - 1; i++) {
       if (isOnWireSegment(points[i], points[i + 1], { x: mx, y: my }, 15)) {
-        return wire_info;
+        return wireInfo;
       }
     }
   }
