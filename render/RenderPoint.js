@@ -174,7 +174,7 @@ export function setNodeSize(node) {
   node.height = height;
 }
 
-export function reBuildNodeMap(renderNodes, nodeMap) {
+export function rebuildNodeMap(renderNodes, nodeMap) {
   nodeMap.clear();
 
   for (const node of renderNodes) {
