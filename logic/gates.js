@@ -1,5 +1,6 @@
 import { Wire } from "./wire.js";
 import { evaluateAll } from "./evaluate.js";
+import { GATE_DEFS } from "../constants.js";
 
 /**
  * Base class for generating unique gate IDs. 
@@ -12,6 +13,8 @@ export class Input {
   constructor(value) {
     this.id = Logic.nextId++;
     this.type = "input";
+    this.outputCount = GATE_DEFS[this.type].outputs;
+    this.inputCount = GATE_DEFS[this.type].inputs;
     this.output = value;
   }
 
@@ -77,7 +80,9 @@ export class Output extends ConnectableGate {
     super();
     this.id = Logic.nextId++;
     this.type = "output";
-    this.inputs = [];
+    this.inputCount = GATE_DEFS[this.type].inputs;
+    this.outputCount = GATE_DEFS[this.type].outputs;
+    this.inputs = new Array(this.inputCount).fill(undefined);
     this.output = false;
     this.tempOutput = false;
   }
@@ -99,7 +104,10 @@ export class Gate extends ConnectableGate {
     super();
     this.id = Logic.nextId++;
     this.type = type.toLowerCase();
-    this.inputs = inputs;
+    this.inputCount = GATE_DEFS[this.type].inputs;
+    this.outputCount = GATE_DEFS[this.type].outputs;
+    this.inputs = new Array(this.inputCount).fill(undefined);
+    // this.inputs = inputs;
     this.output = false;
     this.tempOutput = false;
   }
