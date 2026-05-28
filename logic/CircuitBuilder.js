@@ -114,20 +114,7 @@ export class CircuitBuilder {
    * @param {number} removedIndex - Index of the input to remove
    */
   disconnectWires(toGate, removedIndex) {
-    if (toGate.type === "composite") {
-      // Composite gates have fixed-size input arrays; just clear the slot
-      toGate.inputs[removedIndex] = undefined;
-    } else {
-      // Basic gates & output: splice the input out by its index
-      toGate.inputs.splice(removedIndex, 1);
-
-      // Update toInputIndex on all remaining wires whose index shifted
-      for (const w of this.wires) {
-        if (w.to.id === toGate.id && w.toInputIndex > removedIndex) {
-          w.toInputIndex--;
-        }
-      }
-    }
+    toGate.inputs[removedIndex] = undefined;
   }
 
   /**
