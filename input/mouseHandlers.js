@@ -37,7 +37,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
           }
           const fromGate = state.drawingWire.fromNode.gate;
           const toGate = wireConnection.toNode.gate;
-          let wire = circuit.connectGates(fromGate, toGate, outputIndex, inputIndex);
+          let wire = circuit.connectGates(fromGate, toGate, inputIndex, outputIndex);
           if (wire === null) return;
           setNodeSize(wireConnection.toNode);
           let wireInfo = initWire(renderNodes, wire, state.ghostWire, nodeMap);

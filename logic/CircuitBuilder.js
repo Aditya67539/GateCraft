@@ -94,7 +94,7 @@ export class CircuitBuilder {
    * @param {?Boolean} settle - Settles the circuit if true
    * @returns {Wire} The instantiated wire object
    */
-  connectGates(fromGate, toGate, fromOutputIndex = null, toInputIndex = null, settle = true) {
+  connectGates(fromGate, toGate, toInputIndex, fromOutputIndex = null, settle = true) {
     const result = toGate.connect(fromGate, toInputIndex, fromOutputIndex);
     if (!result.ok) {
       console.error(result.error);
