@@ -89,8 +89,8 @@ export class CircuitBuilder {
    * 
    * @param {Gate} fromGate - Source gate
    * @param {Gate} toGate - Destination gate
+   * @param {number} toInputIndex - Input index of destination gate
    * @param {?number} fromOutputIndex - Output index of source gate (if multi-output)
-   * @param {?number} toInputIndex - Input index of destination gate
    * @param {?Boolean} settle - Settles the circuit if true
    * @returns {Wire} The instantiated wire object
    */
