@@ -1,4 +1,4 @@
-import { run, bench, group } from "mitata";
+import { run, bench, group, flags } from "mitata";
 import { writeFileSync } from "node:fs";
 import { CircuitBuilder } from "../../logic/CircuitBuilder.js";
 
@@ -10,9 +10,9 @@ function buildANDGate(withWasm = true) {
   const B = b.addBasicGate("input");
   const gate = b.addBasicGate("and");
   const out = b.addBasicGate("output");
-  b.connectGates(A, gate, 0);
-  b.connectGates(B, gate, 1);
-  b.connectGates(gate, out, 0);
+  b.connectGates(A, gate, 0, null, false);
+  b.connectGates(B, gate, 1, null, false);
+  b.connectGates(gate, out, 0, null, false);
   A.setValue(true);
   B.setValue(true);
   if (withWasm) b.buildTypedData();
@@ -24,8 +24,8 @@ function buildNOTGate(withWasm = true) {
   const A = b.addBasicGate("input");
   const gate = b.addBasicGate("not");
   const out = b.addBasicGate("output");
-  b.connectGates(A, gate, 0);
-  b.connectGates(gate, out, 0);
+  b.connectGates(A, gate, 0, null, false);
+  b.connectGates(gate, out, 0, null, false);
   A.setValue(true);
   if (withWasm) b.buildTypedData();
   return { builder: b, A, out };
@@ -37,9 +37,9 @@ function buildXORGate(withWasm = true) {
   const B = b.addBasicGate("input");
   const gate = b.addBasicGate("xor");
   const out = b.addBasicGate("output");
-  b.connectGates(A, gate, 0);
-  b.connectGates(B, gate, 1);
-  b.connectGates(gate, out, 0);
+  b.connectGates(A, gate, 0, null, false);
+  b.connectGates(B, gate, 1, null, false);
+  b.connectGates(gate, out, 0, null, false);
   A.setValue(true);
   B.setValue(false);
   if (withWasm) b.buildTypedData();
@@ -55,12 +55,12 @@ function buildHalfAdder(withWasm = true) {
   const sum = b.addBasicGate("output");
   const carry = b.addBasicGate("output");
 
-  b.connectGates(A, xor, 0);
-  b.connectGates(B, xor, 1);
-  b.connectGates(xor, sum, 0);
-  b.connectGates(A, and, 0);
-  b.connectGates(B, and, 1);
-  b.connectGates(and, carry, 0);
+  b.connectGates(A, xor, 0, null, false);
+  b.connectGates(B, xor, 1, null, false);
+  b.connectGates(xor, sum, 0, null, false);
+  b.connectGates(A, and, 0, null, false);
+  b.connectGates(B, and, 1, null, false);
+  b.connectGates(and, carry, 0, null, false);
 
   if (withWasm) b.buildTypedData();
   return { builder: b, A, B, sum, carry };
@@ -82,20 +82,20 @@ function buildFullAdder(withWasm = true) {
   const sum = b.addBasicGate("output");
   const carry = b.addBasicGate("output");
 
-  b.connectGates(A, xor1, 0);
-  b.connectGates(B, xor1, 1);
-  b.connectGates(xor1, xor2, 0);
-  b.connectGates(C, xor2, 1);
-  b.connectGates(xor2, sum, 0);
-  b.connectGates(A, and1, 0);
-  b.connectGates(B, and1, 1);
-  b.connectGates(A, or1, 0);
-  b.connectGates(B, or1, 1);
-  b.connectGates(and1, or2, 0);
-  b.connectGates(or1, and2, 0);
-  b.connectGates(C, and2, 1);
-  b.connectGates(and2, or2, 1);
-  b.connectGates(or2, carry, 0);
+  b.connectGates(A, xor1, 0, null, false);
+  b.connectGates(B, xor1, 1, null, false);
+  b.connectGates(xor1, xor2, 0, null, false);
+  b.connectGates(C, xor2, 1, null, false);
+  b.connectGates(xor2, sum, 0, null, false);
+  b.connectGates(A, and1, 0, null, false);
+  b.connectGates(B, and1, 1, null, false);
+  b.connectGates(A, or1, 0, null, false);
+  b.connectGates(B, or1, 1, null, false);
+  b.connectGates(and1, or2, 0, null, false);
+  b.connectGates(or1, and2, 0, null, false);
+  b.connectGates(C, and2, 1, null, false);
+  b.connectGates(and2, or2, 1, null, false);
+  b.connectGates(or2, carry, 0, null, false);
 
   if (withWasm) b.buildTypedData();
   return { builder: b, A, B, C, sum, carry };
@@ -112,14 +112,14 @@ function buildSRLatch(withWasm = true) {
   const Q = b.addBasicGate("output");
   const notQ = b.addBasicGate("output");
 
-  b.connectGates(S, notS, 0);
-  b.connectGates(R, notR, 0);
-  b.connectGates(notS, nand1, 0);
-  b.connectGates(notR, nand2, 0);
-  b.connectGates(nand1, nand2, 1);
-  b.connectGates(nand2, nand1, 1);
-  b.connectGates(nand1, Q, 0);
-  b.connectGates(nand2, notQ, 0);
+  b.connectGates(S, notS, 0, null, false);
+  b.connectGates(R, notR, 0, null, false);
+  b.connectGates(notS, nand1, 0, null, false);
+  b.connectGates(notR, nand2, 0, null, false);
+  b.connectGates(nand1, nand2, 1, null, false);
+  b.connectGates(nand2, nand1, 1, null, false);
+  b.connectGates(nand1, Q, 0, null, false);
+  b.connectGates(nand2, notQ, 0, null, false);
 
   if (withWasm) b.buildTypedData();
   return { builder: b, S, R, Q, notQ };
@@ -137,17 +137,17 @@ function buildDLatch(withWasm = true) {
   const Q = b.addBasicGate("output");
   const notQ = b.addBasicGate("output");
 
-  b.connectGates(D, notD, 0);
-  b.connectGates(notD, and1, 0);
-  b.connectGates(E, and1, 1);
-  b.connectGates(E, and2, 0);
-  b.connectGates(D, and2, 1);
-  b.connectGates(and1, nor1, 0);
-  b.connectGates(nor2, nor1, 1);
-  b.connectGates(nor1, nor2, 0);
-  b.connectGates(and2, nor2, 1);
-  b.connectGates(nor1, Q, 0);
-  b.connectGates(nor2, notQ, 0);
+  b.connectGates(D, notD, 0, null, false);
+  b.connectGates(notD, and1, 0, null, false);
+  b.connectGates(E, and1, 1, null, false);
+  b.connectGates(E, and2, 0, null, false);
+  b.connectGates(D, and2, 1, null, false);
+  b.connectGates(and1, nor1, 0, null, false);
+  b.connectGates(nor2, nor1, 1, null, false);
+  b.connectGates(nor1, nor2, 0, null, false);
+  b.connectGates(and2, nor2, 1, null, false);
+  b.connectGates(nor1, Q, 0, null, false);
+  b.connectGates(nor2, notQ, 0, null, false);
 
   if (withWasm) b.buildTypedData();
   return { builder: b, D, E, Q, notQ };
@@ -316,10 +316,10 @@ function buildCompositeHalfAdder(withWasm = true) {
   const sum = b.addBasicGate("output");
   const carry = b.addBasicGate("output");
 
-  b.connectGates(A, comp, 0);
-  b.connectGates(B, comp, 1);
-  b.connectGates(comp, sum, 0, 0);
-  b.connectGates(comp, carry, 0, 1);
+  b.connectGates(A, comp, 0, null, false);
+  b.connectGates(B, comp, 1, null, false);
+  b.connectGates(comp, sum, 0, 0, false);
+  b.connectGates(comp, carry, 0, 1, false);
 
   if (withWasm) b.buildTypedData();
 
@@ -397,8 +397,8 @@ function buildNestedComposite(withWasm = true) {
   const comp = b.addCompositeGate("double-not", doubleNotData);
   const out = b.addBasicGate("output");
 
-  b.connectGates(A, comp, 0);
-  b.connectGates(comp, out, 0, 0);
+  b.connectGates(A, comp, 0, null, false);
+  b.connectGates(comp, out, 0, 0, false);
 
   if (withWasm) b.buildTypedData();
 
