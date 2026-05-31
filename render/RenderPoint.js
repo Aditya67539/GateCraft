@@ -164,13 +164,6 @@ function computeSize(gate) {
   return { width, height };
 }
 
-export function setNodeSize(node) {
-  if (node.gate.type === "input" || node.gate.type === "output") return;
-  const { width, height } = computeSize(node.gate);
-  node.width = width;
-  node.height = height;
-}
-
 export function rebuildNodeMap(renderNodes, nodeMap) {
   nodeMap.clear();
 

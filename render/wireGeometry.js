@@ -55,14 +55,6 @@ export function computeWayPoints(renderNodes, wire, nodeMap) {
   return waypoints;
 }
 
-export function recomputeWayPoint(renderNodes, wireInfo, nodeMap) {
-  if (wireInfo.isCustomRouted) return;
-  if (wireInfo.wire.to.type === "composite") return;
-  let newWayPoints = computeWayPoints(renderNodes, wireInfo.wire, nodeMap);
-  const waypointCount = newWayPoints.length;
-  wireInfo.waypoints[waypointCount - 1].y = newWayPoints[waypointCount - 1].y;
-}
-
 export function setCustomWaypoints(p) {
   let waypoints = [];
   function onKeyDown(e) {

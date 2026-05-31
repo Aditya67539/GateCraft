@@ -1,7 +1,8 @@
 import { state } from "../state.js";
 import { Input } from "../logic/gates.js";
 import { CLOCK_TIMER, FREQUENCY } from "../constants.js";
-import { recomputeWayPoint, initWire, getWirePorts, setCustomWaypoints } from "../render/wireGeometry.js";
+import { initWire, getWirePorts, setCustomWaypoints } from "../render/wireGeometry.js";
+import { rebuildNodeMap } from "../render/RenderPoint.js";
 
 function cleanupGhostWire() {
   if (state.ghostWireCleanup) {
@@ -10,8 +11,6 @@ function cleanupGhostWire() {
   }
   state.ghostWire = null;
 }
-
-import { rebuildNodeMap, setNodeSize } from "../render/RenderPoint.js";
 
 export const nodeMap = new Map();
 
@@ -43,16 +42,11 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
             return;
           };
           let wire = result.wire;
-          setNodeSize(wireConnection.toNode);
           let wireInfo = initWire(renderNodes, wire, state.ghostWire, nodeMap);
           wires.push(wireInfo);
-          adjustWaypoints(renderNodes, wires, state.drawingWire.fromNode.gate.id);
-          state.drawingWire = null;
-          cleanupGhostWire();
-        } else {
-          state.drawingWire = null;
-          cleanupGhostWire();
         }
+        state.drawingWire = null;
+        cleanupGhostWire();
       } else {
         state.drawingWire = findNearOutputPort(p.mouseX, p.mouseY, p, renderNodes);
         state.changingWayPoint = findNearWaypoint(p.mouseX, p.mouseY, p, wires);
@@ -133,9 +127,6 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
         const toRemove = wires.filter(n => n.wire.from.id === state.dragging.gate.id || n.wire.to.id === state.dragging.gate.id);
         toRemove.forEach(w => wires.splice(wires.indexOf(w), 1));
 
-        for (let i = 0; i < renderNodes.length; i++) setNodeSize(renderNodes[i]);
-        adjustWaypoints(renderNodes, wires, state.dragging.gate.id);
-        // Mutate arrays in-place so sketch.js references stay valid
         state.dragging = null;
 
         rebuildNodeMap(renderNodes, nodeMap);
@@ -143,19 +134,6 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
         const wireInfo = getWireAtPoint(p.mouseX, p.mouseY, renderNodes, wires, nodeMap);
         if (wireInfo) {
           circuit.removeWire(wireInfo.wire);
-          const toGate = wireInfo.wire.to;
-
-          // Resize the destination node to reflect the reduced input count
-          const toRenderNode = renderNodes.find(n => n.gate.id === toGate.id);
-          if (toRenderNode) setNodeSize(toRenderNode);
-
-          // Re-compute waypoints for all remaining wires going into this gate
-          for (const w of wires) {
-            if (w.wire.to.id === toGate.id) {
-              recomputeWayPoint(renderNodes, w, nodeMap);
-            }
-          }
-
           wires.splice(wires.indexOf(wireInfo), 1);
         }
       }
@@ -322,21 +300,6 @@ function findNearWaypoint(mx, my, p, wires) {
     }
   }
   return null;
-}
-
-function adjustWaypoints(renderNodes, wires, fromGateId) {
-  for (let i = 0; i < wires.length; i++) {
-    if (wires[i].wire.from.id === fromGateId) {
-      const toGate = wires[i].wire.to.id;
-      // Only re-compute waypoints for gates which are connected to toGate
-      for (let j = 0; j < wires.length; j++) {
-        if (wires[j].wire.to.id === toGate) {
-          recomputeWayPoint(renderNodes, wires[j], nodeMap);
-        }
-      }
-      break;
-    }
-  }
 }
 
 /**
