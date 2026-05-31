@@ -92,19 +92,19 @@ export class CircuitBuilder {
    * @param {number} toInputIndex - Input index of destination gate
    * @param {?number} fromOutputIndex - Output index of source gate (if multi-output)
    * @param {?Boolean} settle - Settles the circuit if true
-   * @returns {Wire} The instantiated wire object
+   * @returns {{ok: boolean, wire?: Wire, error?: string}} 
+   * Result object containing the connection status and the instantiated wire
+   * when the connection succeeds. 
    */
   connectGates(fromGate, toGate, toInputIndex, fromOutputIndex = null, settle = true) {
     const result = toGate.connect(fromGate, toInputIndex, fromOutputIndex);
     if (!result.ok) {
-      console.error(result.error);
-      return null;
+      return result;
     }
-    const newWire = result.wire;
-    this.wires.push(newWire);
+    this.wires.push(result.wire);
     this.dirty = true;
     if (settle) this.settle();
-    return newWire;
+    return result;
   }
 
   /**
