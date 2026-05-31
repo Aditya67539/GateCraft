@@ -87,8 +87,11 @@ describe("disconnectWires", () => {
 
     builder.connectGates(A, gate1, 0);
     builder.connectGates(B, gate1, 1);
-    const wireA2 = builder.connectGates(A, gate2, 0);
-    const wireB2 = builder.connectGates(B, gate2, 1);
+    const resultA2 = builder.connectGates(A, gate2, 0);
+    const resultB2 = builder.connectGates(B, gate2, 1);
+
+    const wireA2 = resultA2.wire;
+    const wireB2 = resultB2.wire;
 
     // Disconnect gate1's index 0
     builder.disconnectWires(gate1, 0);
@@ -116,7 +119,9 @@ describe("disconnectWires", () => {
 
     // Reconnect a new input to slot 0
     const C = builder.addBasicGate("input");
-    const wireC = builder.connectGates(C, gate, 0);
+    const resultC = builder.connectGates(C, gate, 0);
+
+    const wireC = resultC.wire;
 
     expect(gate.inputs[0]).toBeDefined();
     expect(gate.inputs[0].from).toBe(C);
@@ -134,8 +139,11 @@ describe("removeWire", () => {
     const gate = builder.addBasicGate("not");
     const out = builder.addBasicGate("output");
 
-    const wireAG = builder.connectGates(A, gate, 0);
-    const wireGO = builder.connectGates(gate, out, 0);
+    const resultAG = builder.connectGates(A, gate, 0);
+    const resultGO = builder.connectGates(gate, out, 0);
+
+    const wireAG = resultAG.wire;
+    const wireGO = resultGO.wire;
 
     expect(builder.wires.length).toBe(2);
 
@@ -153,7 +161,8 @@ describe("removeWire", () => {
     const B = builder.addBasicGate("input");
     const gate = builder.addBasicGate("and");
 
-    const wireA = builder.connectGates(A, gate, 0);
+    const resultA = builder.connectGates(A, gate, 0);
+    const wireA = resultA.wire;
     builder.connectGates(B, gate, 1);
 
     builder.removeWire(wireA);
@@ -173,8 +182,10 @@ describe("removeWire", () => {
     const gate = builder.addBasicGate("and");
     const out = builder.addBasicGate("output");
 
-    const wireA = builder.connectGates(A, gate, 0);
-    const wireB = builder.connectGates(B, gate, 1);
+    const resultA = builder.connectGates(A, gate, 0);
+    const resultB = builder.connectGates(B, gate, 1);
+    const wireA = resultA.wire;
+    const wireB = resultB.wire;
     builder.connectGates(gate, out, 0);
 
     builder.removeWire(wireA);
@@ -189,7 +200,8 @@ describe("removeWire", () => {
     const A = builder.addBasicGate("input");
     const gate = builder.addBasicGate("not");
 
-    const wire = builder.connectGates(A, gate, 0);
+    const result = builder.connectGates(A, gate, 0);
+    const wire = result.wire;
 
     builder.dirty = false;
     builder.removeWire(wire);
@@ -203,7 +215,8 @@ describe("removeWire", () => {
     const A = builder.addBasicGate("input");
     const out = builder.addBasicGate("output");
 
-    const wire = builder.connectGates(A, out, 0);
+    const result = builder.connectGates(A, out, 0);
+    const wire = result.wire;
 
     builder.removeWire(wire);
 
@@ -218,7 +231,8 @@ describe("removeWire", () => {
     const B = builder.addBasicGate("input");
     const gate = builder.addBasicGate("not");
 
-    const wireA = builder.connectGates(A, gate, 0);
+    const resultA = builder.connectGates(A, gate, 0);
+    const wireA = resultA.wire;
 
     builder.removeWire(wireA);
     expect(gate.inputs[0]).toBeUndefined();
@@ -408,7 +422,8 @@ describe("removeGate", () => {
     const gate = builder.addBasicGate("and");
     const out = builder.addBasicGate("output");
 
-    const wireA = builder.connectGates(A, gate, 0);
+    const resultA = builder.connectGates(A, gate, 0);
+    const wireA = resultA.wire;
     builder.connectGates(B, gate, 1);
     builder.connectGates(gate, out, 0);
 
@@ -455,7 +470,8 @@ describe("connectGates", () => {
     const A = builder.addBasicGate("input");
     const gate = builder.addBasicGate("not");
 
-    const wire = builder.connectGates(A, gate, 0);
+    const result = builder.connectGates(A, gate, 0);
+    const wire = result.wire;
 
     expect(wire).not.toBeNull();
     expect(builder.wires.length).toBe(1);
@@ -468,7 +484,8 @@ describe("connectGates", () => {
     const A = builder.addBasicGate("input");
     const gate = builder.addBasicGate("not");
 
-    const wire = builder.connectGates(A, gate, 0);
+    const result = builder.connectGates(A, gate, 0);
+    const wire = result.wire;
 
     expect(wire.from).toBe(A);
     expect(wire.to).toBe(gate);
@@ -497,7 +514,8 @@ describe("connectGates", () => {
     const gate = builder.addBasicGate("not");
 
     A.setValue(true);
-    const wire = builder.connectGates(A, gate, 0);
+    const result = builder.connectGates(A, gate, 0);
+    const wire = result.wire;
 
     expect(wire.signal).toBe(true);
   });
@@ -520,9 +538,9 @@ describe("connectGates", () => {
     const A = builder.addBasicGate("input");
     const gate = builder.addBasicGate("not");
 
-    const wire = builder.connectGates(A, gate, null);
+    const result = builder.connectGates(A, gate, null);
 
-    expect(wire).toBeNull();
+    expect(result.ok).toBe(false);
     expect(builder.wires.length).toBe(0);
   });
 
@@ -534,9 +552,9 @@ describe("connectGates", () => {
     const gate = builder.addBasicGate("not");
 
     builder.connectGates(A, gate, 0);
-    const duplicate = builder.connectGates(B, gate, 0);
+    const duplicateResult = builder.connectGates(B, gate, 0);
 
-    expect(duplicate).toBeNull();
+    expect(duplicateResult.ok).toBe(false);
     // Only the first wire should exist
     expect(builder.wires.length).toBe(1);
     expect(gate.inputs[0].from).toBe(A);
@@ -549,8 +567,11 @@ describe("connectGates", () => {
     const B = builder.addBasicGate("input");
     const gate = builder.addBasicGate("and");
 
-    const wireA = builder.connectGates(A, gate, 0);
-    const wireB = builder.connectGates(B, gate, 1);
+    const resultA = builder.connectGates(A, gate, 0);
+    const resultB = builder.connectGates(B, gate, 1);
+
+    const wireA = resultA.wire;
+    const wireB = resultB.wire;
 
     expect(wireA).not.toBeNull();
     expect(wireB).not.toBeNull();
@@ -566,8 +587,11 @@ describe("connectGates", () => {
     const out1 = builder.addBasicGate("output");
     const out2 = builder.addBasicGate("output");
 
-    const wire1 = builder.connectGates(A, out1, 0);
-    const wire2 = builder.connectGates(A, out2, 0);
+    const result1 = builder.connectGates(A, out1, 0);
+    const result2 = builder.connectGates(A, out2, 0);
+
+    const wire1 = result1.wire;
+    const wire2 = result2.wire;
 
     expect(wire1).not.toBeNull();
     expect(wire2).not.toBeNull();
@@ -624,7 +648,8 @@ describe("connectGates", () => {
     const out = builder.addBasicGate("output");
 
     // Connect composite output 0 to out input 0
-    const wire = builder.connectGates(composite, out, 0, 0);
+    const result = builder.connectGates(composite, out, 0, 0);
+    const wire = result.wire;
 
     expect(wire).not.toBeNull();
     expect(wire.fromOutputIndex).toBe(0);
