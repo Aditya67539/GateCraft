@@ -51,29 +51,6 @@ class ConnectableGate {
     return { ok: true, wire };
   }
 
-  /**
-   * Determines whether all input connections for the gate are properly connected.
-   *
-   * This method accounts for two types of gate input representations:
-   *
-   * - **Basic gates**:
-   *   - The `inputs` array is dynamic (grows as connections are added).
-   *   - If no inputs are connected, the array is empty (`length === 0`).
-   *
-   * - **Composite gates**:
-   *   - The `inputs` array has a fixed length.
-   *   - Unconnected inputs are represented as "undefined".
-   *
-   * A gate is considered "fully connected" if:
-   * - The `inputs` array does not contain any undefined values, AND
-   * - The `inputs` array contains at least one element
-   *
-   * @returns {boolean} Returns `true` if all inputs are connected, otherwise `false`.
-   */
-  hasAllInputsConnected() {
-    return this.inputs.length > 0 && this.inputs.every(n => n !== undefined);
-  }
-
   hasNoInputsConnected() {
     return this.inputs.length > 0 && this.inputs.every(n => n === undefined);
   }
