@@ -23,12 +23,12 @@ function halfAdderCircuitData() {
   const sum = inner.addBasicGate("output");
   const carry = inner.addBasicGate("output");
 
-  inner.connectGates(A, xor);
-  inner.connectGates(B, xor);
-  inner.connectGates(xor, sum);
-  inner.connectGates(A, and);
-  inner.connectGates(B, and);
-  inner.connectGates(and, carry);
+  inner.connectGates(A, xor, 0);
+  inner.connectGates(B, xor, 1);
+  inner.connectGates(xor, sum, 0);
+  inner.connectGates(A, and, 0);
+  inner.connectGates(B, and, 1);
+  inner.connectGates(and, carry, 0);
 
   inner.buildFanout();
 
@@ -55,8 +55,8 @@ function notGateCircuitData() {
   const not = inner.addBasicGate("not");
   const Q = inner.addBasicGate("output");
 
-  inner.connectGates(A, not, null, null, false);
-  inner.connectGates(not, Q, null, null, false);
+  inner.connectGates(A, not, 0, null, false);
+  inner.connectGates(not, Q, 0, null, false);
 
   inner.buildFanout();
 
@@ -82,12 +82,12 @@ describe("Composite Gate – Half Adder", () => {
     const carryOut = outer.addBasicGate("output");
 
     // Connect outer inputs → composite gate (fixed-index inputs)
-    outer.connectGates(A, halfAdder, null, 0);
-    outer.connectGates(B, halfAdder, null, 1);
+    outer.connectGates(A, halfAdder, 0);
+    outer.connectGates(B, halfAdder, 1);
 
     // Connect composite gate outputs → outer outputs (fromOutputIndex)
-    outer.connectGates(halfAdder, sumOut, 0);
-    outer.connectGates(halfAdder, carryOut, 1);
+    outer.connectGates(halfAdder, sumOut, 0, 0);
+    outer.connectGates(halfAdder, carryOut, 0, 1);
 
     const testCases = [
       //  A      B     Sum    Carry
@@ -117,8 +117,8 @@ describe("Composite Gate – NOT wrapper", () => {
     const notGate = outer.addCompositeGate("not-wrapper", notGateCircuitData());
     const out = outer.addBasicGate("output");
 
-    outer.connectGates(A, notGate, null, 0);
-    outer.connectGates(notGate, out, 0);
+    outer.connectGates(A, notGate, 0);
+    outer.connectGates(notGate, out, 0, 0);
 
     const testCases = [
       [false, true],
@@ -130,23 +130,6 @@ describe("Composite Gate – NOT wrapper", () => {
       outer.evaluate();
       expect(out.output).toBe(expected);
     }
-  });
-});
-
-describe("Composite Gate – Unconnected Inputs", () => {
-  it("returns an error when not all inputs are connected", () => {
-    const outer = new CircuitBuilder();
-
-    const A = outer.addBasicGate("input");
-    const halfAdder = outer.addCompositeGate("half-adder", halfAdderCircuitData());
-
-    // Only connect one of the two required inputs
-    outer.connectGates(A, halfAdder, null, 0);
-
-    const result = halfAdder.evaluate();
-
-    expect(result.ok).toBe(false);
-    expect(result.error).toMatch(/not all inputs connected/i);
   });
 });
 
@@ -164,7 +147,7 @@ describe("Composite Gate – Nested Composite", () => {
     const not2 = middle.addCompositeGate("not-wrapper", notGateCircuitData());
     const mQ = middle.addBasicGate("output");
 
-    middle.connectGates(mA, not1, null, 0, false);
+    middle.connectGates(mA, not1, 0, null, false);
     middle.connectGates(not1, not2, 0, 0, false);
     middle.connectGates(not2, mQ, 0, null, false);
 
@@ -183,8 +166,8 @@ describe("Composite Gate – Nested Composite", () => {
     const doubleNot = top.addCompositeGate("double-not", doubleNotData);
     const tOut = top.addBasicGate("output");
 
-    top.connectGates(tA, doubleNot, null, 0);
-    top.connectGates(doubleNot, tOut, 0);
+    top.connectGates(tA, doubleNot, 0);
+    top.connectGates(doubleNot, tOut, 0, 0);
 
     // Double-NOT should act as identity
     for (const val of [false, true]) {
@@ -205,10 +188,10 @@ describe("Composite Gate – Re-evaluation", () => {
     const sumOut = outer.addBasicGate("output");
     const carryOut = outer.addBasicGate("output");
 
-    outer.connectGates(A, halfAdder, null, 0);
-    outer.connectGates(B, halfAdder, null, 1);
-    outer.connectGates(halfAdder, sumOut, 0);
-    outer.connectGates(halfAdder, carryOut, 1);
+    outer.connectGates(A, halfAdder, 0);
+    outer.connectGates(B, halfAdder, 1);
+    outer.connectGates(halfAdder, sumOut, 0, 0);
+    outer.connectGates(halfAdder, carryOut, 0, 1);
 
     // First: 1 + 1 = carry 1, sum 0
     A.setValue(true);
@@ -244,11 +227,11 @@ describe("Composite Gate – Multiple Outputs Wired Independently", () => {
     const invertedSum = outer.addBasicGate("output");
     const carryOut = outer.addBasicGate("output");
 
-    outer.connectGates(A, halfAdder, null, 0);
-    outer.connectGates(B, halfAdder, null, 1);
-    outer.connectGates(halfAdder, notGate, 0);    // sum → NOT
-    outer.connectGates(notGate, invertedSum);       // NOT → output
-    outer.connectGates(halfAdder, carryOut, 1);     // carry → output
+    outer.connectGates(A, halfAdder, 0);
+    outer.connectGates(B, halfAdder, 1);
+    outer.connectGates(halfAdder, notGate, 0, 0);    // sum → NOT
+    outer.connectGates(notGate, invertedSum, 0);       // NOT → output
+    outer.connectGates(halfAdder, carryOut, 0, 1);     // carry → output
 
     const testCases = [
       //  A      B     invertedSum  Carry
@@ -280,12 +263,12 @@ describe("Composite Gate – buildCircuitFromData round-trip", () => {
     const sum = inner.addBasicGate("output");
     const carry = inner.addBasicGate("output");
 
-    inner.connectGates(A, xor);
-    inner.connectGates(B, xor);
-    inner.connectGates(xor, sum);
-    inner.connectGates(A, and);
-    inner.connectGates(B, and);
-    inner.connectGates(and, carry);
+    inner.connectGates(A, xor, 0);
+    inner.connectGates(B, xor, 1);
+    inner.connectGates(xor, sum, 0);
+    inner.connectGates(A, and, 0);
+    inner.connectGates(B, and, 1);
+    inner.connectGates(and, carry, 0);
 
     // Serialize
     const serialized = {
@@ -318,10 +301,10 @@ describe("Composite Gate – buildCircuitFromData round-trip", () => {
     const oSum = outer.addBasicGate("output");
     const oCarry = outer.addBasicGate("output");
 
-    outer.connectGates(oA, composite, null, 0);
-    outer.connectGates(oB, composite, null, 1);
-    outer.connectGates(composite, oSum, 0);
-    outer.connectGates(composite, oCarry, 1);
+    outer.connectGates(oA, composite, 0);
+    outer.connectGates(oB, composite, 1);
+    outer.connectGates(composite, oSum, 0, 0);
+    outer.connectGates(composite, oCarry, 0, 1);
 
     // Verify against truth table
     oA.setValue(true);

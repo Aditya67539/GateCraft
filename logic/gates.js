@@ -1,5 +1,6 @@
 import { Wire } from "./wire.js";
 import { evaluateAll } from "./evaluate.js";
+import { GATE_DEFS } from "../constants.js";
 
 /**
  * Base class for generating unique gate IDs. 
@@ -12,6 +13,8 @@ export class Input {
   constructor(value) {
     this.id = Logic.nextId++;
     this.type = "input";
+    this.outputCount = GATE_DEFS[this.type].outputs;
+    this.inputCount = GATE_DEFS[this.type].inputs;
     this.output = value;
   }
 
@@ -37,9 +40,9 @@ export class Clock extends Input {
 }
 
 class ConnectableGate {
-  connect(fromGate, toInputIndex = null, fromOutputIndex = null) {
+  connect(fromGate, toInputIndex, fromOutputIndex = null) {
     if (toInputIndex === null) {
-      toInputIndex = this.inputs.length;
+      return { ok: false, error: "Invalid input index!" };
     } else if (this.inputs[toInputIndex] !== undefined) {
       return { ok: false, error: "Wire is already connected!" };
     }
@@ -48,27 +51,8 @@ class ConnectableGate {
     return { ok: true, wire };
   }
 
-  /**
-   * Determines whether all input connections for the gate are properly connected.
-   *
-   * This method accounts for two types of gate input representations:
-   *
-   * - **Basic gates**:
-   *   - The `inputs` array is dynamic (grows as connections are added).
-   *   - If no inputs are connected, the array is empty (`length === 0`).
-   *
-   * - **Composite gates**:
-   *   - The `inputs` array has a fixed length.
-   *   - Unconnected inputs are represented as "undefined".
-   *
-   * A gate is considered "fully connected" if:
-   * - The `inputs` array does not contain any undefined values, AND
-   * - The `inputs` array contains at least one element
-   *
-   * @returns {boolean} Returns `true` if all inputs are connected, otherwise `false`.
-   */
-  hasAllInputsConnected() {
-    return this.inputs.length > 0 && this.inputs.every(n => n !== undefined);
+  hasNoInputsConnected() {
+    return this.inputs.length > 0 && this.inputs.every(n => n === undefined);
   }
 }
 
@@ -77,19 +61,18 @@ export class Output extends ConnectableGate {
     super();
     this.id = Logic.nextId++;
     this.type = "output";
-    this.inputs = [];
+    this.inputCount = GATE_DEFS[this.type].inputs;
+    this.outputCount = GATE_DEFS[this.type].outputs;
+    this.inputs = new Array(this.inputCount).fill(undefined);
     this.output = false;
     this.tempOutput = false;
   }
 
   evaluate() {
-    if (!super.hasAllInputsConnected()) {
-      return { ok: false, error: "No input connected!" };
-    }
     if (this.inputs.length > 1) {
       return { ok: false, error: "Output does not support multiple inputs!" };
     }
-    this.tempOutput = this.inputs[0].signal;
+    this.tempOutput = this.inputs[0] ? this.inputs[0].signal : false;
     return { ok: true, output: this.tempOutput };
   }
 }
@@ -99,20 +82,16 @@ export class Gate extends ConnectableGate {
     super();
     this.id = Logic.nextId++;
     this.type = type.toLowerCase();
-    this.inputs = inputs;
+    this.inputCount = GATE_DEFS[this.type].inputs;
+    this.outputCount = GATE_DEFS[this.type].outputs;
+    this.inputs = new Array(this.inputCount).fill(undefined);
+    // this.inputs = inputs;
     this.output = false;
     this.tempOutput = false;
   }
 
   evaluate() {
-    if (!super.hasAllInputsConnected()) {
-      return { ok: false, error: "Inputs not connected!" };
-    }
-    const resolvedInputs = this.inputs.map(input => {
-      if (input instanceof Wire) {
-        return input.signal;
-      }
-    });
+    const resolvedInputs = resolveInputs(this.inputs);
     switch (this.type) {
       case "and":
         this.tempOutput = true;
@@ -196,14 +175,7 @@ export class CompositeGate extends ConnectableGate {
   }
 
   evaluate() {
-    if (!super.hasAllInputsConnected()) {
-      return { ok: false, error: "Not all inputs connected!" };
-    }
-    const resolvedInputs = this.inputs.map(input => {
-      if (input instanceof Wire) {
-        return input.signal;
-      }
-    });
+    const resolvedInputs = resolveInputs(this.inputs);
 
     for (let i = 0; i < this.internalInputs.length; i++) {
       this.internalInputs[i].setValue(resolvedInputs[i]);
@@ -257,4 +229,11 @@ export function createCompositeGate(name, circuitData) {
   gate.label = name;
   gate.parseCircuitData();
   return gate;
+}
+
+function resolveInputs(inputs) {
+  return inputs.map(input => {
+    if (input instanceof Wire) return input.signal;
+    return false;
+  });
 }

@@ -37,7 +37,7 @@ export function getWirePorts(renderNodes, wire, nodeMap) {
 
 export function computeWayPoints(renderNodes, wire, nodeMap) {
   let ports = getWirePorts(renderNodes, wire, nodeMap);
-  let spacing = wire.to.type === "composite" ? (wire.toInputIndex + 2) * 8 : (wire.to.inputs.length + 1) * 8;
+  let spacing = (wire.toInputIndex + 2) * 8;
   let waypoints = [];
   if (ports.start.x <= ports.end.x) {
     // 2 Waypoints
@@ -53,14 +53,6 @@ export function computeWayPoints(renderNodes, wire, nodeMap) {
     waypoints.push({ x: ports.end.x - spacing, y: ports.end.y });
   }
   return waypoints;
-}
-
-export function recomputeWayPoint(renderNodes, wireInfo, nodeMap) {
-  if (wireInfo.isCustomRouted) return;
-  if (wireInfo.wire.to.type === "composite") return;
-  let newWayPoints = computeWayPoints(renderNodes, wireInfo.wire, nodeMap);
-  const waypointCount = newWayPoints.length;
-  wireInfo.waypoints[waypointCount - 1].y = newWayPoints[waypointCount - 1].y;
 }
 
 export function setCustomWaypoints(p) {

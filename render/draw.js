@@ -101,11 +101,7 @@ export function drawInputPorts(renderNodes, p) {
   for (let i = 0; i < renderNodes.length; i++) {
     const gate = renderNodes[i].gate;
     if (gate.type === "input" || gate.type === "clock") continue;
-    const totalInputs = gate.type === "composite"
-      ? gate.inputCount
-      : gate.type !== "output" && gate.type !== "not"
-        ? gate.inputs.length + 1
-        : 1;
+    const totalInputs = gate.inputCount;
 
     for (let j = 0; j < totalInputs; j++) {
       const port = renderNodes[i].getInputPortByIndex(j, totalInputs);

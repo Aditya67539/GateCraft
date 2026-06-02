@@ -89,22 +89,22 @@ export class CircuitBuilder {
    * 
    * @param {Gate} fromGate - Source gate
    * @param {Gate} toGate - Destination gate
+   * @param {number} toInputIndex - Input index of destination gate
    * @param {?number} fromOutputIndex - Output index of source gate (if multi-output)
-   * @param {?number} toInputIndex - Input index of destination gate
    * @param {?Boolean} settle - Settles the circuit if true
-   * @returns {Wire} The instantiated wire object
+   * @returns {{ok: boolean, wire?: Wire, error?: string}} 
+   * Result object containing the connection status and the instantiated wire
+   * when the connection succeeds. 
    */
-  connectGates(fromGate, toGate, fromOutputIndex = null, toInputIndex = null, settle = true) {
+  connectGates(fromGate, toGate, toInputIndex, fromOutputIndex = null, settle = true) {
     const result = toGate.connect(fromGate, toInputIndex, fromOutputIndex);
     if (!result.ok) {
-      console.error(result.error);
-      return null;
+      return result;
     }
-    const newWire = result.wire;
-    this.wires.push(newWire);
+    this.wires.push(result.wire);
     this.dirty = true;
     if (settle) this.settle();
-    return newWire;
+    return result;
   }
 
   /**
@@ -114,20 +114,7 @@ export class CircuitBuilder {
    * @param {number} removedIndex - Index of the input to remove
    */
   disconnectWires(toGate, removedIndex) {
-    if (toGate.type === "composite") {
-      // Composite gates have fixed-size input arrays; just clear the slot
-      toGate.inputs[removedIndex] = undefined;
-    } else {
-      // Basic gates & output: splice the input out by its index
-      toGate.inputs.splice(removedIndex, 1);
-
-      // Update toInputIndex on all remaining wires whose index shifted
-      for (const w of this.wires) {
-        if (w.to.id === toGate.id && w.toInputIndex > removedIndex) {
-          w.toInputIndex--;
-        }
-      }
-    }
+    toGate.inputs[removedIndex] = undefined;
   }
 
   /**

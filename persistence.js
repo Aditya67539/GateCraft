@@ -185,7 +185,7 @@ export function buildCircuitFromData(circuitData) {
     const fromGate = builder.gates.get(idMap[wireSpec.fromGateId]);
     const toGate = builder.gates.get(idMap[wireSpec.toGateId]);
     if (fromGate && toGate) {
-      builder.connectGates(fromGate, toGate, wireSpec.fromOutputIndex, wireSpec.toInputIndex, false);
+      builder.connectGates(fromGate, toGate, wireSpec.toInputIndex, wireSpec.fromOutputIndex, false);
     }
   }
 
