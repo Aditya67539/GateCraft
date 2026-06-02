@@ -73,6 +73,10 @@ class ConnectableGate {
   hasAllInputsConnected() {
     return this.inputs.length > 0 && this.inputs.every(n => n !== undefined);
   }
+
+  hasNoInputsConnected() {
+    return this.inputs.length > 0 && this.inputs.every(n => n === undefined);
+  }
 }
 
 export class Output extends ConnectableGate {
@@ -88,13 +92,10 @@ export class Output extends ConnectableGate {
   }
 
   evaluate() {
-    if (!super.hasAllInputsConnected()) {
-      return { ok: false, error: "No input connected!" };
-    }
     if (this.inputs.length > 1) {
       return { ok: false, error: "Output does not support multiple inputs!" };
     }
-    this.tempOutput = this.inputs[0].signal;
+    this.tempOutput = this.inputs[0] ? this.inputs[0].signal : false;
     return { ok: true, output: this.tempOutput };
   }
 }
@@ -113,14 +114,7 @@ export class Gate extends ConnectableGate {
   }
 
   evaluate() {
-    if (!super.hasAllInputsConnected()) {
-      return { ok: false, error: "Inputs not connected!" };
-    }
-    const resolvedInputs = this.inputs.map(input => {
-      if (input instanceof Wire) {
-        return input.signal;
-      }
-    });
+    const resolvedInputs = resolveInputs(this.inputs);
     switch (this.type) {
       case "and":
         this.tempOutput = true;
@@ -204,14 +198,7 @@ export class CompositeGate extends ConnectableGate {
   }
 
   evaluate() {
-    if (!super.hasAllInputsConnected()) {
-      return { ok: false, error: "Not all inputs connected!" };
-    }
-    const resolvedInputs = this.inputs.map(input => {
-      if (input instanceof Wire) {
-        return input.signal;
-      }
-    });
+    const resolvedInputs = resolveInputs(this.inputs);
 
     for (let i = 0; i < this.internalInputs.length; i++) {
       this.internalInputs[i].setValue(resolvedInputs[i]);
@@ -265,4 +252,11 @@ export function createCompositeGate(name, circuitData) {
   gate.label = name;
   gate.parseCircuitData();
   return gate;
+}
+
+function resolveInputs(inputs) {
+  return inputs.map(input => {
+    if (input instanceof Wire) return input.signal;
+    return false;
+  });
 }
