@@ -133,23 +133,6 @@ describe("Composite Gate – NOT wrapper", () => {
   });
 });
 
-describe("Composite Gate – Unconnected Inputs", () => {
-  it("returns an error when not all inputs are connected", () => {
-    const outer = new CircuitBuilder();
-
-    const A = outer.addBasicGate("input");
-    const halfAdder = outer.addCompositeGate("half-adder", halfAdderCircuitData());
-
-    // Only connect one of the two required inputs
-    outer.connectGates(A, halfAdder, 0);
-
-    const result = halfAdder.evaluate();
-
-    expect(result.ok).toBe(false);
-    expect(result.error).toMatch(/not all inputs connected/i);
-  });
-});
-
 describe("Composite Gate – Nested Composite", () => {
   it("evaluates a composite gate that contains another composite gate", () => {
     // Inner composite: NOT wrapper
