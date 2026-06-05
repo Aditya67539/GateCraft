@@ -5,6 +5,7 @@ import { initToolbar } from "./ui/toolbar.js";
 import { getActiveTheme, applyTheme } from "./render/theme.js";
 import { CircuitBuilder } from "./logic/CircuitBuilder.js";
 import { nodeMap } from "./input/mouseHandlers.js";
+import { GRID_OFFSET, GRID_SIZE } from "./constants.js";
 
 let gridBuffer;
 applyTheme(getActiveTheme());
