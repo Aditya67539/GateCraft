@@ -9,7 +9,8 @@ describe("Full Adder", () => {
     const B = builder.addBasicGate("input");
     const C = builder.addBasicGate("input");
 
-    const xor = builder.addBasicGate("xor");
+    const xor1 = builder.addBasicGate("xor");
+    const xor2 = builder.addBasicGate("xor");
     const and1 = builder.addBasicGate("and");
     const and2 = builder.addBasicGate("and");
     const or1 = builder.addBasicGate("or");
@@ -18,19 +19,20 @@ describe("Full Adder", () => {
     const sum = builder.addBasicGate("output");
     const carry = builder.addBasicGate("output");
 
-    builder.connectGates(A, xor);
-    builder.connectGates(B, xor);
-    builder.connectGates(C, xor);
-    builder.connectGates(xor, sum);
-    builder.connectGates(A, and1);
-    builder.connectGates(B, and1);
-    builder.connectGates(A, or1);
-    builder.connectGates(B, or1);
-    builder.connectGates(and1, or2);
-    builder.connectGates(or1, and2);
-    builder.connectGates(C, and2);
-    builder.connectGates(and2, or2);
-    builder.connectGates(or2, carry);
+    builder.connectGates(A, xor1, 0);
+    builder.connectGates(B, xor1, 1);
+    builder.connectGates(xor1, xor2, 0);
+    builder.connectGates(C, xor2, 1);
+    builder.connectGates(xor2, sum, 0);
+    builder.connectGates(A, and1, 0);
+    builder.connectGates(B, and1, 1);
+    builder.connectGates(A, or1, 0);
+    builder.connectGates(B, or1, 1);
+    builder.connectGates(and1, or2, 0);
+    builder.connectGates(or1, and2, 0);
+    builder.connectGates(C, and2, 1);
+    builder.connectGates(and2, or2, 1);
+    builder.connectGates(or2, carry, 0);
 
     const testCases = [
       [false, false, false, false, false],

@@ -28,7 +28,7 @@ function setStore(store) {
  * Extracts logical circuit data (gates, wires, IO ordering) from render nodes. 
  * 
  * @param {Array<RenderPoint>} renderNodes - Array of RenderPoint objects. 
- * @param {Array<Object>} wire_infos - Array of wire object containing Wire instances. 
+ * @param {Array<Object>} wireInfos - Array of wire object containing Wire instances. 
  * @returns {{
  *   gates: Array<Object>,
  *   wires: Array<Object>,
@@ -37,7 +37,7 @@ function setStore(store) {
  * }}
  * Structured circuit data for reconstruction. 
  */
-function getCircuitData(renderNodes, wire_infos) {
+function getCircuitData(renderNodes, wireInfos) {
   const gates = [];
   const wires = [];
   for (const node of renderNodes) {
@@ -54,7 +54,7 @@ function getCircuitData(renderNodes, wire_infos) {
     gates.push(data);
   }
   
-  for (const w of wire_infos) {
+  for (const w of wireInfos) {
     const data = {
       fromGateId: w.wire.from.id,
       toGateId: w.wire.to.id,
@@ -85,14 +85,14 @@ function getCircuitData(renderNodes, wire_infos) {
  * Extracts rendering data (positions and wire paths) from render nodes. 
  * 
  * @param {Array<RenderPoint>} renderNodes - Array of RenderPoint objects. 
- * @param {Array<Object>} wire_infos - Array of wire objects containing Wire instances. 
+ * @param {Array<Object>} wireInfos - Array of wire objects containing Wire instances. 
  * @returns {{
  *   positions: Array<id: Number, x: number, y: number>,
  *   wires: Array<Object>
  * }}
  * Structered render data for UI reconstruction. 
  */
-function getRenderData(renderNodes, wire_infos) {
+function getRenderData(renderNodes, wireInfos) {
   const positions = [];
   const wires = [];
 
@@ -101,7 +101,7 @@ function getRenderData(renderNodes, wire_infos) {
     positions.push(data);
   }
 
-  for (const w of wire_infos) {
+  for (const w of wireInfos) {
     const data = {
       fromGateId: w.wire.from.id,
       toGateId: w.wire.to.id,
@@ -185,7 +185,7 @@ export function buildCircuitFromData(circuitData) {
     const fromGate = builder.gates.get(idMap[wireSpec.fromGateId]);
     const toGate = builder.gates.get(idMap[wireSpec.toGateId]);
     if (fromGate && toGate) {
-      builder.connectGates(fromGate, toGate, wireSpec.fromOutputIndex, wireSpec.toInputIndex, false);
+      builder.connectGates(fromGate, toGate, wireSpec.toInputIndex, wireSpec.fromOutputIndex, false);
     }
   }
 

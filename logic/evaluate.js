@@ -94,7 +94,7 @@ export function evaluateAll(circuit, seedAll = false) {
     }
 
     // Move to the next delta cycle
-    if (currentDelta.size == 0) {
+    if (currentDelta.size === 0) {
       [currentDelta, nextDelta] = [nextDelta, currentDelta];
       iterations += 1;
     }
@@ -115,9 +115,9 @@ function arraysEqual(a, b) {
  * 
  * @param {CircuitBuilder} circuit - The circuit instance containing the gates, wires, and fanout map 
  */
-export function evaluateOnce(ciruict) {
-  const wires = ciruict.wires;
-  const gates = ciruict.getGates();
+export function evaluateOnce(circuit) {
+  const wires = circuit.wires;
+  const gates = circuit.getGates();
   let changed = false;
   // Update signals from input and clock sources
   for (const wire of wires) {
@@ -130,7 +130,7 @@ export function evaluateOnce(ciruict) {
   // Evaluate every non-input and non-clock gate regardless of change
   for (const gate of gates) {
     if (gate.type === "input" || gate.type === "clock") continue;
-    if (!gate.hasAllInputsConnected()) continue;
+    if (gate.hasNoInputsConnected()) continue;
     const result = gate.evaluate();
     if (!result.ok) {
       console.error(result.error);
@@ -138,7 +138,6 @@ export function evaluateOnce(ciruict) {
     }
     const newOutput = result.output;
     gate.output = newOutput;
-    let signal;
     for (const wire of wires) {
       if (wire.from.id !== gate.id) continue;
 

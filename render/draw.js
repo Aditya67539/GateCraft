@@ -47,20 +47,20 @@ export function drawGate(renderNode, p) {
   p.strokeWeight(1);
 }
 
-export function drawWire(renderNodes, wire_info, nodeMap, p) {
+export function drawWire(renderNodes, wireInfo, nodeMap, p) {
   const theme = getActiveTheme();
-  const ports = getWirePorts(renderNodes, wire_info.wire, nodeMap);
+  const ports = getWirePorts(renderNodes, wireInfo.wire, nodeMap);
   p.strokeWeight(3);
 
-  let color = wire_info.wire.signal ? theme.wires.high.hex : theme.wires.low.hex;
+  let color = wireInfo.wire.signal ? theme.wires.high.hex : theme.wires.low.hex;
   p.stroke(color);
 
-  const waypointCount = wire_info.waypoints.length;
-  p.line(ports.start.x, ports.start.y, wire_info.waypoints[0].x, wire_info.waypoints[0].y);
+  const waypointCount = wireInfo.waypoints.length;
+  p.line(ports.start.x, ports.start.y, wireInfo.waypoints[0].x, wireInfo.waypoints[0].y);
   for (let i = 0; i < waypointCount - 1; i++) {
-    p.line(wire_info.waypoints[i].x, wire_info.waypoints[i].y, wire_info.waypoints[i + 1].x, wire_info.waypoints[i + 1].y);
+    p.line(wireInfo.waypoints[i].x, wireInfo.waypoints[i].y, wireInfo.waypoints[i + 1].x, wireInfo.waypoints[i + 1].y);
   }
-  p.line(wire_info.waypoints[waypointCount - 1].x, wire_info.waypoints[waypointCount - 1].y, ports.end.x, ports.end.y);
+  p.line(wireInfo.waypoints[waypointCount - 1].x, wireInfo.waypoints[waypointCount - 1].y, ports.end.x, ports.end.y);
 
   p.stroke(0);
   p.strokeWeight(1);
@@ -101,11 +101,7 @@ export function drawInputPorts(renderNodes, p) {
   for (let i = 0; i < renderNodes.length; i++) {
     const gate = renderNodes[i].gate;
     if (gate.type === "input" || gate.type === "clock") continue;
-    const totalInputs = gate.type === "composite"
-      ? gate.inputCount
-      : gate.type !== "output" && gate.type !== "not"
-        ? gate.inputs.length + 1
-        : 1;
+    const totalInputs = gate.inputCount;
 
     for (let j = 0; j < totalInputs; j++) {
       const port = renderNodes[i].getInputPortByIndex(j, totalInputs);
@@ -157,9 +153,9 @@ export function drawGhostWire(wire, p) {
   p.strokeWeight(1);
 }  
 
-export function drawWaypoint(wire_info, waypoint, p) {
+export function drawWaypoint(wireInfo, waypoint, p) {
   const theme = getActiveTheme();
-  let color = wire_info.wire.signal ? theme.wires.high.hex : theme.wires.low.hex;
+  let color = wireInfo.wire.signal ? theme.wires.high.hex : theme.wires.low.hex;
   p.fill(color);
   p.circle(waypoint.x, waypoint.y, 12);
 }

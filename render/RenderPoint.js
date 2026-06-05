@@ -25,7 +25,7 @@ export class RenderPoint {
   getOutputPort(wire = null) {
     if (wire !== null && wire.from.type === "composite") {
       const index = wire.fromOutputIndex;
-      const outputCount = wire.from.output.length;
+      const outputCount = wire.from.outputCount;
       const spacing = this.height / outputCount;
 
       return {
@@ -49,11 +49,8 @@ export class RenderPoint {
 
   getInputPort(wire) {
     const index = this.gate.inputs.indexOf(wire);
-    let inputCount = this.gate.inputs.length;
-    if (this.gate.type !== "input" && this.gate.type !== "output" && this.gate.type !== "composite" && this.gate.type !== "not") {
-      inputCount += 1;
-    }
-    const spacing = this.height / inputCount;
+    let inputCount = this.gate.inputCount; 
+    const spacing = this.height / inputCount; // NOTE: ZERO DIVISION ERROR F0R INPUT NODES
 
     return {
       x: this.x,
@@ -129,8 +126,8 @@ export function spawnCompositeNode(name, circuitData, mouseX, mouseY) {
 
 function computeSize(gate) {
   if (gate.type === "input" || gate.type === "output" || gate.type === "not" || gate.type === "clock") return { width: 60, height: 40 };
-  const inputCount = gate.type === "composite" ? gate.inputCount : gate.inputs.length + 1;
-  const outputCount = gate.type === "composite" ? gate.outputCount : 1;
+  const inputCount = gate.inputCount;
+  const outputCount = gate.outputCount;
 
   const maxPortCount = Math.max(inputCount, outputCount);
   const centerLabel = gate.label || gate.type;
@@ -167,14 +164,7 @@ function computeSize(gate) {
   return { width, height };
 }
 
-export function setNodeSize(node) {
-  if (node.gate.type === "input" || node.gate.type === "output") return;
-  const { width, height } = computeSize(node.gate);
-  node.width = width;
-  node.height = height;
-}
-
-export function reBuildNodeMap(renderNodes, nodeMap) {
+export function rebuildNodeMap(renderNodes, nodeMap) {
   nodeMap.clear();
 
   for (const node of renderNodes) {
