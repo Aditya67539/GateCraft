@@ -6,6 +6,7 @@ import { getActiveTheme, applyTheme } from "./render/theme.js";
 import { CircuitBuilder } from "./logic/CircuitBuilder.js";
 import { nodeMap } from "./input/mouseHandlers.js";
 import { GRID_OFFSET, GRID_SIZE } from "./constants.js";
+import { snapPointToGrid } from "./render/RenderPoint.js";
 
 let gridBuffer;
 applyTheme(getActiveTheme());
@@ -59,8 +60,9 @@ const sketch = (p) => {
     if (state.ghostNode) {
       drawGate(state.ghostNode, p);
       if (state.mode === "placing") {
-        state.ghostNode.x = p.mouseX;
-        state.ghostNode.y = p.mouseY;
+        const { x, y } = snapPointToGrid(p.mouseX, p.mouseY);
+        state.ghostNode.x = x;
+        state.ghostNode.y = y;
       }
     }
     if (state.drawingWire) {
