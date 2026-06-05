@@ -1,4 +1,4 @@
-import { FONT_SIZE, PORT_LABEL_SIZE } from "../constants.js";
+import { FONT_SIZE, GRID_OFFSET, GRID_SIZE, PORT_LABEL_SIZE } from "../constants.js";
 import { createBasicGate, createCompositeGate } from "../logic/gates.js";
 import { state } from "../state.js";
 
@@ -180,4 +180,11 @@ export function reBuildNodeMap(renderNodes, nodeMap) {
   for (const node of renderNodes) {
     nodeMap.set(node.gate.id, node);
   }
+}
+
+export function snapPointToGrid(x, y) {
+  const point = {};
+  point.x = Math.round((x - GRID_OFFSET) / GRID_SIZE) * GRID_SIZE + GRID_OFFSET;
+  point.y = Math.round((y - GRID_OFFSET) / GRID_SIZE) * GRID_SIZE + GRID_OFFSET;
+  return point;
 }
