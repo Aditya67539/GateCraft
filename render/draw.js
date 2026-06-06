@@ -1,4 +1,4 @@
-import { FONT_SIZE, PORT_LABEL_SIZE } from "../constants.js";
+import { FONT_SIZE, PORT_LABEL_SIZE, PORT_RADIUS } from "../constants.js";
 import { getActiveTheme } from "./theme.js";
 import { getWirePorts } from "./wireGeometry.js";
 import { state } from "../state.js";
@@ -78,7 +78,7 @@ export function drawOutputPorts(renderNodes, p) {
       p.fill(theme.accent.hex);
       p.stroke(theme.text.primary.hex);
       p.strokeWeight(1.5);
-      p.circle(port.x, port.y, 12);
+      p.circle(port.x, port.y, PORT_RADIUS);
 
       // Draw port label for composite gates
       if (gate.type === "composite" && gate.internalOutputs && gate.internalOutputs[j]) {
@@ -108,7 +108,7 @@ export function drawInputPorts(renderNodes, p) {
       p.fill(theme.accent.hex);
       p.stroke(theme.text.primary.hex);
       p.strokeWeight(1.5);
-      p.circle(port.x, port.y, 12);
+      p.circle(port.x, port.y, PORT_RADIUS);
 
       // Draw port label for composite gates
       if (gate.type === "composite" && gate.internalInputs && gate.internalInputs[j]) {
