@@ -1,3 +1,4 @@
+import { GRID_SIZE } from "../constants.js";
 import { isNearWaypoint } from "../input/mouseHandlers.js";
 
 export function initWire(renderNodes, wire, custom_waypoints, nodeMap) {
@@ -37,7 +38,7 @@ export function getWirePorts(renderNodes, wire, nodeMap) {
 
 export function computeWayPoints(renderNodes, wire, nodeMap) {
   let ports = getWirePorts(renderNodes, wire, nodeMap);
-  let spacing = (wire.toInputIndex + 2) * 8;
+  let spacing = (wire.toInputIndex + 1) * GRID_SIZE;
   let waypoints = [];
   if (ports.start.x <= ports.end.x) {
     // 2 Waypoints
