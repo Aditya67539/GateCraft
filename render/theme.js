@@ -1,3 +1,5 @@
+import { state } from "../state.js";
+
 // ── Forge Palette & Theme ──────────────────────────────────────
 const forgePalette = {
   void:     { hex: "#141417" },
@@ -551,6 +553,8 @@ function hexToRGB(hex) {
 
 export function applyTheme(theme) {
   const root = document.documentElement;
+
+  state.gridDirty = true;
 
   function flatten(obj, prefix = "theme") {
     for (const key in obj) {

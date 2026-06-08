@@ -1,4 +1,4 @@
-import { FONT_SIZE, PORT_LABEL_SIZE } from "../constants.js";
+import { FONT_SIZE, GRID_OFFSET, GRID_SIZE, PORT_LABEL_SIZE } from "../constants.js";
 import { createBasicGate, createCompositeGate } from "../logic/gates.js";
 import { state } from "../state.js";
 
@@ -24,19 +24,9 @@ export class RenderPoint {
 
   getOutputPort(wire = null) {
     if (wire !== null && wire.from.type === "composite") {
-      const index = wire.fromOutputIndex;
-      const outputCount = wire.from.outputCount;
-      const spacing = this.height / outputCount;
-
-      return {
-        x: this.x + this.width,
-        y: this.y + index * spacing + spacing / 2,
-      };
+      return this.getOutputPortByIndex(wire.fromOutputIndex, wire.from.outputCount);
     }
-    return {
-      x: this.x + this.width,
-      y: this.y + this.height / 2
-    };
+    return this.getOutputPortByIndex(0, 1);
   }
 
   getOutputPortByIndex(index, totalOutputs) {
@@ -49,13 +39,8 @@ export class RenderPoint {
 
   getInputPort(wire) {
     const index = this.gate.inputs.indexOf(wire);
-    let inputCount = this.gate.inputCount; 
-    const spacing = this.height / inputCount; // NOTE: ZERO DIVISION ERROR F0R INPUT NODES
-
-    return {
-      x: this.x,
-      y: this.y + spacing * index + spacing / 2
-    };
+    const inputCount = this.gate.inputCount;
+    return this.getInputPortByIndex(index, inputCount);
   }
 
   getInputPortByIndex(index, totalInputs) {
@@ -125,17 +110,15 @@ export function spawnCompositeNode(name, circuitData, mouseX, mouseY) {
 }
 
 function computeSize(gate) {
-  if (gate.type === "input" || gate.type === "output" || gate.type === "not" || gate.type === "clock") return { width: 60, height: 40 };
   const inputCount = gate.inputCount;
   const outputCount = gate.outputCount;
 
   const maxPortCount = Math.max(inputCount, outputCount);
   const centerLabel = gate.label || gate.type;
 
-  if (gate.type === "composite") {
-    // Taller rows so port labels don't overlap
-    const height = Math.max(60, maxPortCount * 30);
+  const height = (maxPortCount + 1) * GRID_SIZE;
 
+  if (gate.type === "composite") {
     // Measure the widest input and output port labels
     let maxInputLabelLen = 0;
     let maxOutputLabelLen = 0;
@@ -155,12 +138,15 @@ function computeSize(gate) {
     const inputLabelWidth = maxInputLabelLen * PORT_LABEL_SIZE * 0.55 + 10;
     const outputLabelWidth = maxOutputLabelLen * PORT_LABEL_SIZE * 0.55 + 10;
     const centerLabelWidth = centerLabel.length * FONT_SIZE * 0.6 + 20;
-    const width = Math.max(80, inputLabelWidth + centerLabelWidth + outputLabelWidth);
+    const rawWidth = Math.max(80, inputLabelWidth + centerLabelWidth + outputLabelWidth);
+    // Snap width to the nearest larger multiple of GRID_SIZE
+    const width = Math.ceil(rawWidth / GRID_SIZE) * GRID_SIZE;
     return { width, height };
   }
 
-  const height = Math.max(60, maxPortCount * 20);
-  const width = Math.max(60, centerLabel.length * FONT_SIZE * 0.6 + 20);
+  const rawWidth = Math.max(60, centerLabel.length * FONT_SIZE * 0.6 + 20);
+  // Snap width to the nearest larger multiple of GRID_SIZE
+  const width = Math.ceil(rawWidth / GRID_SIZE) * GRID_SIZE;
   return { width, height };
 }
 
@@ -170,4 +156,11 @@ export function rebuildNodeMap(renderNodes, nodeMap) {
   for (const node of renderNodes) {
     nodeMap.set(node.gate.id, node);
   }
+}
+
+export function snapPointToGrid(x, y) {
+  const point = {};
+  point.x = Math.round((x - GRID_OFFSET) / GRID_SIZE) * GRID_SIZE + GRID_OFFSET;
+  point.y = Math.round((y - GRID_OFFSET) / GRID_SIZE) * GRID_SIZE + GRID_OFFSET;
+  return point;
 }

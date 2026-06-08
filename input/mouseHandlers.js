@@ -2,7 +2,7 @@ import { state } from "../state.js";
 import { Input } from "../logic/gates.js";
 import { CLOCK_TIMER, FREQUENCY } from "../constants.js";
 import { initWire, getWirePorts, setCustomWaypoints } from "../render/wireGeometry.js";
-import { rebuildNodeMap } from "../render/RenderPoint.js";
+import { rebuildNodeMap, snapPointToGrid } from "../render/RenderPoint.js";
 
 function cleanupGhostWire() {
   if (state.ghostWireCleanup) {
@@ -52,8 +52,9 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
         state.changingWayPoint = findNearWaypoint(p.mouseX, p.mouseY, p, wires);
 
         if (!state.drawingWire && !state.changingWayPoint && state.dragging) {
-          state.offsetX = p.mouseX - state.dragging.x;
-          state.offsetY = p.mouseY - state.dragging.y;
+          const { x, y } = snapPointToGrid(p.mouseX, p.mouseY);
+          state.offsetX = x - state.dragging.x;
+          state.offsetY = y - state.dragging.y;
 
           let connectedInputWires = wires.filter(n => n.wire.to.id === state.dragging.gate.id);
           let connectedOutputWires = wires.filter(n => n.wire.from.id === state.dragging.gate.id);
@@ -64,8 +65,8 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
               const lastWaypoint = connectedInputWires[i].waypoints.length - 1;
               state.connectedWires.push({
                 wire: connectedInputWires[i],
-                offsetX: p.mouseX - connectedInputWires[i].waypoints[lastWaypoint].x,
-                offsetY: p.mouseY - connectedInputWires[i].waypoints[lastWaypoint].y,
+                offsetX: x - connectedInputWires[i].waypoints[lastWaypoint].x,
+                offsetY: y - connectedInputWires[i].waypoints[lastWaypoint].y,
                 type: "input",
               });
             }
@@ -73,8 +74,8 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
             for (let i = 0; i < connectedOutputWires.length; i++) {
               state.connectedWires.push({
                 wire: connectedOutputWires[i],
-                offsetX: p.mouseX - connectedOutputWires[i].waypoints[0].x,
-                offsetY: p.mouseY - connectedOutputWires[i].waypoints[0].y,
+                offsetX: x - connectedOutputWires[i].waypoints[0].x,
+                offsetY: y - connectedOutputWires[i].waypoints[0].y,
                 type: "output",
               });
             }
@@ -143,17 +144,18 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
   p.mouseDragged = function () {
     if (state.mode === "edit") {
       if (state.dragging) {
-        state.dragging.x = p.mouseX - state.offsetX;
-        state.dragging.y = p.mouseY - state.offsetY;
+        const { x, y } = snapPointToGrid(p.mouseX, p.mouseY);
+        state.dragging.x = x - state.offsetX;
+        state.dragging.y = y - state.offsetY;
 
         if (state.connectedWires) {
           for (let i = 0; i < state.connectedWires.length; i++) {
             const lastWaypoint = state.connectedWires[i].wire.waypoints.length - 1;
             const firstWaypoint = 0;
             if (state.connectedWires[i].type === "input") {
-              state.connectedWires[i].wire.waypoints[lastWaypoint].y = p.mouseY - state.connectedWires[i].offsetY;
+              state.connectedWires[i].wire.waypoints[lastWaypoint].y = y - state.connectedWires[i].offsetY;
             } else if (state.connectedWires[i].type === "output") {
-              state.connectedWires[i].wire.waypoints[firstWaypoint].y = p.mouseY - state.connectedWires[i].offsetY;
+              state.connectedWires[i].wire.waypoints[firstWaypoint].y = y - state.connectedWires[i].offsetY;
             }
           }
         }

@@ -1,4 +1,4 @@
-import { FONT_SIZE, PORT_LABEL_SIZE } from "../constants.js";
+import { FONT_SIZE, PORT_LABEL_SIZE, PORT_RADIUS } from "../constants.js";
 import { getActiveTheme } from "./theme.js";
 import { getWirePorts } from "./wireGeometry.js";
 import { state } from "../state.js";
@@ -78,7 +78,7 @@ export function drawOutputPorts(renderNodes, p) {
       p.fill(theme.accent.hex);
       p.stroke(theme.text.primary.hex);
       p.strokeWeight(1.5);
-      p.circle(port.x, port.y, 12);
+      p.circle(port.x, port.y, PORT_RADIUS);
 
       // Draw port label for composite gates
       if (gate.type === "composite" && gate.internalOutputs && gate.internalOutputs[j]) {
@@ -108,7 +108,7 @@ export function drawInputPorts(renderNodes, p) {
       p.fill(theme.accent.hex);
       p.stroke(theme.text.primary.hex);
       p.strokeWeight(1.5);
-      p.circle(port.x, port.y, 12);
+      p.circle(port.x, port.y, PORT_RADIUS);
 
       // Draw port label for composite gates
       if (gate.type === "composite" && gate.internalInputs && gate.internalInputs[j]) {
@@ -166,4 +166,32 @@ export function setFont(theme, p) {
     const fontName = theme.font.family.split(",")[0].replace(/'/g, "").trim();
     p.textFont(fontName);
   }
+}
+
+
+/**
+ * Creates and returns a grid texture using a p5.Graphics buffer. 
+ * 
+ * @param {number} width - Width of the grid buffer in pixels. 
+ * @param {number} height - Height of the grid buffer in pixels. 
+ * @param {Object} theme - Theme configuration object. 
+ * @param {number} offset - Starting offset for the grid buffer.
+ * @param {number} size - Distance between grid points. 
+ * @param {Object} p - The p5 instance used to create the graphics buffer. 
+ * @returns A p5.Graphics buffer containing the rendered grid. 
+ */
+export function createGrid(width, height, theme, offset, size, p) {
+  const buffer = p.createGraphics(width, height);
+
+  buffer.background(theme.canvas.bg.hex);
+  buffer.stroke(theme.canvas.grid.hex);
+  buffer.strokeWeight(3);
+
+  for (let i = offset; i < width; i += size) {
+    for (let j = offset; j < height; j += size) {
+      buffer.point(i, j);
+    }
+  }
+
+  return buffer;
 }
