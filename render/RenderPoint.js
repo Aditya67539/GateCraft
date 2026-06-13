@@ -124,14 +124,18 @@ function computeSize(gate) {
     let maxOutputLabelLen = 0;
     if (gate.internalInputs) {
       for (const g of gate.internalInputs) {
-        const lbl = g.label || g.type;
-        if (lbl.length > maxInputLabelLen) maxInputLabelLen = lbl.length;
+        if (g.label) {
+          const lbl = g.label;
+          if (lbl.length > maxInputLabelLen) maxInputLabelLen = lbl.length;
+        }
       }
     }
     if (gate.internalOutputs) {
       for (const g of gate.internalOutputs) {
-        const lbl = g.label || g.type;
-        if (lbl.length > maxOutputLabelLen) maxOutputLabelLen = lbl.length;
+        if (g.label) {
+          const lbl = g.label;
+          if (lbl.length > maxOutputLabelLen) maxOutputLabelLen = lbl.length;
+        }
       }
     }
 

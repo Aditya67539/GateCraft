@@ -81,8 +81,13 @@ export function drawOutputPorts(renderNodes, p) {
       p.circle(port.x, port.y, PORT_RADIUS);
 
       // Draw port label for composite gates
-      if (gate.type === "composite" && gate.internalOutputs && gate.internalOutputs[j]) {
-        const portLabel = gate.internalOutputs[j].label || gate.internalOutputs[j].type;
+      if (
+        gate.type === "composite" &&
+        gate.internalOutputs &&
+        gate.internalOutputs[j] &&
+        gate.internalOutputs[j].label
+      ) {
+        const portLabel = gate.internalOutputs[j].label;
         p.noStroke();
         p.fill(theme.text.muted ? theme.text.muted.hex : "#94a3b8");
         p.textSize(PORT_LABEL_SIZE);
@@ -111,8 +116,13 @@ export function drawInputPorts(renderNodes, p) {
       p.circle(port.x, port.y, PORT_RADIUS);
 
       // Draw port label for composite gates
-      if (gate.type === "composite" && gate.internalInputs && gate.internalInputs[j]) {
-        const portLabel = gate.internalInputs[j].label || gate.internalInputs[j].type;
+      if (
+        gate.type === "composite" &&
+        gate.internalInputs &&
+        gate.internalInputs[j] &&
+        gate.internalInputs[j].label
+      ) {
+        const portLabel = gate.internalInputs[j].label;
         p.noStroke();
         p.fill(theme.text.muted ? theme.text.muted.hex : "#94a3b8");
         p.textSize(PORT_LABEL_SIZE);
