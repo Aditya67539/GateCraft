@@ -197,6 +197,25 @@ export class CompositeGate extends ConnectableGate {
   }
 }
 
+export class SevenSegmentDisplay extends ConnectableGate {
+  constructor() {
+    super();
+    this.id = Logic.nextId++;
+    this.type = "seven-seg";
+    this.inputCount = 8;
+    this.inputs = new Array(this.inputCount).fill(undefined);
+    this.output = new Array(this.inputCount).fill(false);
+    this.tempOutput = new Array(this.inputCount).fill(false);
+  }
+
+  evaluate() {
+    for (let i = 0; i < this.inputCount; i++) {
+      this.tempOutput[i] = this.inputs[i]?.signal ?? false;
+    }
+    return { ok: true, output: this.tempOutput };
+  }
+}
+
 
 /**
  * Creates a basic gate instance based on the given type.
@@ -211,6 +230,8 @@ export function createBasicGate(type) {
     ? new Output()
     : type === "clock"
     ? new Clock(false)
+    : type === "seven-seg"
+    ? new SevenSegmentDisplay()
     : new Gate(type, []);
 }
 
