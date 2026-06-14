@@ -1,4 +1,4 @@
-import { FONT_SIZE, PORT_LABEL_SIZE, PORT_RADIUS } from "../constants.js";
+import { FONT_SIZE, GRID_SIZE, PORT_LABEL_SIZE, PORT_RADIUS } from "../constants.js";
 import { getActiveTheme } from "./theme.js";
 import { getWirePorts } from "./wireGeometry.js";
 import { state } from "../state.js";
@@ -19,6 +19,10 @@ function contrastText(hex) {
 }
 
 export function drawGate(renderNode, p) {
+  if (renderNode.gate.type === "seven-seg") {
+    drawDisplay(renderNode, p);
+    return;
+  }
   const theme = getActiveTheme();
   const gate = renderNode.gate;
   const isOn = Array.isArray(gate.output) ? gate.output.some(Boolean) : gate.output;
@@ -45,6 +49,99 @@ export function drawGate(renderNode, p) {
   p.fill(0);
   p.stroke(0);
   p.strokeWeight(1);
+}
+
+function drawHorizontalSegment(x, y, width, thickness, bevel, color, p) {
+  p.beginShape();
+  p.vertex(x + bevel, y);
+  p.vertex(x + width - bevel, y);
+  p.vertex(x + width, y + thickness / 2);
+  p.vertex(x + width - bevel, y + thickness);
+  p.vertex(x + bevel, y + thickness);
+  p.vertex(x, y + thickness / 2);
+  p.endShape(p.CLOSE);
+}
+
+function drawVerticalSegment(x, y, height, thickness, bevel, color, p) {
+  p.beginShape();
+  p.vertex(x + thickness / 2, y);
+  p.vertex(x + thickness, y + bevel);
+  p.vertex(x + thickness, y + height - bevel);
+  p.vertex(x + thickness / 2, y + height);
+  p.vertex(x, y + height - bevel);
+  p.vertex(x, y + bevel);
+  p.endShape(p.CLOSE);
+}
+
+function drawDisplay(renderNode, p) {
+  const theme = getActiveTheme();
+  const gate = renderNode.gate;
+
+  const x = renderNode.x;
+  const y = renderNode.y;
+  const width = renderNode.width;
+  const height = renderNode.height;
+  const padding = GRID_SIZE;
+  const thickness = GRID_SIZE;
+  
+  const signWidth = thickness * 2;
+  const signGap = padding * 0.5;
+
+  // 1. Define the core bounding box for the '8' figure
+  const digitX = x + padding + signWidth + signGap;
+  const digitY = y + padding;
+  const digitW = width - padding * 2 - signWidth - signGap;
+  const digitH = height - padding * 2;
+  
+  // 2. Setup interlocking geometry variables
+  const T = thickness;
+  const bevel = T / 2;
+  const gap = T * 0.125; // Creates the tiny separation between LEDs
+
+  const midY = digitY + digitH / 2;
+  const hSegW = digitW - T;            // Width of horizontal segments
+  const vSegH = digitH / 2 - T / 2;    // Height of vertical segments
+
+  // Background
+  p.fill("#262220");
+  p.rect(x, y, width, height);
+
+  let colors = gate.output.map(segment => {
+    return segment ? theme.gates.output.low.hex : "#2a1a1a";
+  });
+
+  // 0: Top
+  p.fill(colors[0]);
+  drawHorizontalSegment(digitX + T / 2 + gap, digitY, hSegW - 2 * gap, T, bevel, colors[0], p);
+  
+  // 1: Top Right
+  p.fill(colors[1]);
+  drawVerticalSegment(digitX + digitW - T, digitY + T / 2 + gap, vSegH - 2 * gap, T, bevel, colors[1], p);
+  
+  // 2: Bottom Right
+  p.fill(colors[2]);
+  drawVerticalSegment(digitX + digitW - T, midY + gap, vSegH - 2 * gap, T, bevel, colors[2], p);
+  
+  // 3: Bottom
+  p.fill(colors[3]);
+  drawHorizontalSegment(digitX + T / 2 + gap, digitY + digitH - T, hSegW - 2 * gap, T, bevel, colors[3], p);
+  
+  // 4: Bottom Left
+  p.fill(colors[4]);
+  drawVerticalSegment(digitX, midY + gap, vSegH - 2 * gap, T, bevel, colors[4], p);
+  
+  // 5: Top Left
+  p.fill(colors[5]);
+  drawVerticalSegment(digitX, digitY + T / 2 + gap, vSegH - 2 * gap, T, bevel, colors[5], p);
+  
+  // 6: Middle
+  p.fill(colors[6]);
+  drawHorizontalSegment(digitX + T / 2 + gap, midY - T / 2, hSegW - 2 * gap, T, bevel, colors[6], p);
+
+  // 7: Sign / Minus Indicator
+  p.fill(colors[7]);
+  // Vertically centered relative to the middle segment
+  drawHorizontalSegment(x + padding, midY - T / 2, signWidth, T, bevel, colors[7], p);
 }
 
 export function drawWire(renderNodes, wireInfo, nodeMap, p) {
