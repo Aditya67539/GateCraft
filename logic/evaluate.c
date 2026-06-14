@@ -109,6 +109,10 @@ uint8_t evaluateGate(uint8_t type, uint8_t *inputs, uint8_t inputCount) {
         }
         output = output == 0 ? 1 : 0;
         break;
+    // 7 Segment Display
+    case 11:
+        output = 0;
+        break;
     default:
         break;
     }

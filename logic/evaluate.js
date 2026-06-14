@@ -141,7 +141,7 @@ export function evaluateOnce(circuit) {
     for (const wire of wires) {
       if (wire.from.id !== gate.id) continue;
 
-      const signal = gate.type === "composite"
+      const signal = (gate.type === "composite" || gate.type === "seven-seg")
         ? gate.output[wire.fromOutputIndex]
         : gate.output;
 
@@ -186,6 +186,7 @@ const Types = Object.freeze({
   xor: 8,
   xnor: 9,
   composite: 10,
+  display: 11,
 });
 
 function encodeType(type) {
@@ -254,7 +255,7 @@ export function flatten(circuit, acc, inputOrder = [], outputOrder = [], gateCou
 
       acc.gateTypes.push(encodeType(gate.type));
       acc.outputOffset.push(acc.allOutputs.length);
-      acc.allOutputs.push(gate.output ? 1 : 0);
+      acc.allOutputs.push((Array.isArray(gate.output) ? gate.output[0] : gate.output) ? 1 : 0);
 
       gateCount++;
     } else {
@@ -482,13 +483,18 @@ export function buildTypedArrays(acc) {
   acc.syncOffsets = [];
   acc.compositeGates = [];
   acc.compositeBoundaries = [];
+  acc.displayGates = [];
 
   for (const [gate, entry] of acc.gateMap.entries()) {
     if (gate.type === "input" || gate.type === "clock") {
-      acc.inputGates.push(gate);
-      acc.inputOffsets.push(acc.outputOffset[entry]);
-    }
-    if (gate.type !== "composite") {
+      const faninWires = acc.fanin.get(entry);
+      if (!faninWires || faninWires.length === 0) {
+        acc.inputGates.push(gate);
+        acc.inputOffsets.push(acc.outputOffset[entry]);
+      }
+    } else if (gate.type === "seven-seg") {
+      acc.displayGates.push(gate);
+    } else if (gate.type !== "composite") {
       acc.syncGates.push(gate);
       acc.syncOffsets.push(acc.outputOffset[entry]);
     } else {
@@ -598,6 +604,15 @@ export function evaluateWasm(circuit, acc, typedArrays) {
         const outArray = acc.compositeGates[i].output;
         for (let j = 0; j < boundary.length; j++) {
           outArray[j] = allOutputs[outputOffset[boundary[j]]] === 1;
+        }
+      }
+    }
+
+    if (acc.displayGates) {
+      for (let i = 0; i < acc.displayGates.length; i++) {
+        const gate = acc.displayGates[i];
+        for (let j = 0; j < gate.inputCount; j++) {
+          gate.output[j] = gate.inputs[j] ? gate.inputs[j].signal : false;
         }
       }
     }
