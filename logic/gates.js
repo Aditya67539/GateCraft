@@ -162,6 +162,12 @@ export class CompositeGate extends ConnectableGate {
 
   parseCircuitData() {
     const gates = this.circuitData.builder.gates;
+    
+    for (let gate of gates.values()) {
+      if (gate.type === "seven-seg") {
+        this.embeddedDisplay = gate;
+      }
+    }
 
     this.internalInputs = this.circuitData.inputOrder.map(id => gates.get(id));
     this.internalOutputs = this.circuitData.outputOrder.map(id => gates.get(id));
@@ -202,7 +208,8 @@ export class SevenSegmentDisplay extends ConnectableGate {
     super();
     this.id = Logic.nextId++;
     this.type = "seven-seg";
-    this.inputCount = 8;
+    this.inputCount = GATE_DEFS[this.type].inputs;
+    this.outputCount = GATE_DEFS[this.type].outputs;
     this.inputs = new Array(this.inputCount).fill(undefined);
     this.output = new Array(this.inputCount).fill(false);
     this.tempOutput = new Array(this.inputCount).fill(false);

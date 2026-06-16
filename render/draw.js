@@ -168,7 +168,7 @@ export function drawOutputPorts(renderNodes, p) {
   for (let i = 0; i < renderNodes.length; i++) {
     const gate = renderNodes[i].gate;
     if (gate.type === "output") continue;
-    const totalOutputs = gate.type === "composite" ? gate.outputCount : 1;
+    const totalOutputs = gate.outputCount;
 
     for (let j = 0; j < totalOutputs; j++) {
       const port = renderNodes[i].getOutputPortByIndex(j, totalOutputs);
