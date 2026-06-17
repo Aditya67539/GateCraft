@@ -120,30 +120,8 @@ function computeSize(gate) {
   const height = (maxPortCount + 1) * GRID_SIZE;
 
   if (gate.type === "composite") {
-    // Measure the widest input and output port labels
-    let maxInputLabelLen = 0;
-    let maxOutputLabelLen = 0;
-    if (gate.internalInputs) {
-      for (const g of gate.internalInputs) {
-        if (g.label) {
-          const lbl = g.label;
-          if (lbl.length > maxInputLabelLen) maxInputLabelLen = lbl.length;
-        }
-      }
-    }
-    if (gate.internalOutputs) {
-      for (const g of gate.internalOutputs) {
-        if (g.label) {
-          const lbl = g.label;
-          if (lbl.length > maxOutputLabelLen) maxOutputLabelLen = lbl.length;
-        }
-      }
-    }
-
-    const inputLabelWidth = maxInputLabelLen * PORT_LABEL_SIZE * 0.55 + 10;
-    const outputLabelWidth = maxOutputLabelLen * PORT_LABEL_SIZE * 0.55 + 10;
     const centerLabelWidth = centerLabel.length * FONT_SIZE * 0.6 + 20;
-    const rawWidth = Math.max(80, inputLabelWidth + centerLabelWidth + outputLabelWidth);
+    const rawWidth = Math.max(80, 10 + centerLabelWidth + 10);
     // Snap width to the nearest larger multiple of GRID_SIZE
     const width = Math.ceil(rawWidth / GRID_SIZE) * GRID_SIZE;
     return { width, height };
