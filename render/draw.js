@@ -237,6 +237,115 @@ export function drawWaypoint(wireInfo, waypoint, p) {
   p.circle(waypoint.x, waypoint.y, 12);
 }
 
+/**
+ * Draws an animated tooltip above a port showing the parent gate's label or type.
+ *
+ * @param {string} label - The text to display (gate.label || gate.type)
+ * @param {{x: number, y: number}} port - The port position
+ * @param {number} opacity - Animation progress from 0 → 1 (controls fade + slide)
+ * @param {Object} p - The p5 instance
+ */
+export function drawPortTooltip(label, port, opacity, portType, p) {
+  if (opacity <= 0) return;
+
+  const theme = getActiveTheme();
+
+  // Measure text
+  p.textSize(12);
+  p.textAlign(p.CENTER, p.CENTER);
+  const textW = p.textWidth(label);
+
+  // Tooltip geometry
+  const padX = 12;
+  const padY = 7;
+  const tooltipW = textW + padX * 2;
+  const tooltipH = 26;
+  const cornerR = 7;
+  const arrowSize = 5;
+  const gap = 10; // distance above the port
+
+  // Animate: slide horizontally from the port (6px closer) + fade in
+  const slideOffset = (1 - opacity) * 6;
+  const portGap = PORT_RADIUS / 2 + arrowSize + 2; // clearance from port circle edge
+  let tooltipX;
+  if (portType === "input") {
+    tooltipX = port.x - tooltipW - portGap - arrowSize + slideOffset;
+  } else if (portType === "output") {
+    tooltipX = port.x + portGap + arrowSize - slideOffset;
+  }
+  const tooltipY = port.y - tooltipH / 2;
+
+  p.push();
+  // Apply overall opacity via tint
+  const easedAlpha = opacity * opacity * (3 - 2 * opacity); // smoothstep
+
+  // Background pill
+  const bgColor = p.color(theme.panel.bg.hex);
+  bgColor.setAlpha(easedAlpha * 235);
+  p.fill(bgColor);
+
+  const borderColor = p.color(theme.accent.hex);
+  borderColor.setAlpha(easedAlpha * 180);
+  p.stroke(borderColor);
+  p.strokeWeight(1.2);
+
+  p.rect(tooltipX, tooltipY, tooltipW, tooltipH, cornerR);
+
+  // Arrow / triangle pointer — base is inset from the tooltip edge
+  // so it connects with the flat portion of the rounded rect, not the curve
+  p.noStroke();
+  p.fill(bgColor);
+  const arrowY = port.y; // vertically centered on the port
+
+  if (portType === "output") {
+    // Arrow on the LEFT side of the tooltip, pointing toward the port
+    const baseX = tooltipX;
+    p.triangle(
+      baseX, arrowY - arrowSize,
+      baseX, arrowY + arrowSize,
+      baseX - arrowSize, arrowY
+    );
+
+    p.stroke(borderColor);
+    p.strokeWeight(1.2);
+    p.line(baseX, arrowY - arrowSize, baseX - arrowSize, arrowY);
+    p.line(baseX, arrowY + arrowSize, baseX - arrowSize, arrowY);
+
+  } else if (portType === "input") {
+    // Arrow on the RIGHT side of the tooltip, pointing toward the port
+    const baseX = tooltipX + tooltipW;
+    p.triangle(
+      baseX, arrowY - arrowSize,
+      baseX, arrowY + arrowSize,
+      baseX + arrowSize, arrowY
+    );
+
+    p.stroke(borderColor);
+    p.strokeWeight(1.2);
+    p.line(baseX, arrowY - arrowSize, baseX + arrowSize, arrowY);
+    p.line(baseX, arrowY + arrowSize, baseX + arrowSize, arrowY);
+  }
+
+  // Label text
+  const textColor = p.color(theme.text.primary.hex);
+  textColor.setAlpha(easedAlpha * 255);
+  p.noStroke();
+  p.fill(textColor);
+  p.textSize(12);
+  p.textStyle(p.BOLD);
+  p.textAlign(p.CENTER, p.CENTER);
+  p.text(label, tooltipX + tooltipW / 2, tooltipY + tooltipH / 2);
+
+  p.pop();
+
+  // Restore defaults for subsequent draws
+  p.textStyle(p.NORMAL);
+  p.textSize(FONT_SIZE);
+  p.fill(0);
+  p.stroke(0);
+  p.strokeWeight(1);
+}
+
 export function setFont(theme, p) {
   if (theme.font && theme.font.family) {
     // Strip quotes for p5 textFont
