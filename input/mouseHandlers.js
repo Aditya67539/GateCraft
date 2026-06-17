@@ -196,7 +196,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
 }
 
 
-function isNearPort(mouseX, mouseY, port, p) {
+export function isNearPort(mouseX, mouseY, port, p) {
   const d = p.dist(mouseX, mouseY, port.x, port.y);
   return d < 15;
 }
