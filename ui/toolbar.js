@@ -122,7 +122,7 @@ function refreshCompositeSection() {
     btn.addEventListener("click", () => {
       const circuit = loadCompositeGate(name);
       if (!circuit) return;
-      const compositeGate = buildCircuitFromData(circuit.circuitData);
+      const compositeGate = buildCircuitFromData(circuit.circuitData, circuit.renderData);
       state.justPlacedFromToolbar = true;
       spawnCompositeNode(name, compositeGate, 0, 0);
     });
