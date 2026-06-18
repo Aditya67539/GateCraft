@@ -172,6 +172,9 @@ export class CompositeGate extends ConnectableGate {
     for (const wire of this.circuitData.builder.wires) {
       wire.signal = false;
     }
+
+    // Recursively collect all embedded seven-segment displays
+    this.embeddedDisplays = collectDisplays(gates, this.circuitData.positionMap);
   }
 
   evaluate() {
@@ -197,6 +200,26 @@ export class CompositeGate extends ConnectableGate {
   }
 }
 
+export class SevenSegmentDisplay extends ConnectableGate {
+  constructor() {
+    super();
+    this.id = Logic.nextId++;
+    this.type = "seven-seg";
+    this.inputCount = GATE_DEFS[this.type].inputs;
+    this.outputCount = GATE_DEFS[this.type].outputs;
+    this.inputs = new Array(this.inputCount).fill(undefined);
+    this.output = new Array(this.inputCount).fill(false);
+    this.tempOutput = new Array(this.inputCount).fill(false);
+  }
+
+  evaluate() {
+    for (let i = 0; i < this.inputCount; i++) {
+      this.tempOutput[i] = this.inputs[i]?.signal ?? false;
+    }
+    return { ok: true, output: this.tempOutput };
+  }
+}
+
 
 /**
  * Creates a basic gate instance based on the given type.
@@ -211,6 +234,8 @@ export function createBasicGate(type) {
     ? new Output()
     : type === "clock"
     ? new Clock(false)
+    : type === "seven-seg"
+    ? new SevenSegmentDisplay()
     : new Gate(type, []);
 }
 
@@ -229,6 +254,39 @@ export function createCompositeGate(name, circuitData) {
   gate.label = name;
   gate.parseCircuitData();
   return gate;
+}
+
+/**
+ * Recursively collects all seven-segment display gates from a gate map,
+ * including those nested inside composite gates. Returns them sorted
+ * by x-coordinate (left-to-right).
+ *
+ * @param {Map<number, Object>} gates - The gate map to search
+ * @param {Object|null} positionMap - Map of gate ID → { x, y } render positions
+ * @returns {Array<Object>} Sorted array of display gate references
+ */
+function collectDisplays(gates, positionMap) {
+  const displays = [];
+
+  for (const [id, gate] of gates) {
+    if (gate.type === "seven-seg") {
+      const pos = positionMap ? positionMap[id] : null;
+      const sortX = pos ? pos.x : 0;
+      displays.push({ gate, sortX });
+    } else if (gate.type === "composite" && gate.embeddedDisplays && gate.embeddedDisplays.length > 0) {
+      // For nested composites that contain displays, use the composite gate's
+      // own x position as the sort key for all its displays
+      const pos = positionMap ? positionMap[id] : null;
+      const outerX = pos ? pos.x : 0;
+      for (const nested of gate.embeddedDisplays) {
+        displays.push({ gate: nested.gate, sortX: outerX });
+      }
+    }
+  }
+
+  // Sort left-to-right by x position
+  displays.sort((a, b) => a.sortX - b.sortX);
+  return displays;
 }
 
 function resolveInputs(inputs) {

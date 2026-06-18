@@ -161,7 +161,7 @@ export function loadCompositeGate(name) {
  * 
  * @throws {Error} If a referenced nested composite gate is missing.
  */
-export function buildCircuitFromData(circuitData) {
+export function buildCircuitFromData(circuitData, renderData = null) {
   const builder = new CircuitBuilder();
   const idMap = {};
 
@@ -170,7 +170,7 @@ export function buildCircuitFromData(circuitData) {
     if (gateSpec.type === "composite") {
       const nestedCircuit = loadCompositeGate(gateSpec.label);
       if (!nestedCircuit) throw new Error(`Missing nested gate: ${gateSpec.label}`);
-      const nestedBuilder = buildCircuitFromData(nestedCircuit.circuitData);
+      const nestedBuilder = buildCircuitFromData(nestedCircuit.circuitData, nestedCircuit.renderData);
       gate = builder.addCompositeGate(gateSpec.label, nestedBuilder);
     } else {
       gate = builder.addBasicGate(gateSpec.type);
@@ -192,7 +192,19 @@ export function buildCircuitFromData(circuitData) {
   const inputOrder = circuitData.inputOrder.map(id => idMap[id]);
   const outputOrder = circuitData.outputOrder.map(id => idMap[id]);
 
-  return { builder, inputOrder, outputOrder };
+  // Build a lookup from new gate IDs to their render positions
+  let positionMap = null;
+  if (renderData && renderData.positions) {
+    positionMap = {};
+    for (const pos of renderData.positions) {
+      const newId = idMap[pos.id];
+      if (newId !== undefined) {
+        positionMap[newId] = { x: pos.x, y: pos.y };
+      }
+    }
+  }
+
+  return { builder, inputOrder, outputOrder, positionMap };
 }
 
 /**
