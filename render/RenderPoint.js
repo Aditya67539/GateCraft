@@ -117,20 +117,50 @@ function computeSize(gate) {
   const maxPortCount = Math.max(inputCount, outputCount);
   const centerLabel = gate.label || gate.type;
 
-  const height = (maxPortCount + 1) * GRID_SIZE;
+  const portHeight = (maxPortCount + 1) * GRID_SIZE;
 
   if (gate.type === "composite") {
     const centerLabelWidth = centerLabel.length * FONT_SIZE * 0.6 + 20;
+
+    if (gate.embeddedDisplays && gate.embeddedDisplays.length > 0) {
+      // --- Embedded display sizing (supports multiple displays) ---
+      // Seven-seg standalone size: 9×GRID_SIZE wide, 11×GRID_SIZE tall
+      // Scale it down to ~70% for embedding
+      const displayScale = 0.70;
+      const displayW = Math.round(9 * GRID_SIZE * displayScale);
+      const displayH = Math.round(11 * GRID_SIZE * displayScale);
+      const displayCount = gate.embeddedDisplays.length;
+      const displayGap = 0;
+
+      // Label row at the top + padding around the display strip
+      const labelRowH = GRID_SIZE * 1.5;
+      const displayPad = GRID_SIZE * 0.5;
+
+      // Total width of the display strip: N displays + (N-1) gaps
+      const displayStripW = displayCount * displayW + (displayCount - 1) * displayGap;
+
+      const rawWidth = Math.max(80, 10 + centerLabelWidth + 10, displayStripW + displayPad * 2);
+      const rawHeight = Math.max(portHeight, labelRowH + displayH + displayPad * 2);
+
+      const width = Math.ceil(rawWidth / GRID_SIZE) * GRID_SIZE;
+      const height = Math.ceil(rawHeight / GRID_SIZE) * GRID_SIZE;
+
+      // Stash display layout metrics for the draw pass
+      gate._displayArea = { displayW, displayH, labelRowH, displayPad, displayCount, displayGap };
+
+      return { width, height };
+    }
+
     const rawWidth = Math.max(80, 10 + centerLabelWidth + 10);
     // Snap width to the nearest larger multiple of GRID_SIZE
     const width = Math.ceil(rawWidth / GRID_SIZE) * GRID_SIZE;
-    return { width, height };
+    return { width, height: portHeight };
   }
 
   const rawWidth = Math.max(60, centerLabel.length * FONT_SIZE * 0.6 + 20);
   // Snap width to the nearest larger multiple of GRID_SIZE
   const width = Math.ceil(rawWidth / GRID_SIZE) * GRID_SIZE;
-  return { width, height };
+  return { width, height: portHeight };
 }
 
 export function rebuildNodeMap(renderNodes, nodeMap) {
