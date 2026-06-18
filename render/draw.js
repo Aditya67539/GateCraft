@@ -44,7 +44,24 @@ export function drawGate(renderNode, p) {
   p.textAlign(p.CENTER, p.CENTER);
   p.textSize(FONT_SIZE);
   const label = gate.label || gate.type;
-  p.text(label, renderNode.x + renderNode.width / 2, renderNode.y + renderNode.height / 2);
+
+  if (gate.type === "composite" && gate.embeddedDisplays && gate.embeddedDisplays.length > 0 && gate._displayArea) {
+    // --- Label at the top ---
+    const { displayW, displayH, labelRowH, displayPad, displayCount, displayGap } = gate._displayArea;
+    p.text(label, renderNode.x + renderNode.width / 2, renderNode.y + labelRowH / 2);
+
+    // --- Embedded displays (centered strip) ---
+    const displayStripW = displayCount * displayW + (displayCount - 1) * displayGap;
+    const stripStartX = renderNode.x + (renderNode.width - displayStripW) / 2;
+    const dispY = renderNode.y + labelRowH + displayPad;
+
+    for (let i = 0; i < displayCount; i++) {
+      const dispX = stripStartX + i * (displayW + displayGap);
+      drawEmbeddedDisplay(gate.embeddedDisplays[i].gate, dispX, dispY, displayW, displayH, p);
+    }
+  } else {
+    p.text(label, renderNode.x + renderNode.width / 2, renderNode.y + renderNode.height / 2);
+  }
 
   p.fill(0);
   p.stroke(0);
@@ -144,6 +161,81 @@ function drawDisplay(renderNode, p) {
   drawHorizontalSegment(x + padding, midY - T / 2, signWidth, T, bevel, colors[7], p);
 }
 
+/**
+ * Draws a seven-segment display at an arbitrary position and size.
+ * Used to embed a display inside a composite gate body.
+ *
+ * @param {Object} displayGate - The seven-seg gate whose output drives the segments
+ * @param {number} x - Top-left x of the display area
+ * @param {number} y - Top-left y of the display area
+ * @param {number} width - Width of the display area
+ * @param {number} height - Height of the display area
+ * @param {Object} p - The p5 instance
+ */
+function drawEmbeddedDisplay(displayGate, x, y, width, height, p) {
+  const theme = getActiveTheme();
+
+  // Scale padding and thickness proportionally to the display size
+  const scale = height / (11 * GRID_SIZE); // ratio vs standalone display
+  const padding = GRID_SIZE * scale;
+  const thickness = GRID_SIZE * scale;
+
+  const signWidth = thickness * 2;
+  const signGap = padding * 0.5;
+
+  const digitX = x + padding + signWidth + signGap;
+  const digitY = y + padding;
+  const digitW = width - padding * 2 - signWidth - signGap;
+  const digitH = height - padding * 2;
+
+  const T = thickness;
+  const bevel = T / 2;
+  const gap = T * 0.125;
+
+  const midY = digitY + digitH / 2;
+  const hSegW = digitW - T;
+  const vSegH = digitH / 2 - T / 2;
+
+  // Background
+  p.fill("#090808");
+  p.rect(x, y, width, height);
+
+  let colors = displayGate.output.map(segment => {
+    return segment ? theme.gates.output.low.hex : "#2a1a1a";
+  });
+
+  // 0: Top
+  p.fill(colors[0]);
+  drawHorizontalSegment(digitX + T / 2 + gap, digitY, hSegW - 2 * gap, T, bevel, colors[0], p);
+
+  // 1: Top Right
+  p.fill(colors[1]);
+  drawVerticalSegment(digitX + digitW - T, digitY + T / 2 + gap, vSegH - 2 * gap, T, bevel, colors[1], p);
+
+  // 2: Bottom Right
+  p.fill(colors[2]);
+  drawVerticalSegment(digitX + digitW - T, midY + gap, vSegH - 2 * gap, T, bevel, colors[2], p);
+
+  // 3: Bottom
+  p.fill(colors[3]);
+  drawHorizontalSegment(digitX + T / 2 + gap, digitY + digitH - T, hSegW - 2 * gap, T, bevel, colors[3], p);
+
+  // 4: Bottom Left
+  p.fill(colors[4]);
+  drawVerticalSegment(digitX, midY + gap, vSegH - 2 * gap, T, bevel, colors[4], p);
+
+  // 5: Top Left
+  p.fill(colors[5]);
+  drawVerticalSegment(digitX, digitY + T / 2 + gap, vSegH - 2 * gap, T, bevel, colors[5], p);
+
+  // 6: Middle
+  p.fill(colors[6]);
+  drawHorizontalSegment(digitX + T / 2 + gap, midY - T / 2, hSegW - 2 * gap, T, bevel, colors[6], p);
+
+  // 7: Sign / Minus Indicator
+  p.fill(colors[7]);
+  drawHorizontalSegment(x + padding, midY - T / 2, signWidth, T, bevel, colors[7], p);
+}
 export function drawWire(renderNodes, wireInfo, nodeMap, p) {
   const theme = getActiveTheme();
   const ports = getWirePorts(renderNodes, wireInfo.wire, nodeMap);
