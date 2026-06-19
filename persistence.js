@@ -226,3 +226,19 @@ export function deleteCompositeGate(name) {
   delete store[name];
   setStore(store);
 }
+
+/**
+ * Renames a composite gate in storage.
+ *
+ * @param {string} oldName - Current name of the composite gate.
+ * @param {string} newName - New name for the composite gate.
+ * @returns {boolean} True if rename succeeded, false if oldName not found or newName already exists.
+ */
+export function renameCompositeGate(oldName, newName) {
+  const store = getStore();
+  if (!store[oldName] || store[newName]) return false;
+  store[newName] = store[oldName];
+  delete store[oldName];
+  setStore(store);
+  return true;
+}

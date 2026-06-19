@@ -5,6 +5,7 @@ import {
   loadCompositeGate,
   listCompositeGates,
   deleteCompositeGate,
+  renameCompositeGate,
   buildCircuitFromData,
 } from "../persistence.js";
 import { themes, getActiveThemeId, setActiveThemeId } from "../render/theme.js";
@@ -92,12 +93,162 @@ function renderThemeGrid() {
   }
 }
 
+// ─── Sidebar collapse / expand ──────────────────────────────────
+const sidebar = document.getElementById("sidebar");
+const sidebarCollapseBtn = document.getElementById("sidebar-collapse-btn");
+const sidebarExpandBtn = document.getElementById("sidebar-expand-btn");
+
+function collapseSidebar() {
+  sidebar.classList.add("collapsed");
+  sidebarExpandBtn.classList.add("visible");
+}
+
+function expandSidebar() {
+  sidebar.classList.remove("collapsed");
+  sidebarExpandBtn.classList.remove("visible");
+}
+
+sidebarCollapseBtn.addEventListener("click", collapseSidebar);
+sidebarExpandBtn.addEventListener("click", expandSidebar);
+
+// ─── Section collapse / expand ──────────────────────────────────
+document.querySelectorAll(".sidebar-section-header").forEach(header => {
+  header.addEventListener("click", () => {
+    const section = header.closest(".sidebar-section");
+    section.classList.toggle("collapsed");
+  });
+});
+
 // ─── Sidebar composite section ──────────────────────────────────
 const compositeSection = document.getElementById("composite-section");
+const compositeBtnGrid = document.getElementById("composite-btn-grid");
+
+// ─── Custom context menu ───────────────────────────────────────
+const ctxMenu = document.getElementById("composite-context-menu");
+let _ctxTargetName = null;
+
+function showContextMenu(e, name) {
+  e.preventDefault();
+  e.stopPropagation();
+  _ctxTargetName = name;
+
+  // Position the menu near the cursor, clamped to viewport
+  const x = Math.min(e.clientX, window.innerWidth - 170);
+  const y = Math.min(e.clientY, window.innerHeight - 100);
+  ctxMenu.style.left = `${x}px`;
+  ctxMenu.style.top = `${y}px`;
+  ctxMenu.classList.add("open");
+}
+
+function hideContextMenu() {
+  ctxMenu.classList.remove("open");
+  _ctxTargetName = null;
+}
+
+// Close context menu on any click or Escape
+document.addEventListener("click", hideContextMenu);
+document.addEventListener("contextmenu", (e) => {
+  // Close if right-clicking elsewhere
+  if (ctxMenu.classList.contains("open") && !ctxMenu.contains(e.target)) {
+    hideContextMenu();
+  }
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") hideContextMenu();
+});
+
+// Context menu actions
+document.getElementById("ctx-rename").addEventListener("click", () => {
+  const name = _ctxTargetName;
+  hideContextMenu();
+  if (!name) return;
+
+  // Reuse the save modal for rename
+  const renameModal = document.getElementById("rename-gate-modal");
+  const renameInput = document.getElementById("rename-gate-input");
+  const renameSave = document.getElementById("rename-save-btn");
+  const renameCancel = document.getElementById("rename-cancel-btn");
+
+  renameInput.value = name;
+  renameModal.classList.add("open");
+  renameInput.focus();
+  renameInput.select();
+
+  const doRename = () => {
+    const newName = renameInput.value.trim();
+    if (!newName || newName === name) {
+      renameModal.classList.remove("open");
+      cleanup();
+      return;
+    }
+    if (renameCompositeGate(name, newName)) {
+      refreshCompositeSection();
+    }
+    renameModal.classList.remove("open");
+    cleanup();
+  };
+
+  const doCancel = () => {
+    renameModal.classList.remove("open");
+    cleanup();
+  };
+
+  const onKey = (e) => {
+    if (e.key === "Enter") doRename();
+    if (e.key === "Escape") doCancel();
+  };
+
+  const onOverlay = (e) => {
+    if (e.target === renameModal) doCancel();
+  };
+
+  function cleanup() {
+    renameSave.removeEventListener("click", doRename);
+    renameCancel.removeEventListener("click", doCancel);
+    renameInput.removeEventListener("keydown", onKey);
+    renameModal.removeEventListener("click", onOverlay);
+  }
+
+  renameSave.addEventListener("click", doRename);
+  renameCancel.addEventListener("click", doCancel);
+  renameInput.addEventListener("keydown", onKey);
+  renameModal.addEventListener("click", onOverlay);
+});
+
+document.getElementById("ctx-delete").addEventListener("click", () => {
+  const name = _ctxTargetName;
+  hideContextMenu();
+  if (!name) return;
+  deleteCompositeGate(name);
+  refreshCompositeSection();
+});
+
+// ─── Custom tooltip ───────────────────────────────────────────
+const tooltip = document.getElementById("sidebar-tooltip");
+let _tooltipTimeout = null;
+
+function showTooltip(e, text) {
+  clearTimeout(_tooltipTimeout);
+  tooltip.textContent = text;
+  tooltip.classList.add("visible");
+  positionTooltip(e);
+}
+
+function positionTooltip(e) {
+  const x = Math.min(e.clientX + 10, window.innerWidth - tooltip.offsetWidth - 10);
+  const y = e.clientY - tooltip.offsetHeight - 8;
+  tooltip.style.left = `${x}px`;
+  tooltip.style.top = `${Math.max(y, 4)}px`;
+}
+
+function hideTooltip() {
+  _tooltipTimeout = setTimeout(() => {
+    tooltip.classList.remove("visible");
+  }, 50);
+}
 
 function refreshCompositeSection() {
-  // Remove old dynamic buttons (keep the header label)
-  compositeSection.querySelectorAll(".composite-gate-row").forEach(el => el.remove());
+  compositeBtnGrid.innerHTML = "";
 
   const names = listCompositeGates();
 
@@ -105,20 +256,16 @@ function refreshCompositeSection() {
     const empty = document.createElement("p");
     empty.className = "composite-empty";
     empty.textContent = "No saved gates";
-    compositeSection.appendChild(empty);
+    compositeBtnGrid.appendChild(empty);
     return;
-  } else {
-    compositeSection.querySelectorAll(".composite-empty").forEach(el => el.remove());
   }
 
   names.forEach(name => {
-    const row = document.createElement("div");
-    row.className = "composite-gate-row";
-
     const btn = document.createElement("button");
     btn.className = "addComponent composite-btn";
-    btn.title = `Place ${name}`;
     btn.textContent = name;
+
+    // Left-click: place the gate
     btn.addEventListener("click", () => {
       const circuit = loadCompositeGate(name);
       if (!circuit) return;
@@ -127,22 +274,21 @@ function refreshCompositeSection() {
       spawnCompositeNode(name, compositeGate, 0, 0);
     });
 
-    const del = document.createElement("button");
-    del.className = "composite-delete-btn";
-    del.title = `Delete ${name}`;
-    del.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-    </svg>`;
-    del.addEventListener("click", (e) => {
-      e.stopPropagation();
-      deleteCompositeGate(name);
-      refreshCompositeSection();
-    });
+    // Right-click: show context menu
+    btn.addEventListener("contextmenu", (e) => showContextMenu(e, name));
 
-    row.appendChild(btn);
-    row.appendChild(del);
-    compositeSection.appendChild(row);
+    // Custom tooltip on hover (only if text is truncated)
+    btn.addEventListener("mouseenter", (e) => {
+      if (btn.scrollWidth > btn.clientWidth) {
+        showTooltip(e, name);
+      }
+    });
+    btn.addEventListener("mousemove", (e) => {
+      if (tooltip.classList.contains("visible")) positionTooltip(e);
+    });
+    btn.addEventListener("mouseleave", hideTooltip);
+
+    compositeBtnGrid.appendChild(btn);
   });
 }
 
@@ -218,4 +364,34 @@ export function initToolbar(p, circuit, renderNodes, wires) {
 
   // Initial population of composite section
   refreshCompositeSection();
+
+  // ─── Global custom tooltip for all [title] elements ───────────
+  // Replaces native browser tooltips with the styled glassmorphism tooltip.
+  // Converts title → data-tooltip on first hover to suppress the native tooltip.
+  document.addEventListener("mouseenter", (e) => {
+    if (!(e.target instanceof Element)) return;
+    const el = e.target.closest("[title], [data-tooltip]");
+    if (!el) return;
+
+    // On first encounter, move title → data-tooltip to suppress native tooltip
+    if (el.hasAttribute("title")) {
+      el.dataset.tooltip = el.getAttribute("title");
+      el.removeAttribute("title");
+    }
+
+    const text = el.dataset.tooltip;
+    if (text) showTooltip(e, text);
+  }, true);
+
+  document.addEventListener("mousemove", (e) => {
+    if (tooltip.classList.contains("visible")) {
+      positionTooltip(e);
+    }
+  }, true);
+
+  document.addEventListener("mouseleave", (e) => {
+    if (!(e.target instanceof Element)) { hideTooltip(); return; }
+    const el = e.target.closest("[data-tooltip]");
+    if (el) hideTooltip();
+  }, true);
 }
