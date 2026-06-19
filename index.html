@@ -74,35 +74,121 @@
   </header>
 
   <!-- ── Left Sidebar ────────────────────────────────────── -->
-  <aside class="sidebar">
-    <div class="sidebar-section">
-      <p class="sidebar-label">I / O</p>
-      <button class="addComponent" data-type="input">Input</button>
-      <button class="addComponent" data-type="output">Output</button>
-      <button class="addComponent" data-type="clock">Clock</button>
-      <button class="addComponent" data-type="seven-seg">7 Segment Display</button>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <span class="sidebar-title">Digital Component Palette</span>
+      <button class="sidebar-collapse-btn" id="sidebar-collapse-btn" title="Collapse sidebar" aria-label="Collapse sidebar">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+      </button>
     </div>
 
-    <div class="sidebar-divider"></div>
+    <div class="sidebar-body" id="sidebar-body">
+      <div class="sidebar-section" data-section="io">
+        <button class="sidebar-section-header" data-toggle="io">
+          <span class="sidebar-section-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
+              <path d="M2 12h20" />
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+            </svg>
+          </span>
+          <span class="sidebar-section-label">I/O</span>
+          <span class="sidebar-section-chevron">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </span>
+        </button>
+        <div class="sidebar-section-content scrollable" id="section-io">
+          <div class="sidebar-btn-grid">
+            <button class="addComponent" data-type="input">Input</button>
+            <button class="addComponent" data-type="output">Output</button>
+            <button class="addComponent" data-type="clock">Clock</button>
+            <button class="addComponent" data-type="seven-seg">7-Segment Display</button>
+          </div>
+        </div>
+      </div>
 
-    <div class="sidebar-section">
-      <p class="sidebar-label">Gates</p>
-      <button class="addComponent" data-type="and">AND</button>
-      <button class="addComponent" data-type="or">OR</button>
-      <button class="addComponent" data-type="not">NOT</button>
-      <button class="addComponent" data-type="nand">NAND</button>
-      <button class="addComponent" data-type="nor">NOR</button>
-      <button class="addComponent" data-type="xor">XOR</button>
-      <button class="addComponent" data-type="xnor">XNOR</button>
-    </div>
+      <div class="sidebar-section" data-section="gates">
+        <button class="sidebar-section-header" data-toggle="gates">
+          <span class="sidebar-section-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 6h8a8 8 0 0 1 0 12H4z" />
+              <line x1="20" y1="9" x2="16" y2="9" />
+              <line x1="20" y1="15" x2="16" y2="15" />
+              <line x1="4" y1="9" x2="1" y2="9" />
+              <line x1="4" y1="15" x2="1" y2="15" />
+            </svg>
+          </span>
+          <span class="sidebar-section-label">Gates</span>
+          <span class="sidebar-section-chevron">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </span>
+        </button>
+        <div class="sidebar-section-content scrollable" id="section-gates">
+          <div class="sidebar-btn-grid">
+            <button class="addComponent" data-type="and">AND</button>
+            <button class="addComponent" data-type="not">NOT</button>
+            <button class="addComponent" data-type="or">OR</button>
+            <button class="addComponent" data-type="nor">NOR</button>
+            <button class="addComponent" data-type="xor">XOR</button>
+            <button class="addComponent" data-type="xnor">XNOR</button>
+            <button class="addComponent" data-type="nand">NAND</button>
+          </div>
+        </div>
+      </div>
 
-    <div class="sidebar-divider"></div>
-
-    <!-- Dynamically populated by toolbar.js -->
-    <div class="sidebar-section" id="composite-section">
-      <p class="sidebar-label">Composite</p>
+      <!-- Dynamically populated by toolbar.js -->
+      <div class="sidebar-section" id="composite-section" data-section="composite">
+        <button class="sidebar-section-header" data-toggle="composite">
+          <span class="sidebar-section-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="4" width="16" height="16" rx="2" />
+              <rect x="9" y="9" width="6" height="6" />
+              <line x1="9" y1="1" x2="9" y2="4" />
+              <line x1="15" y1="1" x2="15" y2="4" />
+              <line x1="9" y1="20" x2="9" y2="23" />
+              <line x1="15" y1="20" x2="15" y2="23" />
+              <line x1="20" y1="9" x2="23" y2="9" />
+              <line x1="20" y1="14" x2="23" y2="14" />
+              <line x1="1" y1="9" x2="4" y2="9" />
+              <line x1="1" y1="14" x2="4" y2="14" />
+            </svg>
+          </span>
+          <span class="sidebar-section-label">Composite</span>
+          <span class="sidebar-section-chevron">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </span>
+        </button>
+        <div class="sidebar-section-content scrollable" id="section-composite">
+          <div class="sidebar-btn-grid" id="composite-btn-grid">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+      </div>
     </div>
   </aside>
+
+  <!-- Sidebar expand button (visible when collapsed) -->
+  <button class="sidebar-expand-btn" id="sidebar-expand-btn" title="Expand sidebar" aria-label="Expand sidebar">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+      stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  </button>
 
   <!-- ── Save-as-Gate Modal ─────────────────────────────────── -->
   <div class="modal-overlay" id="save-gate-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
@@ -139,6 +225,44 @@
       </div>
     </div>
   </div>
+  <!-- ── Composite Gate Context Menu ─────────────────────────── -->
+  <div class="ctx-menu" id="composite-context-menu">
+    <button class="ctx-menu-item" id="ctx-rename">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+      </svg>
+      Rename
+    </button>
+    <div class="ctx-menu-divider"></div>
+    <button class="ctx-menu-item ctx-menu-danger" id="ctx-delete">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="3 6 5 6 21 6" />
+        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+        <path d="M10 11v6" /><path d="M14 11v6" />
+      </svg>
+      Delete
+    </button>
+  </div>
+
+  <!-- ── Rename Modal ──────────────────────────────────────────── -->
+  <div class="modal-overlay" id="rename-gate-modal" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <h3 class="modal-title">Rename Gate</h3>
+      <p class="modal-desc">Enter a new name for this composite gate.</p>
+      <input class="modal-input" id="rename-gate-input" type="text" placeholder="New name" maxlength="32"
+        autocomplete="off" />
+      <div class="modal-actions">
+        <button class="modal-btn cancel" id="rename-cancel-btn">Cancel</button>
+        <button class="modal-btn confirm" id="rename-save-btn">Rename</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Custom Tooltip ────────────────────────────────────────── -->
+  <div class="sidebar-tooltip" id="sidebar-tooltip"></div>
 
   <!-- ── Canvas host (p5 injects here) ──────────────────── -->
   <main class="canvas-host"></main>
