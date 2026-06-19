@@ -16,4 +16,4 @@ export const FONT_SIZE = 16;
 export const PORT_LABEL_SIZE = 14;
 export const GRID_OFFSET = 5;
 export const GRID_SIZE = 20;
-export const PORT_RADIUS = 10;
+export const PORT_RADIUS = 11;
