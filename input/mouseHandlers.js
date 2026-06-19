@@ -19,7 +19,6 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
     if (state.labelEditing) return;
     if (state.justPlacedFromToolbar) {
       state.justPlacedFromToolbar = false;
-      return;
     }
     state.dragging = renderNodes.find(n => n.containsPoint(p.mouseX, p.mouseY));
 
