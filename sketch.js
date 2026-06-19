@@ -1,5 +1,5 @@
 import { state } from "./state.js";
-import { drawGate, drawWaypoint, drawGhostWire, drawInputPorts, drawOutputPorts, drawWire, drawPortTooltip, setFont, createGrid } from "./render/draw.js";
+import { drawGate, drawWaypoint, drawGhostWire, drawWire, drawPortTooltip, setFont, createGrid } from "./render/draw.js";
 import { registerMouseHandlers, isNearWaypoint, isNearPort } from "./input/mouseHandlers.js";
 import { initToolbar } from "./ui/toolbar.js";
 import { getActiveTheme, applyTheme } from "./render/theme.js";
@@ -56,8 +56,6 @@ const sketch = (p) => {
     for (let i = 0; i < renderNodes.length; i++) {
       drawGate(renderNodes[i], p);
     }
-    drawOutputPorts(renderNodes, p);
-    drawInputPorts(renderNodes, p);
 
     // ── Detect hovered port for tooltip ──────────────────────
     let hoveredPort = null;

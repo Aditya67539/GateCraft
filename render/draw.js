@@ -19,11 +19,18 @@ function contrastText(hex) {
 }
 
 export function drawGate(renderNode, p) {
+  const theme = getActiveTheme();
   if (renderNode.gate.type === "seven-seg") {
     drawDisplay(renderNode, p);
+    drawInputPort(renderNode, theme, p);
+    drawOutputPort(renderNode, theme, p);
+    
+    p.fill(0);
+    p.stroke(0);
+    p.strokeWeight(1);
     return;
   }
-  const theme = getActiveTheme();
+  
   const gate = renderNode.gate;
   const isOn = Array.isArray(gate.output) ? gate.output.some(Boolean) : gate.output;
   let color;
@@ -62,6 +69,9 @@ export function drawGate(renderNode, p) {
   } else {
     p.text(label, renderNode.x + renderNode.width / 2, renderNode.y + renderNode.height / 2);
   }
+
+  drawOutputPort(renderNode, theme, p);
+  drawInputPort(renderNode, theme, p);
 
   p.fill(0);
   p.stroke(0);
@@ -255,44 +265,32 @@ export function drawWire(renderNodes, wireInfo, nodeMap, p) {
   p.strokeWeight(1);
 }
 
-export function drawOutputPorts(renderNodes, p) {
-  const theme = getActiveTheme();
-  for (let i = 0; i < renderNodes.length; i++) {
-    const gate = renderNodes[i].gate;
-    if (gate.type === "output") continue;
-    const totalOutputs = gate.outputCount;
+function drawOutputPort(renderNode, theme, p) {
+  const gate = renderNode.gate;
+  if (gate.type === "output") return;
+  const totalOutputs = gate.outputCount;
 
-    for (let j = 0; j < totalOutputs; j++) {
-      const port = renderNodes[i].getOutputPortByIndex(j, totalOutputs);
-      p.fill(theme.accent.hex);
-      p.stroke(theme.text.primary.hex);
-      p.strokeWeight(1.5);
-      p.circle(port.x, port.y, PORT_RADIUS);
-    }
+  for (let i = 0; i < totalOutputs; i++) {
+    const port = renderNode.getOutputPortByIndex(i, totalOutputs);
+    p.fill(theme.accent.hex);
+    p.stroke(theme.text.primary.hex);
+    p.strokeWeight(1.5);
+    p.circle(port.x, port.y, PORT_RADIUS);
   }
-  p.fill(0);
-  p.stroke(0);
-  p.strokeWeight(1);
 }
 
-export function drawInputPorts(renderNodes, p) {
-  const theme = getActiveTheme();
-  for (let i = 0; i < renderNodes.length; i++) {
-    const gate = renderNodes[i].gate;
-    if (gate.type === "input" || gate.type === "clock") continue;
-    const totalInputs = gate.inputCount;
+function drawInputPort(renderNode, theme, p) {
+  const gate = renderNode.gate;
+  if (gate.type === "input" || gate.type === "clock") return;
+  const totalInputs = gate.inputCount;
 
-    for (let j = 0; j < totalInputs; j++) {
-      const port = renderNodes[i].getInputPortByIndex(j, totalInputs);
-      p.fill(theme.accent.hex);
-      p.stroke(theme.text.primary.hex);
-      p.strokeWeight(1.5);
-      p.circle(port.x, port.y, PORT_RADIUS);
-    }
+  for (let i = 0; i < totalInputs; i++) {
+    const port = renderNode.getInputPortByIndex(i, totalInputs);
+    p.fill(theme.accent.hex);
+    p.stroke(theme.text.primary.hex);
+    p.strokeWeight(1.5);
+    p.circle(port.x, port.y, PORT_RADIUS);
   }
-  p.fill(0);
-  p.stroke(0);
-  p.strokeWeight(1);
 }
 
 export function drawGhostWire(wire, p) {
