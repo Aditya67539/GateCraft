@@ -2,7 +2,7 @@ import { state } from "../state.js";
 import { Input } from "../logic/gates.js";
 import { CLOCK_TIMER, FREQUENCY } from "../constants.js";
 import { initWire, getWirePorts, setCustomWaypoints } from "../render/wireGeometry.js";
-import { rebuildNodeMap, snapPointToGrid } from "../render/RenderPoint.js";
+import { createBasicNode, createCompositeNode, rebuildNodeMap, snapPointToGrid, spawnBasicNode } from "../render/RenderPoint.js";
 
 function cleanupGhostWire() {
   if (state.ghostWireCleanup) {
@@ -15,7 +15,7 @@ function cleanupGhostWire() {
 export const nodeMap = new Map();
 
 export function registerMouseHandlers(p, circuit, renderNodes, wires) {
-  p.mousePressed = function () {
+  p.mousePressed = function (event) {
     if (state.labelEditing) return;
     if (state.justPlacedFromToolbar) {
       state.justPlacedFromToolbar = false;
@@ -108,14 +108,27 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
         }, CLOCK_TIMER);
       }
     } else if (state.mode === "placing") {
-      state.mode = "edit";
       circuit.registerGate(state.ghostNode.gate);
       renderNodes.push(state.ghostNode);
       rebuildNodeMap(renderNodes, nodeMap);
-      state.ghostNode = null;
 
       document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
       document.getElementById("btn-edit").classList.add("active");
+
+      if (event.shiftKey) {
+        const gateType = state.ghostNode.gate.type;
+        const { x, y } = snapPointToGrid(p.mouseX, p.mouseY);
+        if (gateType !== "composite") {
+          state.ghostNode = createBasicNode(gateType, x, y);
+        } else {
+          const circuitData = state.ghostNode.gate.circuitData;
+          const name = state.ghostNode.gate.label;
+          state.ghostNode = createCompositeNode(name, circuitData, x, y);
+        }
+      } else {
+        state.mode = "edit";
+        state.ghostNode = null;
+      }
     } else if (state.mode === "delete") {
       if (state.dragging) {
         const nodeId = renderNodes.indexOf(state.dragging);
