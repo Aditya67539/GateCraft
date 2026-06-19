@@ -2,7 +2,7 @@ import { state } from "../state.js";
 import { Input } from "../logic/gates.js";
 import { CLOCK_TIMER, FREQUENCY } from "../constants.js";
 import { initWire, getWirePorts, setCustomWaypoints } from "../render/wireGeometry.js";
-import { createBasicNode, createCompositeNode, rebuildNodeMap, snapPointToGrid, spawnBasicNode } from "../render/RenderPoint.js";
+import { createBasicNode, createCompositeNode, rebuildNodeMap, snapPointToGrid, spawnBasicNode, wouldOverlap } from "../render/RenderPoint.js";
 
 function cleanupGhostWire() {
   if (state.ghostWireCleanup) {
@@ -108,6 +108,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
         }, CLOCK_TIMER);
       }
     } else if (state.mode === "placing") {
+      if (wouldOverlap(state.ghostNode, renderNodes)) return;
       circuit.registerGate(state.ghostNode.gate);
       renderNodes.push(state.ghostNode);
       rebuildNodeMap(renderNodes, nodeMap);
@@ -156,6 +157,11 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
   p.mouseDragged = function () {
     if (state.mode === "edit") {
       if (state.dragging) {
+        if (!state.changingPos) {
+          state.currentX = state.dragging.x;
+          state.currentY = state.dragging.y;
+          state.changingPos = true;
+        }
         const { x, y } = snapPointToGrid(p.mouseX, p.mouseY);
         state.dragging.x = x - state.offsetX;
         state.dragging.y = y - state.offsetY;
@@ -183,10 +189,17 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
   }
 
   p.mouseReleased = function () {
+    if (wouldOverlap(state.dragging, renderNodes, state.dragging.gate.id)) {
+      state.dragging.x = state.currentX;
+      state.dragging.y = state.currentY;
+    }
     state.dragging = null;
     state.offsetX = 0;
     state.offsetY = 0;
     state.connectedWires = null;
+    state.currentX = 0;
+    state.currentY = 0;
+    state.changingPos = false;
   }
 
   // Right-click on an input/output gate to edit its label

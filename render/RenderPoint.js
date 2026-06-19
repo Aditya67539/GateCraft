@@ -1,4 +1,4 @@
-import { FONT_SIZE, GRID_OFFSET, GRID_SIZE, PORT_LABEL_SIZE } from "../constants.js";
+import { FONT_SIZE, GRID_OFFSET, GRID_SIZE, PORT_LABEL_SIZE, PORT_RADIUS } from "../constants.js";
 import { createBasicGate, createCompositeGate } from "../logic/gates.js";
 import { state } from "../state.js";
 
@@ -49,6 +49,15 @@ export class RenderPoint {
       x: this.x,
       y: this.y + spacing * index + spacing / 2
     };
+  }
+
+  getBounds(padding = 0) {
+    return {
+      left:   (this.x - PORT_RADIUS / 2 - padding),
+      right:  (this.x + this.width + PORT_RADIUS / 2 + padding),
+      top:    (this.y - padding),
+      bottom: (this.y + this.height + padding),
+    }
   }
 }
 
@@ -176,4 +185,25 @@ export function snapPointToGrid(x, y) {
   point.x = Math.round((x - GRID_OFFSET) / GRID_SIZE) * GRID_SIZE + GRID_OFFSET;
   point.y = Math.round((y - GRID_OFFSET) / GRID_SIZE) * GRID_SIZE + GRID_OFFSET;
   return point;
+}
+
+function overlaps(boundsA, boundsB) {
+  return !(
+    boundsA.right  < boundsB.left  ||
+    boundsA.left   > boundsB.right ||
+    boundsA.bottom < boundsB.top   ||
+    boundsA.top    > boundsB.bottom
+  )
+}
+
+export function wouldOverlap(candidate, renderNodes, excludeId = null) {
+  let boundsA = candidate.getBounds();
+
+  for (let node of renderNodes) {
+    if (node.gate.id === excludeId) continue;
+    let boundsB = node.getBounds();
+    if (overlaps(boundsA, boundsB)) return true;
+  }
+
+  return false;
 }
