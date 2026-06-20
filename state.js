@@ -14,6 +14,7 @@ const _state = {
   drawingWire: null,
   changingWayPoint: null,
   connectedWires: null,
+  connectedWiresWaypoints: null,
   labelEditing: false,
   gridDirty: false,
 };

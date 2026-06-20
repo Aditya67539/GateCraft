@@ -170,6 +170,14 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
           state.currentX = state.dragging.x;
           state.currentY = state.dragging.y;
           state.changingPos = true;
+          if (state.connectedWires) {
+            state.connectedWiresWaypoints = new Map();
+            for (let i = 0; i < state.connectedWires.length; i++) {
+              const wireId = state.connectedWires[i].wire.wire.id;
+              const waypoints = state.connectedWires[i].wire.waypoints.map(wp => ({ ...wp }));
+              state.connectedWiresWaypoints.set(wireId, waypoints);
+            }
+          }
         }
         const { x, y } = snapPointToGrid(p.mouseX, p.mouseY);
         state.dragging.x = x - state.offsetX;
@@ -198,9 +206,15 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
   }
 
   p.mouseReleased = function () {
-    if (wouldOverlap(state.dragging, renderNodes, state.dragging.gate.id)) {
+    if (state.dragging && wouldOverlap(state.dragging, renderNodes, state.dragging.gate.id)) {
       state.dragging.x = state.currentX;
       state.dragging.y = state.currentY;
+      if (state.connectedWires && state.connectedWiresWaypoints) {
+        for (let i = 0; i < state.connectedWires.length; i++) {
+          const waypoints = state.connectedWiresWaypoints.get(state.connectedWires[i].wire.wire.id);
+          state.connectedWires[i].wire.waypoints = waypoints;
+        }
+      }
     }
     state.dragging = null;
     state.offsetX = 0;
@@ -209,6 +223,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
     state.currentX = 0;
     state.currentY = 0;
     state.changingPos = false;
+    state.connectedWiresWaypoints = null;
   }
 
   // Right-click on an input/output gate to edit its label
