@@ -51,10 +51,10 @@ export class RenderPoint {
     };
   }
 
-  getBounds(padding = 0) {
+  getBounds(padding = 4) {
     return {
-      left:   (this.x - PORT_RADIUS / 2 - padding),
-      right:  (this.x + this.width + PORT_RADIUS / 2 + padding),
+      left:   (this.x - PORT_RADIUS / 2 - padding / 2),
+      right:  (this.x + this.width + PORT_RADIUS / 2 + padding / 2),
       top:    (this.y - padding),
       bottom: (this.y + this.height + padding),
     }
