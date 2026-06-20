@@ -50,6 +50,14 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
         state.drawingWire = findNearOutputPort(p.mouseX, p.mouseY, p, renderNodes);
         state.changingWayPoint = findNearWaypoint(p.mouseX, p.mouseY, p, wires);
 
+        // ── Update persistent selection ──────────────────────────
+        if (state.dragging) {
+          state.selectedNode = state.dragging;
+        } else if (!state.drawingWire && !state.changingWayPoint) {
+          // Clicked empty space or a wire — deselect
+          state.selectedNode = null;
+        }
+
         if (!state.drawingWire && !state.changingWayPoint && state.dragging) {
           const { x, y } = snapPointToGrid(p.mouseX, p.mouseY);
           state.offsetX = x - state.dragging.x;
@@ -141,6 +149,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
         const toRemove = wires.filter(n => n.wire.from.id === state.dragging.gate.id || n.wire.to.id === state.dragging.gate.id);
         toRemove.forEach(w => wires.splice(wires.indexOf(w), 1));
 
+        if (state.selectedNode === state.dragging) state.selectedNode = null;
         state.dragging = null;
 
         rebuildNodeMap(renderNodes, nodeMap);

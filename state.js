@@ -5,6 +5,7 @@ const _state = {
   ghostWire: null,
   ghostWireCleanup: null,
   dragging: null,
+  selectedNode: null,
   offsetX: 0,
   offsetY: 0,
   currentX: 0,
