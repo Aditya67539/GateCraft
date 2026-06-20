@@ -2,7 +2,7 @@ import { state } from "../state.js";
 import { Input } from "../logic/gates.js";
 import { CLOCK_TIMER, FREQUENCY } from "../constants.js";
 import { initWire, getWirePorts, setCustomWaypoints } from "../render/wireGeometry.js";
-import { createBasicNode, createCompositeNode, rebuildNodeMap, snapPointToGrid, spawnBasicNode } from "../render/RenderPoint.js";
+import { createBasicNode, createCompositeNode, rebuildNodeMap, snapPointToGrid, spawnBasicNode, wouldOverlap } from "../render/RenderPoint.js";
 
 function cleanupGhostWire() {
   if (state.ghostWireCleanup) {
@@ -49,6 +49,14 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
       } else {
         state.drawingWire = findNearOutputPort(p.mouseX, p.mouseY, p, renderNodes);
         state.changingWayPoint = findNearWaypoint(p.mouseX, p.mouseY, p, wires);
+
+        // ── Update persistent selection ──────────────────────────
+        if (state.dragging) {
+          state.selectedNode = state.dragging;
+        } else if (!state.drawingWire && !state.changingWayPoint) {
+          // Clicked empty space or a wire — deselect
+          state.selectedNode = null;
+        }
 
         if (!state.drawingWire && !state.changingWayPoint && state.dragging) {
           const { x, y } = snapPointToGrid(p.mouseX, p.mouseY);
@@ -108,6 +116,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
         }, CLOCK_TIMER);
       }
     } else if (state.mode === "placing") {
+      if (wouldOverlap(state.ghostNode, renderNodes)) return;
       circuit.registerGate(state.ghostNode.gate);
       renderNodes.push(state.ghostNode);
       rebuildNodeMap(renderNodes, nodeMap);
@@ -140,6 +149,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
         const toRemove = wires.filter(n => n.wire.from.id === state.dragging.gate.id || n.wire.to.id === state.dragging.gate.id);
         toRemove.forEach(w => wires.splice(wires.indexOf(w), 1));
 
+        if (state.selectedNode === state.dragging) state.selectedNode = null;
         state.dragging = null;
 
         rebuildNodeMap(renderNodes, nodeMap);
@@ -156,6 +166,19 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
   p.mouseDragged = function () {
     if (state.mode === "edit") {
       if (state.dragging) {
+        if (!state.changingPos) {
+          state.currentX = state.dragging.x;
+          state.currentY = state.dragging.y;
+          state.changingPos = true;
+          if (state.connectedWires) {
+            state.connectedWiresWaypoints = new Map();
+            for (let i = 0; i < state.connectedWires.length; i++) {
+              const wireId = state.connectedWires[i].wire.wire.id;
+              const waypoints = state.connectedWires[i].wire.waypoints.map(wp => ({ ...wp }));
+              state.connectedWiresWaypoints.set(wireId, waypoints);
+            }
+          }
+        }
         const { x, y } = snapPointToGrid(p.mouseX, p.mouseY);
         state.dragging.x = x - state.offsetX;
         state.dragging.y = y - state.offsetY;
@@ -183,10 +206,24 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
   }
 
   p.mouseReleased = function () {
+    if (state.dragging && wouldOverlap(state.dragging, renderNodes, state.dragging.gate.id)) {
+      state.dragging.x = state.currentX;
+      state.dragging.y = state.currentY;
+      if (state.connectedWires && state.connectedWiresWaypoints) {
+        for (let i = 0; i < state.connectedWires.length; i++) {
+          const waypoints = state.connectedWiresWaypoints.get(state.connectedWires[i].wire.wire.id);
+          state.connectedWires[i].wire.waypoints = waypoints;
+        }
+      }
+    }
     state.dragging = null;
     state.offsetX = 0;
     state.offsetY = 0;
     state.connectedWires = null;
+    state.currentX = 0;
+    state.currentY = 0;
+    state.changingPos = false;
+    state.connectedWiresWaypoints = null;
   }
 
   // Right-click on an input/output gate to edit its label

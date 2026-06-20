@@ -18,7 +18,7 @@ function contrastText(hex) {
   return lum > 0.35 ? "#1a1a2e" : "#ffffff";
 }
 
-export function drawGate(renderNode, p) {
+export function drawGate(renderNode, p, status = null) {
   const theme = getActiveTheme();
   if (renderNode.gate.type === "seven-seg") {
     drawDisplay(renderNode, p);
@@ -72,6 +72,26 @@ export function drawGate(renderNode, p) {
 
   drawOutputPort(renderNode, theme, p);
   drawInputPort(renderNode, theme, p);
+
+  if (status) {
+    const bounds = renderNode.getBounds();
+    const bw = bounds.right - bounds.left;
+    const bh = bounds.bottom - bounds.top;
+
+    if (status === "valid") {
+      p.noStroke();
+      p.fill(255, 255, 255, 50);
+      p.rect(bounds.left, bounds.top, bw, bh);
+    } else if (status === "invalid") {
+      p.noStroke();
+      p.fill(180, 45, 45, 55);
+      p.rect(bounds.left, bounds.top, bw, bh);
+    } else if (status === "selected") {
+      p.noStroke();
+      p.fill(255, 255, 255, 30);
+      p.rect(bounds.left, bounds.top, bw, bh);
+    }
+  }
 
   p.fill(0);
   p.stroke(0);

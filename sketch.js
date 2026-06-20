@@ -6,7 +6,7 @@ import { getActiveTheme, applyTheme } from "./render/theme.js";
 import { CircuitBuilder } from "./logic/CircuitBuilder.js";
 import { nodeMap } from "./input/mouseHandlers.js";
 import { GRID_OFFSET, GRID_SIZE } from "./constants.js";
-import { snapPointToGrid } from "./render/RenderPoint.js";
+import { snapPointToGrid, wouldOverlap } from "./render/RenderPoint.js";
 
 let gridBuffer;
 applyTheme(getActiveTheme());
@@ -54,7 +54,17 @@ const sketch = (p) => {
     p.image(gridBuffer, 0, 0);
     setFont(theme, p);
     for (let i = 0; i < renderNodes.length; i++) {
-      drawGate(renderNodes[i], p);
+      let nodeStatus = null;
+      if (state.dragging && renderNodes[i] === state.dragging) {
+        // Actively dragging — show overlap feedback
+        nodeStatus = wouldOverlap(state.dragging, renderNodes, state.dragging.gate.id)
+          ? "invalid"
+          : "selected";
+      } else if (state.selectedNode && renderNodes[i] === state.selectedNode) {
+        // Persistently selected (not being dragged)
+        nodeStatus = "selected";
+      }
+      drawGate(renderNodes[i], p, nodeStatus);
     }
 
     // ── Detect hovered port for tooltip ──────────────────────
@@ -133,7 +143,8 @@ const sketch = (p) => {
       }
     }
     if (state.ghostNode) {
-      drawGate(state.ghostNode, p);
+      let status = wouldOverlap(state.ghostNode, renderNodes) ? "invalid" : "valid";
+      drawGate(state.ghostNode, p, status);
       if (state.mode === "placing") {
         const { x, y } = snapPointToGrid(p.mouseX, p.mouseY);
         state.ghostNode.x = x;
