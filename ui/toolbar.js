@@ -108,6 +108,11 @@ function expandSidebar() {
   sidebarExpandBtn.classList.remove("visible");
 }
 
+export function toggleSidebar() {
+  if (sidebar.classList.contains("collapsed")) expandSidebar();
+  else collapseSidebar();
+}
+
 sidebarCollapseBtn.addEventListener("click", collapseSidebar);
 sidebarExpandBtn.addEventListener("click", expandSidebar);
 
@@ -155,6 +160,7 @@ document.addEventListener("contextmenu", (e) => {
 });
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") hideContextMenu();
+  if (e.key === "Tab") e.preventDefault();
 });
 
 // Context menu actions
@@ -292,6 +298,13 @@ function refreshCompositeSection() {
   });
 }
 
+export function changeMode(mode) {
+  state.mode = mode;
+  document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
+  const btnId = `#btn-${mode}`;
+  document.querySelector(btnId).classList.add("active");
+}
+
 // ─── Main init ──────────────────────────────────────────────────
 export function initToolbar(p, circuit, renderNodes, wires) {
   _renderNodes = renderNodes;
@@ -300,9 +313,7 @@ export function initToolbar(p, circuit, renderNodes, wires) {
   // Segmented mode switcher
   document.querySelectorAll(".mode-btn").forEach(btn => {
     btn.addEventListener("click", () => {
-      state.mode = btn.dataset.mode;
-      document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
+      changeMode(btn.dataset.mode);
     });
   });
 

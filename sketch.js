@@ -7,6 +7,7 @@ import { CircuitBuilder } from "./logic/CircuitBuilder.js";
 import { nodeMap } from "./input/mouseHandlers.js";
 import { GRID_OFFSET, GRID_SIZE } from "./constants.js";
 import { snapPointToGrid, wouldOverlap } from "./render/RenderPoint.js";
+import { registerKeyboardHandlers } from "./input/keyboardHandlers.js";
 
 let gridBuffer;
 applyTheme(getActiveTheme());
@@ -162,6 +163,7 @@ const sketch = (p) => {
   }
 
   registerMouseHandlers(p, circuit, renderNodes, wires);
+  registerKeyboardHandlers(p, circuit, renderNodes, wires);
 }
 
 new p5(sketch);
