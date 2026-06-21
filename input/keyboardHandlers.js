@@ -21,7 +21,6 @@ export function registerKeyboardHandlers(p, circuit, renderNodes, wires) {
     if (document.activeElement?.tagName === "INPUT") return;
 
     const combo = buildKeyCombo(p);
-    console.log(combo);
     shortcuts[combo]?.();
   }
 }
