@@ -9,6 +9,7 @@ import {
   buildCircuitFromData,
 } from "../persistence.js";
 import { themes, getActiveThemeId, setActiveThemeId } from "../render/theme.js";
+import { createModal } from "./modal.js";
 
 
 
@@ -17,6 +18,10 @@ const modal = document.getElementById("save-gate-modal");
 const modalInput = document.getElementById("gate-name-input");
 const modalSave = document.getElementById("modal-save-btn");
 const modalCancel = document.getElementById("modal-cancel-btn");
+
+const clearWarningModal = document.getElementById("clear-warning-modal");
+const clearCancel = document.getElementById("clear-cancel-btn");
+const clearConfirm = document.getElementById("clear-confirm-btn");
 
 let _renderNodes = null;
 let _wires = null;
@@ -31,29 +36,10 @@ function clearCanvas(circuit) {
   _wires.splice(0, _wires.length);
 }
 
-function openSaveModal() {
-  modalInput.value = "";
-  modal.classList.add("open");
-  modalInput.focus();
-}
-
-function closeSaveModal() {
-  modal.classList.remove("open");
-}
-
 // ─── Settings panel helpers ─────────────────────────────────────
 const settingsOverlay = document.getElementById("settings-overlay");
 const settingsCloseBtn = document.getElementById("settings-close-btn");
 const themeGrid = document.getElementById("theme-grid");
-
-function openSettings() {
-  settingsOverlay.classList.add("open");
-  renderThemeGrid();
-}
-
-function closeSettings() {
-  settingsOverlay.classList.remove("open");
-}
 
 function renderThemeGrid() {
   themeGrid.innerHTML = "";
@@ -305,10 +291,41 @@ export function changeMode(mode) {
   document.querySelector(btnId).classList.add("active");
 }
 
+
+const saveAsCompositeBtn = document.getElementById("btn-save-gate");
+const clearBtn = document.getElementById("btn-clear-canvas");
+const settingsBtn = document.getElementById("btn-settings");
 // ─── Main init ──────────────────────────────────────────────────
 export function initToolbar(p, circuit, renderNodes, wires) {
   _renderNodes = renderNodes;
   _wires = wires;
+
+  const warningModal = createModal({
+    overlay: clearWarningModal,
+    onConfirm: () => clearCanvas(circuit),
+    onOpen: () => p.noLoop(),
+    onClose: () => p.loop(),
+  });
+
+  const saveModal = createModal({
+    overlay: modal,
+    focusElement: modalInput,
+    onConfirm: () => {
+      const name = modalInput.value.trim();
+      if (!name) { modalInput.focus(); return false; };
+      saveCompositeGate(name, _renderNodes, _wires);
+      clearCanvas(circuit);
+      refreshCompositeSection();
+    },
+    onOpen: () => { modalInput.value = ""; p.noLoop() },
+    onClose: () => p.loop(),
+  });
+
+  const settingsModal = createModal({
+    overlay: settingsOverlay,
+    onOpen: () => { renderThemeGrid(); p.noLoop() },
+    onClose: () => p.loop(),
+  })
 
   // Segmented mode switcher
   document.querySelectorAll(".mode-btn").forEach(btn => {
@@ -327,51 +344,23 @@ export function initToolbar(p, circuit, renderNodes, wires) {
     });
   });
 
-  // Save-as-composite button
-  document.getElementById("btn-save-gate").addEventListener("click", () => {
-    openSaveModal();
-    p.noLoop();
-  });
-
-  // Modal cancel
-  modalCancel.addEventListener("click", () => {
-    closeSaveModal();
-    p.loop();
-  });
-
-  // Modal save
-  modalSave.addEventListener("click", () => {
-    const name = modalInput.value.trim();
-    if (!name) { modalInput.focus(); return; }
-    saveCompositeGate(name, _renderNodes, _wires);
-    closeSaveModal();
-    p.loop();
-    clearCanvas(circuit);
-    refreshCompositeSection();
-  });
-
-  // Allow Enter key in the name field
+  // ─── Save as composite ────────────────────────────────────────
+  saveAsCompositeBtn.addEventListener("click", () => saveModal.open());
+  modalCancel.addEventListener("click", () => saveModal.close());
+  modalSave.addEventListener("click", () => saveModal.confirm());
   modalInput.addEventListener("keydown", e => {
-    if (e.key === "Enter") modalSave.click();
-    if (e.key === "Escape") closeSaveModal();
-  });
-
-  // Click outside modal to close
-  modal.addEventListener("click", e => {
-    if (e.target === modal) closeSaveModal();
+    if (e.key === "Enter") saveModal.confirm();
+    else if (e.key === "Escape") saveModal.close();
   });
 
   // ─── Clear canvas ─────────────────────────────────────────────
-  document.getElementById("btn-clear-canvas").addEventListener("click", () => {
-    clearCanvas(circuit);
-  });
+  clearBtn.addEventListener("click", () => warningModal.open());
+  clearCancel.addEventListener("click", () => warningModal.close());
+  clearConfirm.addEventListener("click", () => warningModal.confirm());
 
   // ─── Settings panel ────────────────────────────────────────────
-  document.getElementById("btn-settings").addEventListener("click", openSettings);
-  settingsCloseBtn.addEventListener("click", closeSettings);
-  settingsOverlay.addEventListener("click", e => {
-    if (e.target === settingsOverlay) closeSettings();
-  });
+  settingsBtn.addEventListener("click", () => settingsModal.open());
+  settingsCloseBtn.addEventListener("click", () => settingsModal.close());
 
   // Initial population of composite section
   refreshCompositeSection();
