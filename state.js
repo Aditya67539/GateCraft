@@ -17,6 +17,7 @@ const _state = {
   connectedWiresWaypoints: null,
   labelEditing: false,
   gridDirty: false,
+  isAnyModalOpen: false,
 };
 
 /**

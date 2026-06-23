@@ -129,11 +129,18 @@ function showContextMenu(e, name) {
   ctxMenu.style.left = `${x}px`;
   ctxMenu.style.top = `${y}px`;
   ctxMenu.classList.add("open");
+
+  state.isAnyModalOpen = true;
 }
 
 function hideContextMenu() {
+  // Only modify state if the context menu is actually open
+  if (!ctxMenu.classList.contains("open")) return;
+
   ctxMenu.classList.remove("open");
   _ctxTargetName = null;
+
+  state.isAnyModalOpen = false;
 }
 
 // Close context menu on any click or Escape
@@ -302,6 +309,7 @@ export function initToolbar(p, circuit, renderNodes, wires) {
 
   const warningModal = createModal({
     overlay: clearWarningModal,
+    focusElement: clearConfirm,
     onConfirm: () => clearCanvas(circuit),
     onOpen: () => p.noLoop(),
     onClose: () => p.loop(),
@@ -325,7 +333,7 @@ export function initToolbar(p, circuit, renderNodes, wires) {
     overlay: settingsOverlay,
     onOpen: () => { renderThemeGrid(); p.noLoop() },
     onClose: () => p.loop(),
-  })
+  });
 
   // Segmented mode switcher
   document.querySelectorAll(".mode-btn").forEach(btn => {

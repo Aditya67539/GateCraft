@@ -1,13 +1,17 @@
+import { state } from "../state.js";
+
 export function createModal({ overlay, focusElement, onConfirm, onCancel, onOpen, onClose }) {
   function open() {
     overlay.classList.add("open");
     focusElement?.focus();
     onOpen?.();
+    state.isAnyModalOpen = true;
   }
 
   function close() {
     overlay.classList.remove("open");
     onClose?.();
+    state.isAnyModalOpen = false;
   }
 
   function confirm(...args) {
