@@ -37,7 +37,10 @@ const sketch = (p) => {
   p.setup = function () {
     const cnv = p.createCanvas(WIDTH, HEIGHT);
     cnv.parent(canvasHost);
-    initToolbar(p, circuit, renderNodes, wires);
+    const toolbarActions = initToolbar(p, circuit, renderNodes, wires);
+
+    registerMouseHandlers(p, circuit, renderNodes, wires);
+    registerKeyboardHandlers(p, circuit, renderNodes, wires, toolbarActions);
 
     const theme = getActiveTheme();    
     gridBuffer = createGrid(WIDTH, HEIGHT, theme, GRID_OFFSET, GRID_SIZE, p);
@@ -161,9 +164,6 @@ const sketch = (p) => {
       drawPortTooltip(tooltipState.label, tooltipState.port, tooltipState.opacity, tooltipState.portType, p);
     }
   }
-
-  registerMouseHandlers(p, circuit, renderNodes, wires);
-  registerKeyboardHandlers(p, circuit, renderNodes, wires);
 }
 
 new p5(sketch);

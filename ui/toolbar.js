@@ -402,4 +402,11 @@ export function initToolbar(p, circuit, renderNodes, wires) {
     const el = e.target.closest("[data-tooltip]");
     if (el) hideTooltip();
   }, true);
+
+  return {
+    openSaveModal: () => saveModal.open(),
+    openWarningModal: () => warningModal.open(),
+    openSettings: () => settingsModal.open(),
+    closeAllModals: () => { saveModal.close(); warningModal.close(); settingsModal.close(); },
+  }
 }
