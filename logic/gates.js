@@ -2,6 +2,9 @@ import { Wire } from "./wire.js";
 import { evaluateAll } from "./evaluate.js";
 import { GATE_DEFS, SIGNAL } from "../constants.js";
 
+
+const { LOW, HIGH, X, Z, E } = SIGNAL;
+
 /**
  * Base class for generating unique gate IDs. 
  */
@@ -15,7 +18,7 @@ export class Input {
     this.type = "input";
     this.outputCount = GATE_DEFS[this.type].outputs;
     this.inputCount = GATE_DEFS[this.type].inputs;
-    this.output = SIGNAL.LOW;
+    this.output = LOW;
   }
 
   setValue(newValue) {
@@ -35,7 +38,7 @@ export class Clock extends Input {
   }
 
   tick() {
-    const signal = this.output === SIGNAL.LOW ? SIGNAL.HIGH : SIGNAL.LOW;
+    const signal = this.output === LOW ? HIGH : LOW;
     super.setValue(signal);
   }
 }
@@ -65,12 +68,12 @@ export class Output extends ConnectableGate {
     this.inputCount = GATE_DEFS[this.type].inputs;
     this.outputCount = GATE_DEFS[this.type].outputs;
     this.inputs = new Array(this.inputCount).fill(undefined);
-    this.output = SIGNAL.X;
-    this.tempOutput = SIGNAL.X;
+    this.output = X;
+    this.tempOutput = X;
   }
 
   evaluate() {
-    this.tempOutput = this.inputs[0]?.signal ?? SIGNAL.X;
+    this.tempOutput = this.inputs[0]?.signal ?? X;
     return { ok: true, output: this.tempOutput };
   }
 }
@@ -83,21 +86,21 @@ export class Gate extends ConnectableGate {
     this.inputCount = GATE_DEFS[this.type].inputs;
     this.outputCount = GATE_DEFS[this.type].outputs;
     this.inputs = new Array(this.inputCount).fill(undefined);
-    this.output = SIGNAL.X;
-    this.tempOutput = SIGNAL.X;
+    this.output = X;
+    this.tempOutput = X;
   }
 
   evaluate() {
     const resolvedInputs = resolveInputs(this.inputs);
     switch (this.type) {
       case "and":
-        this.tempOutput = SIGNAL.HIGH;
+        this.tempOutput = HIGH;
         resolvedInputs.forEach(input => {
           this.tempOutput = andPair(this.tempOutput, input);
         });
         break;
       case "or":
-        this.tempOutput = SIGNAL.LOW;
+        this.tempOutput = LOW;
         resolvedInputs.forEach(input => {
           this.tempOutput = orPair(this.tempOutput, input);
         });
@@ -109,27 +112,27 @@ export class Gate extends ConnectableGate {
         this.tempOutput = not(resolvedInputs[0]);
         break;
       case "nand":
-        this.tempOutput = SIGNAL.HIGH;
+        this.tempOutput = HIGH;
         resolvedInputs.forEach(input => {
           this.tempOutput = andPair(this.tempOutput, input);
         });
         this.tempOutput = not(this.tempOutput);
         break;
       case "nor":
-        this.tempOutput = SIGNAL.LOW;
+        this.tempOutput = LOW;
         resolvedInputs.forEach(input => {
           this.tempOutput = orPair(this.tempOutput, input);
         });
         this.tempOutput = not(this.tempOutput);
         break;
       case "xor":
-        this.tempOutput = SIGNAL.LOW;
+        this.tempOutput = LOW;
         resolvedInputs.forEach(input => {
           this.tempOutput = xorPair(this.tempOutput, input);
         });
         break;
       case "xnor":
-        this.tempOutput = SIGNAL.LOW;
+        this.tempOutput = LOW;
         resolvedInputs.forEach(input => {
           this.tempOutput = xorPair(this.tempOutput, input);
         });
@@ -152,8 +155,8 @@ export class CompositeGate extends ConnectableGate {
     this.circuitData = circuitData;
     this.inputOrder = circuitData.inputOrder;
     this.outputOrder = circuitData.outputOrder;
-    this.output = new Array(this.outputOrder.length).fill(SIGNAL.X);
-    this.tempOutput = new Array(this.outputOrder.length).fill(SIGNAL.X);
+    this.output = new Array(this.outputOrder.length).fill(X);
+    this.tempOutput = new Array(this.outputOrder.length).fill(X);
   }
 
   parseCircuitData() {
@@ -166,7 +169,7 @@ export class CompositeGate extends ConnectableGate {
     this.outputCount = this.internalOutputs.length;
 
     for (const wire of this.circuitData.builder.wires) {
-      wire.signal = SIGNAL.X;
+      wire.signal = X;
     }
 
     // Recursively collect all embedded seven-segment displays
@@ -204,13 +207,13 @@ export class SevenSegmentDisplay extends ConnectableGate {
     this.inputCount = GATE_DEFS[this.type].inputs;
     this.outputCount = GATE_DEFS[this.type].outputs;
     this.inputs = new Array(this.inputCount).fill(undefined);
-    this.output = new Array(this.inputCount).fill(SIGNAL.X);
-    this.tempOutput = new Array(this.inputCount).fill(SIGNAL.X);
+    this.output = new Array(this.inputCount).fill(X);
+    this.tempOutput = new Array(this.inputCount).fill(X);
   }
 
   evaluate() {
     for (let i = 0; i < this.inputCount; i++) {
-      this.tempOutput[i] = this.inputs[i]?.signal ?? SIGNAL.X;
+      this.tempOutput[i] = this.inputs[i]?.signal ?? X;
     }
     return { ok: true, output: this.tempOutput };
   }
@@ -287,24 +290,24 @@ function collectDisplays(gates, positionMap) {
 
 function resolveInputs(inputs) {
   return inputs.map(input => {
-    if (input instanceof Wire && input.signal !== SIGNAL.Z) return input.signal;
-    return SIGNAL.X;
+    if (input instanceof Wire && input.signal !== Z) return input.signal;
+    return X;
   });
 }
 
 
-const NOTTABLE = [ SIGNAL.HIGH, SIGNAL.LOW, SIGNAL.X ];
+const NOTTABLE = [ HIGH, LOW, X ];
 
 const ANDTABLE = [
-  [ SIGNAL.LOW, SIGNAL.LOW, SIGNAL.LOW ],
-  [ SIGNAL.LOW, SIGNAL.HIGH, SIGNAL.X ],
-  [ SIGNAL.LOW, SIGNAL.X, SIGNAL.X ],
+  [ LOW, LOW, LOW ],
+  [ LOW, HIGH, X ],
+  [ LOW, X, X ],
 ];
 
 const ORTABLE = [
-  [ SIGNAL.LOW, SIGNAL.HIGH, SIGNAL.X ],
-  [ SIGNAL.HIGH, SIGNAL.HIGH, SIGNAL.HIGH ],
-  [ SIGNAL.X, SIGNAL.HIGH, SIGNAL.X ],
+  [ LOW, HIGH, X ],
+  [ HIGH, HIGH, HIGH ],
+  [ X, HIGH, X ],
 ];
 
 const not = (a) => NOTTABLE[a];
