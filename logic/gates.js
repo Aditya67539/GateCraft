@@ -296,18 +296,29 @@ function resolveInputs(inputs) {
 }
 
 
-const NOTTABLE = [ HIGH, LOW, X ];
+/*  Truth tables for 5-value logic: LOW=0, HIGH=1, X=2, Z=3, E=4
+ *  Z (high-impedance) behaves like X when driving a gate input.
+ *  E (error) propagates unless a dominating value forces the result.
+ */
+//                    LOW   HIGH   X     Z     E
+const NOTTABLE = [    HIGH, LOW,   X,    X,    E   ];
 
 const ANDTABLE = [
-  [ LOW, LOW, LOW ],
-  [ LOW, HIGH, X ],
-  [ LOW, X, X ],
+  //                  LOW   HIGH   X     Z     E
+  /* LOW  */ [        LOW,  LOW,   LOW,  LOW,  LOW  ],
+  /* HIGH */ [        LOW,  HIGH,  X,    X,    E    ],
+  /* X    */ [        LOW,  X,     X,    X,    E    ],
+  /* Z    */ [        LOW,  X,     X,    X,    E    ],
+  /* E    */ [        LOW,  E,     E,    E,    E    ],
 ];
 
 const ORTABLE = [
-  [ LOW, HIGH, X ],
-  [ HIGH, HIGH, HIGH ],
-  [ X, HIGH, X ],
+  //                  LOW   HIGH   X     Z     E
+  /* LOW  */ [        LOW,  HIGH,  X,    X,    E    ],
+  /* HIGH */ [        HIGH, HIGH,  HIGH, HIGH, HIGH ],
+  /* X    */ [        X,    HIGH,  X,    X,    E    ],
+  /* Z    */ [        X,    HIGH,  X,    X,    E    ],
+  /* E    */ [        E,    HIGH,  E,    E,    E    ],
 ];
 
 const not = (a) => NOTTABLE[a];
