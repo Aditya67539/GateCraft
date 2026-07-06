@@ -1,3 +1,7 @@
+import { SIGNAL } from '../constants.js';
+
+const { LOW, HIGH, X, Z, E } = SIGNAL;
+
 export var wasmMemory = null;
 export var wasmInstance = null;
 
@@ -255,7 +259,7 @@ export function flatten(circuit, acc, inputOrder = [], outputOrder = [], gateCou
 
       acc.gateTypes.push(encodeType(gate.type));
       acc.outputOffset.push(acc.allOutputs.length);
-      acc.allOutputs.push((Array.isArray(gate.output) ? gate.output[0] : gate.output) ? 1 : 0);
+      acc.allOutputs.push(Array.isArray(gate.output) ? gate.output[0] : gate.output);
 
       gateCount++;
     } else {
@@ -320,7 +324,7 @@ export function flatten(circuit, acc, inputOrder = [], outputOrder = [], gateCou
     acc.wireMap.set(wire, wireIndex);
     acc.wireFrom.push(fromIndex);
     acc.wireTo.push(toIndex);
-    acc.wireSignal.push(wire.signal ? 1 : 0);
+    acc.wireSignal.push(wire.signal);
 
     if (!acc.fanout.has(fromIndex)) {
       acc.fanout.set(fromIndex, []);
@@ -569,13 +573,13 @@ export function evaluateWasm(circuit, acc, typedArrays) {
   // Copy input/clock states from JS objects to WASM memory
   if (acc.inputGates) {
     for (let i = 0; i < acc.inputGates.length; i++) {
-      allOutputs[acc.inputOffsets[i]] = acc.inputGates[i].output ? 1 : 0;
+      allOutputs[acc.inputOffsets[i]] = acc.inputGates[i].output;
     }
   } else {
     // Fallback if not built yet
     for (const [gate, entry] of acc.gateMap.entries()) {
       if (gate.type === "input" || gate.type === "clock") {
-        allOutputs[outputOffset[entry]] = gate.output ? 1 : 0;
+        allOutputs[outputOffset[entry]] = gate.output;
       }
     }
   }
@@ -592,10 +596,10 @@ export function evaluateWasm(circuit, acc, typedArrays) {
   // Copy state from WASM memory back to JS objects
   if (acc.syncGates) {
     for (let i = 0; i < acc.syncGates.length; i++) {
-      acc.syncGates[i].output = allOutputs[acc.syncOffsets[i]] === 1;
+      acc.syncGates[i].output = allOutputs[acc.syncOffsets[i]];
     }
     for (let i = 0; i < acc.syncWires.length; i++) {
-      acc.syncWires[i].signal = wireSignal[acc.syncWireIndices[i]] === 1;
+      acc.syncWires[i].signal = wireSignal[acc.syncWireIndices[i]];
     }
     // Handle composite gates
     if (acc.compositeGates) {
@@ -603,7 +607,7 @@ export function evaluateWasm(circuit, acc, typedArrays) {
         const boundary = acc.compositeBoundaries[i];
         const outArray = acc.compositeGates[i].output;
         for (let j = 0; j < boundary.length; j++) {
-          outArray[j] = allOutputs[outputOffset[boundary[j]]] === 1;
+          outArray[j] = allOutputs[outputOffset[boundary[j]]];
         }
       }
     }
@@ -612,23 +616,23 @@ export function evaluateWasm(circuit, acc, typedArrays) {
       for (let i = 0; i < acc.displayGates.length; i++) {
         const gate = acc.displayGates[i];
         for (let j = 0; j < gate.inputCount; j++) {
-          gate.output[j] = gate.inputs[j] ? gate.inputs[j].signal : false;
+          gate.output[j] = gate.inputs[j] ? gate.inputs[j].signal : X;
         }
       }
     }
   } else {
     for (const [gate, entry] of acc.gateMap.entries()) {
       if (gate.type !== "composite") {
-        gate.output = allOutputs[outputOffset[entry]] === 1;
+        gate.output = allOutputs[outputOffset[entry]];
       } else {
         const boundary = entry.outputBoundary;
         for (let j = 0; j < boundary.length; j++) {
-          gate.output[j] = allOutputs[outputOffset[boundary[j]]] === 1;
+          gate.output[j] = allOutputs[outputOffset[boundary[j]]];
         }
       }
     }
     for (const [wire, idx] of acc.wireMap.entries()) {
-      wire.signal = wireSignal[idx] === 1;
+      wire.signal = wireSignal[idx];
     }
   }
 }
