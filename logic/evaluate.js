@@ -30,22 +30,25 @@ export function evaluateAll(circuit, seedAll = false) {
    * change-driven evaluation
   */
   if (seedAll) {
-    const gates = circuit.getGates();
-    for (const gate of gates) {
-      if (gate.type !== "input" && gate.type !== "clock") {
-        currentDelta.add(gate.id);
+    for (const wire of wires) {
+      const signal = (wire.from.type === "composite" || wire.from.type === "seven-seg")
+        ? wire.from.output[wire.fromOutputIndex]
+        : wire.from.output;
+      if (wire.signal !== signal) {
+        wire.signal = signal;
       }
+      currentDelta.add(wire.to.id);
     }
-  }
-
-  // Seed inputs and clocks if their state is changed
-  for (const wire of wires) {
-    const from = wire.from;
-    if (from.type === "input" || from.type === "clock") {
-      const newSignal = from.output;
-      if (wire.signal !== newSignal) {
-        wire.signal = newSignal;
-        currentDelta.add(wire.to.id);
+  } else {
+    // Seed inputs and clocks if their state is changed
+    for (const wire of wires) {
+      const from = wire.from;
+      if (from.type === "input" || from.type === "clock") {
+        const newSignal = from.output;
+        if (wire.signal !== newSignal) {
+          wire.signal = newSignal;
+          currentDelta.add(wire.to.id);
+        }
       }
     }
   }
@@ -190,7 +193,7 @@ const Types = Object.freeze({
   xor: 8,
   xnor: 9,
   composite: 10,
-  display: 11,
+  "seven-seg": 11,
 });
 
 function encodeType(type) {
