@@ -367,10 +367,10 @@ export function buildTypedArrays(acc) {
     throw new Error("WASM not initialized. Call initWasm() first.");
   }
 
-  // Emscripten stores C global variables (pointers, gate/wire counts) at
-  // offsets 1024–1087 in linear memory. Start our typed arrays after that
-  // region to prevent the C runtime from corrupting circuit data.
-  let ptr = 1088;
+  // Emscripten stores C global variables and static data in linear memory.
+  // With 5-state logic, the static data increased in size, colliding with offset 1088.
+  // We use a safe hardcoded offset of 4096 to ensure we never collide with C data.
+  let ptr = 4096;
 
   // 1-byte arrays
   const gateTypes = new Uint8Array(wasmMemory.buffer, ptr, acc.gateTypes.length);
