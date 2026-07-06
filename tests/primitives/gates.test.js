@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { CircuitBuilder } from "../../logic/CircuitBuilder.js";
+import { SIGNAL } from "../../constants.js";
+
+const { LOW, HIGH, X, Z, E } = SIGNAL;
 
 describe("AND Gate", () => {
   it("follows truth table", () => {
@@ -15,10 +18,10 @@ describe("AND Gate", () => {
     builder.connectGates(gate, out, 0);
 
     const testCases = [
-      [false, false, false],
-      [true, false, false],
-      [false, true, false],
-      [true, true, true],
+      [LOW, LOW, LOW],
+      [HIGH, LOW, LOW],
+      [LOW, HIGH, LOW],
+      [HIGH, HIGH, HIGH],
     ];
 
     for (const [a, b, expected] of testCases) {
@@ -46,10 +49,10 @@ describe("OR Gate", () => {
     builder.connectGates(gate, out, 0);
 
     const testCases = [
-      [false, false, false],
-      [true, false, true],
-      [false, true, true],
-      [true, true, true],
+      [LOW, LOW, LOW],
+      [HIGH, LOW, HIGH],
+      [LOW, HIGH, HIGH],
+      [HIGH, HIGH, HIGH],
     ];
 
     for (const [a, b, expected] of testCases) {
@@ -75,8 +78,8 @@ describe("NOT Gate", () => {
     builder.connectGates(gate, out, 0);
 
     const testCases = [
-      [false, true],
-      [true, false],
+      [LOW, HIGH],
+      [HIGH, LOW],
     ];
 
     for (const [a, expected] of testCases) {
@@ -103,10 +106,10 @@ describe("NAND Gate", () => {
     builder.connectGates(gate, out, 0);
 
     const testCases = [
-      [false, false, true],
-      [false, true, true],
-      [true, false, true],
-      [true, true, false],
+      [LOW, LOW, HIGH],
+      [LOW, HIGH, HIGH],
+      [HIGH, LOW, HIGH],
+      [HIGH, HIGH, LOW],
     ];
 
     for (const [a, b, expected] of testCases) {
@@ -134,10 +137,10 @@ describe("NOR Gate", () => {
     builder.connectGates(gate, out, 0);
 
     const testCases = [
-      [false, false, true],
-      [false, true, false],
-      [true, false, false],
-      [true, true, false],
+      [LOW, LOW, HIGH],
+      [LOW, HIGH, LOW],
+      [HIGH, LOW, LOW],
+      [HIGH, HIGH, LOW],
     ];
 
     for (const [a, b, expected] of testCases) {
@@ -165,10 +168,10 @@ describe("XOR Gate", () => {
     builder.connectGates(gate, out, 0);
 
     const testCases = [
-      [false, false, false],
-      [false, true, true],
-      [true, false, true],
-      [true, true, false],
+      [LOW, LOW, LOW],
+      [LOW, HIGH, HIGH],
+      [HIGH, LOW, HIGH],
+      [HIGH, HIGH, LOW],
     ];
 
     for (const [a, b, expected] of testCases) {
@@ -196,10 +199,10 @@ describe("XNOR Gate", () => {
     builder.connectGates(gate, out, 0);
 
     const testCases = [
-      [false, false, true],
-      [false, true, false],
-      [true, false, false],
-      [true, true, true],
+      [LOW, LOW, HIGH],
+      [LOW, HIGH, LOW],
+      [HIGH, LOW, LOW],
+      [HIGH, HIGH, HIGH],
     ];
 
     for (const [a, b, expected] of testCases) {

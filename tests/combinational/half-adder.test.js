@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { CircuitBuilder } from "../../logic/CircuitBuilder.js";
+import { SIGNAL } from "../../constants.js";
+
+const { LOW, HIGH, X, Z, E } = SIGNAL;
 
 describe("Half Adder", () => {
   it("follows truth table", () => {
@@ -20,10 +23,10 @@ describe("Half Adder", () => {
     builder.connectGates(and, carry, 0);
 
     const testCases = [
-      [false, false, false, false],
-      [true, false, true, false],
-      [false, true, true, false],
-      [true, true, false, true],
+      [LOW, LOW, LOW, LOW],
+      [HIGH, LOW, HIGH, LOW],
+      [LOW, HIGH, HIGH, LOW],
+      [HIGH, HIGH, LOW, HIGH],
     ];
 
     for (const [a, b, exp_sum, exp_carry] of testCases) {

@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { CircuitBuilder } from "../../logic/CircuitBuilder.js";
+import { SIGNAL } from "../../constants.js";
+
+const { LOW, HIGH, X, Z, E } = SIGNAL;
 
 /**
  * Reproducer for the bug: composite gates give wrong results when
@@ -148,16 +151,16 @@ describe("4-bit adder with direct inputs", () => {
     outer.connectGates(adder, Cout, 0, 4);
 
     // 5 = 0101, 3 = 0011 => 8 = 1000
-    A0.setValue(true);  A1.setValue(false); A2.setValue(true);  A3.setValue(false);
-    B0.setValue(true);  B1.setValue(true);  B2.setValue(false); B3.setValue(false);
-    Cin.setValue(false);
+    A0.setValue(HIGH);  A1.setValue(LOW); A2.setValue(HIGH);  A3.setValue(LOW);
+    B0.setValue(HIGH);  B1.setValue(HIGH);  B2.setValue(LOW); B3.setValue(LOW);
+    Cin.setValue(LOW);
     outer.evaluate();
 
-    expect(S0.output).toBe(false);
-    expect(S1.output).toBe(false);
-    expect(S2.output).toBe(false);
-    expect(S3.output).toBe(true);
-    expect(Cout.output).toBe(false);
+    expect(S0.output).toBe(LOW);
+    expect(S1.output).toBe(LOW);
+    expect(S2.output).toBe(LOW);
+    expect(S3.output).toBe(HIGH);
+    expect(Cout.output).toBe(LOW);
   });
 });
 
@@ -219,16 +222,16 @@ describe("4-bit adder with upstream XOR gates (2's complement)", () => {
     // A = 0101, B = 0011, SUB = 1
     // ~B = 1100, ~B+1 = 1101
     // 0101 + 1101 = 10010, lower 4 bits = 0010 = 2, Cout=1
-    A0.setValue(true);  A1.setValue(false); A2.setValue(true);  A3.setValue(false);
-    B0.setValue(true);  B1.setValue(true);  B2.setValue(false); B3.setValue(false);
-    SUB.setValue(true);
+    A0.setValue(HIGH);  A1.setValue(LOW); A2.setValue(HIGH);  A3.setValue(LOW);
+    B0.setValue(HIGH);  B1.setValue(HIGH);  B2.setValue(LOW); B3.setValue(LOW);
+    SUB.setValue(HIGH);
     outer.evaluate();
 
-    expect(S0.output).toBe(false);  // bit 0
-    expect(S1.output).toBe(true);   // bit 1
-    expect(S2.output).toBe(false);  // bit 2
-    expect(S3.output).toBe(false);  // bit 3
-    expect(Cout.output).toBe(true); // overflow/carry
+    expect(S0.output).toBe(LOW);  // bit 0
+    expect(S1.output).toBe(HIGH);   // bit 1
+    expect(S2.output).toBe(LOW);  // bit 2
+    expect(S3.output).toBe(LOW);  // bit 3
+    expect(Cout.output).toBe(HIGH); // overflow/carry
   });
 
   it("computes correctly after toggling inputs", () => {
@@ -281,26 +284,26 @@ describe("4-bit adder with upstream XOR gates (2's complement)", () => {
     outer.connectGates(adder, Cout, 0, 4);
 
     // First: SUB=0, so add mode: 5 + 3 = 8 = 1000
-    A0.setValue(true);  A1.setValue(false); A2.setValue(true);  A3.setValue(false);
-    B0.setValue(true);  B1.setValue(true);  B2.setValue(false); B3.setValue(false);
-    SUB.setValue(false);
+    A0.setValue(HIGH);  A1.setValue(LOW); A2.setValue(HIGH);  A3.setValue(LOW);
+    B0.setValue(HIGH);  B1.setValue(HIGH);  B2.setValue(LOW); B3.setValue(LOW);
+    SUB.setValue(LOW);
     outer.evaluate();
 
-    expect(S0.output).toBe(false);
-    expect(S1.output).toBe(false);
-    expect(S2.output).toBe(false);
-    expect(S3.output).toBe(true);
-    expect(Cout.output).toBe(false);
+    expect(S0.output).toBe(LOW);
+    expect(S1.output).toBe(LOW);
+    expect(S2.output).toBe(LOW);
+    expect(S3.output).toBe(HIGH);
+    expect(Cout.output).toBe(LOW);
 
     // Now toggle SUB to 1: 5 - 3 = 2 = 0010, Cout=1
-    SUB.setValue(true);
+    SUB.setValue(HIGH);
     outer.evaluate();
 
-    expect(S0.output).toBe(false);
-    expect(S1.output).toBe(true);
-    expect(S2.output).toBe(false);
-    expect(S3.output).toBe(false);
-    expect(Cout.output).toBe(true);
+    expect(S0.output).toBe(LOW);
+    expect(S1.output).toBe(HIGH);
+    expect(S2.output).toBe(LOW);
+    expect(S3.output).toBe(LOW);
+    expect(Cout.output).toBe(HIGH);
   });
 });
 
@@ -316,20 +319,20 @@ describe("Wire signal consistency", () => {
     outer.connectGates(B, xor, 1);
     outer.connectGates(xor, out, 0);
 
-    A.setValue(true);
-    B.setValue(false);
+    A.setValue(HIGH);
+    B.setValue(LOW);
     outer.evaluate();
 
     // Check that the wire from xor to out matches xor's output
     const wireToOut = outer.wires.find(w => w.to === out);
     expect(wireToOut.signal).toBe(xor.output);
-    expect(out.output).toBe(true);
+    expect(out.output).toBe(HIGH);
 
     // Toggle
-    B.setValue(true);
+    B.setValue(HIGH);
     outer.evaluate();
     expect(wireToOut.signal).toBe(xor.output);
-    expect(out.output).toBe(false);
+    expect(out.output).toBe(LOW);
   });
 
   it("composite gate output wire signal matches composite output after evaluation", () => {
@@ -345,16 +348,16 @@ describe("Wire signal consistency", () => {
     outer.connectGates(ha, sumOut, 0, 0);
     outer.connectGates(ha, carryOut, 0, 1);
 
-    A.setValue(true);
-    B.setValue(true);
+    A.setValue(HIGH);
+    B.setValue(HIGH);
     outer.evaluate();
 
     const wireToSum = outer.wires.find(w => w.to === sumOut);
     const wireToCarry = outer.wires.find(w => w.to === carryOut);
 
     // Sum should be 0, carry should be 1
-    expect(sumOut.output).toBe(false);
-    expect(carryOut.output).toBe(true);
+    expect(sumOut.output).toBe(LOW);
+    expect(carryOut.output).toBe(HIGH);
     expect(wireToSum.signal).toBe(sumOut.output);
     expect(wireToCarry.signal).toBe(carryOut.output);
   });
