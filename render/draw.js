@@ -154,7 +154,7 @@ function drawDisplay(renderNode, p) {
   p.rect(x, y, width, height);
 
   let colors = gate.output.map(segment => {
-    return segment ? theme.gates.output.low.hex : "#2a1a1a";
+    return segment ? theme.gates.output.e.hex : "#2a1a1a";
   });
 
   // 0: Top
@@ -231,7 +231,7 @@ function drawEmbeddedDisplay(displayGate, x, y, width, height, p) {
   p.rect(x, y, width, height);
 
   let colors = displayGate.output.map(segment => {
-    return segment ? theme.gates.output.low.hex : "#2a1a1a";
+    return segment ? theme.gates.output.e.hex : "#2a1a1a";
   });
 
   // 0: Top
