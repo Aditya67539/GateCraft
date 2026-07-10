@@ -52,12 +52,13 @@ export class RenderPoint {
   }
 
   getBounds(padding = 4) {
-    return {
-      left:   (this.x - PORT_RADIUS / 2 - padding / 2),
-      right:  (this.x + this.width + PORT_RADIUS / 2 + padding / 2),
-      top:    (this.y - padding),
-      bottom: (this.y + this.height + padding),
-    }
+    const top = this.y - padding;
+    const bottom = this.y + this.height + padding;
+    let left = this.x - PORT_RADIUS / 2 - padding / 2;
+    let right = this.x + this.width + PORT_RADIUS / 2 + padding / 2;
+    if (this.gate.inputCount !== 0) left -= GRID_SIZE;
+    if (this.gate.outputCount !== 0) right += GRID_SIZE;
+    return { left, right, top, bottom };
   }
 }
 
