@@ -21,6 +21,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
       state.justPlacedFromToolbar = false;
     }
     state.dragging = renderNodes.find(n => n.containsPoint(p.mouseX, p.mouseY));
+    bringToFront(renderNodes, state.dragging);
 
     if (state.mode === "edit") {
       // Check input ports
@@ -351,6 +352,13 @@ function findNearWaypoint(mx, my, p, wires) {
     }
   }
   return null;
+}
+
+function bringToFront(renderNodes, node) {
+  const idx = renderNodes.indexOf(node);
+  if (idx === -1) return;
+  renderNodes.splice(idx, 1);
+  renderNodes.push(node);
 }
 
 /**
