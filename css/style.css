@@ -741,8 +741,8 @@ body {
   align-items: flex-start;
   justify-content: flex-end;
   background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 .settings-overlay.open {
@@ -751,18 +751,19 @@ body {
 
 .settings-panel {
   margin-top: var(--topbar-h);
-  width: 320px;
-  max-width: calc(100vw - 20px);
+  margin-right: 10px;
+  width: 440px;
+  max-width: calc(100vw - 40px);
   max-height: calc(100vh - var(--topbar-h) - 20px);
   overflow-y: auto;
-  background: rgba(var(--theme-panel-bg-rgb, 22, 32, 54), 0.92);
-  border: 1px solid var(--border-hov);
-  border-top: none;
-  border-radius: 0 0 14px 14px;
-  padding: 20px;
+  background: var(--settings-bg, rgba(var(--theme-panel-bg-rgb, 22, 32, 54), 0.96));
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 28px;
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
-    0 16px 48px rgba(0, 0, 0, 0.50);
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+    0 24px 80px rgba(0, 0, 0, 0.55),
+    0 8px 24px rgba(0, 0, 0, 0.30);
   animation: settings-slide-in 0.22s ease;
 }
 
@@ -777,17 +778,30 @@ body {
   }
 }
 
+/* Hide scrollbar for settings panel */
+.settings-panel::-webkit-scrollbar {
+  width: 4px;
+}
+.settings-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+.settings-panel::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
+
 .settings-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .settings-title {
-  font-size: 15px;
+  font-size: 20px;
   font-weight: 700;
   color: var(--text);
+  letter-spacing: -0.02em;
 }
 
 .settings-close-btn {
@@ -796,52 +810,64 @@ body {
   outline: none;
   background: var(--overlay);
   color: var(--text-muted);
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.12s;
 }
 
 .settings-close-btn:hover {
   background: var(--overlay-hov);
   color: var(--text);
   border-color: var(--border-hov);
+  transform: rotate(90deg);
 }
 
 .settings-section {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.settings-section:last-child {
+  margin-bottom: 0;
 }
 
 .settings-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text-muted);
 }
 
-/* ─── Theme Card Grid ────────────────────────────────────────── */
+.settings-divider {
+  height: 1px;
+  background: var(--border);
+  margin: -4px 0 0;
+}
+
+/* ─── Theme Card Grid (Appearance) ────────────────────────────── */
 .theme-grid {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .theme-card {
   cursor: pointer;
-  border: 1px solid var(--border);
+  border: 2px solid var(--border);
   outline: none;
   background: var(--overlay);
-  border-radius: var(--radius);
-  padding: 12px 14px;
+  border-radius: 14px;
+  padding: 14px 16px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   transition: background 0.18s, border-color 0.18s, box-shadow 0.18s, transform 0.12s;
   font-family: inherit;
   text-align: left;
@@ -858,50 +884,306 @@ body {
 
 .theme-card.active {
   border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent), 0 0 18px rgba(var(--theme-accent-rgb, 99, 102, 241), 0.25);
-  background: rgba(var(--theme-accent-rgb, 99, 102, 241), 0.08);
+  box-shadow: 0 0 0 1px var(--accent), 0 0 18px rgba(var(--theme-accent-rgb, 99, 102, 241), 0.20);
+  background: rgba(var(--theme-accent-rgb, 99, 102, 241), 0.06);
 }
 
 .theme-card:active {
-  transform: scale(0.97);
+  transform: scale(0.98);
 }
 
-.theme-swatches {
+/* Theme card icon */
+.theme-card-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   display: flex;
-  gap: 3px;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  transition: background 0.18s;
 }
 
-.theme-swatch {
-  width: 18px;
-  height: 18px;
-  border-radius: 5px;
-  border: 1px solid var(--border);
+.theme-card-icon svg {
+  width: 22px;
+  height: 22px;
 }
 
+.theme-card-icon.light-icon {
+  background: rgba(var(--theme-ui-overlay-rgb, 255, 255, 255), 0.10);
+  color: var(--text-muted);
+}
+
+.theme-card-icon.dark-icon {
+  background: rgba(var(--theme-surface-bg-rgb, 30, 41, 59), 0.65);
+  color: var(--text-muted);
+}
+
+.theme-card.active .theme-card-icon {
+  color: var(--text);
+}
+
+/* Theme card info */
 .theme-card-info {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+  flex: 1;
 }
 
 .theme-card-name {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text);
 }
 
-.theme-card-active-badge {
-  display: none;
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--accent);
-  letter-spacing: 0.04em;
+.theme-card-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 400;
 }
 
-.theme-card.active .theme-card-active-badge {
+/* Radio indicator */
+.theme-card-radio {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--border-hov);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
+}
+
+.theme-card.active .theme-card-radio {
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow: 0 0 10px rgba(var(--theme-accent-rgb, 99, 102, 241), 0.40);
+}
+
+.theme-card-radio svg {
+  display: none;
+}
+
+.theme-card.active .theme-card-radio svg {
   display: block;
+}
+
+/* ─── Signal Colors Button ────────────────────────────────────── */
+.signal-colors-btn {
+  cursor: pointer;
+  border: 1px solid var(--border);
+  outline: none;
+  background: var(--overlay);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: background 0.18s, border-color 0.18s, box-shadow 0.18s, transform 0.12s;
+  font-family: inherit;
+  text-align: left;
+  width: 100%;
+  color: inherit;
+}
+
+.signal-colors-btn:hover {
+  background: var(--overlay-hov);
+  border-color: var(--border-hov);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.30);
+}
+
+.signal-colors-btn:active {
+  transform: scale(0.98);
+}
+
+.signal-colors-btn-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--overlay);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 8px;
+  flex-shrink: 0;
+}
+
+.signal-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.signal-colors-btn-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.signal-colors-btn-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.signal-colors-btn-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.signal-colors-btn-chevron {
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition: transform 0.2s, color 0.15s;
+}
+
+.signal-colors-btn:hover .signal-colors-btn-chevron {
+  color: var(--text);
+  transform: translateX(2px);
+}
+
+/* ─── Signal Color Customization Panel ────────────────────────── */
+.signal-colors-panel .settings-header {
+  gap: 12px;
+}
+
+.signal-back-btn {
+  cursor: pointer;
+  border: 1px solid var(--border);
+  outline: none;
+  background: var(--overlay);
+  color: var(--text-muted);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.12s;
+}
+
+.signal-back-btn:hover {
+  background: var(--overlay-hov);
+  color: var(--text);
+  border-color: var(--border-hov);
+  transform: translateX(-2px);
+}
+
+.signal-colors-panel .settings-title {
+  flex: 1;
+}
+
+/* Signal color rows */
+.signal-color-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.signal-color-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--overlay);
+  border: 1px solid var(--border);
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.signal-color-row:hover {
+  background: var(--overlay-hov);
+  border-color: var(--border-hov);
+}
+
+.signal-color-swatch-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.signal-color-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.15s;
+}
+
+.signal-color-swatch:hover {
+  transform: scale(1.08);
+  box-shadow: 0 0 12px rgba(var(--theme-accent-rgb, 99, 102, 241), 0.30);
+}
+
+/* Hidden native color input anchored to the swatch */
+.signal-color-input {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: none;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.signal-color-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  flex: 1;
+  white-space: nowrap;
+}
+
+.signal-color-hex {
+  font-size: 11px;
+  font-weight: 500;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Mono', monospace;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+/* Reset button */
+.signal-reset-btn {
+  cursor: pointer;
+  border: 1px solid var(--border);
+  outline: none;
+  background: var(--overlay);
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: 10px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.signal-reset-btn:hover {
+  background: var(--overlay-hov);
+  color: var(--text);
+  border-color: var(--border-hov);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.20);
+}
+
+.signal-reset-btn:active {
+  transform: scale(0.97);
 }
 
 /* ─── Inline Gate Label Editor ──────────────────────────────── */

@@ -8,7 +8,15 @@ import {
   renameCompositeGate,
   buildCircuitFromData,
 } from "../persistence.js";
-import { themes, getActiveThemeId, setActiveThemeId } from "../render/theme.js";
+import {
+  themes,
+  getActiveThemeId,
+  setActiveThemeId,
+  SIGNAL_STATE_LABELS,
+  setSignalColor,
+  getSignalColors,
+  resetSignalColors,
+} from "../render/theme.js";
 import { createModal } from "./modal.js";
 
 
@@ -41,6 +49,37 @@ const settingsOverlay = document.getElementById("settings-overlay");
 const settingsCloseBtn = document.getElementById("settings-close-btn");
 const themeGrid = document.getElementById("theme-grid");
 
+// Signal colors sub-panel
+const signalColorsOverlay = document.getElementById("signal-colors-overlay");
+const signalColorGrid = document.getElementById("signal-color-grid");
+const signalBackBtn = document.getElementById("signal-colors-back-btn");
+const signalCloseBtn = document.getElementById("signal-colors-close-btn");
+const signalResetBtn = document.getElementById("signal-reset-btn");
+const openSignalColorsBtn = document.getElementById("btn-open-signal-colors");
+
+// ─── Theme icon SVGs ────────────────────────────────────────────
+const THEME_ICONS = {
+  light: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="5"/>
+    <line x1="12" y1="1" x2="12" y2="3"/>
+    <line x1="12" y1="21" x2="12" y2="23"/>
+    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+    <line x1="1" y1="12" x2="3" y2="12"/>
+    <line x1="21" y1="12" x2="23" y2="12"/>
+    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+  </svg>`,
+  dark: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+  </svg>`,
+};
+
+const THEME_DESCRIPTIONS = {
+  light: "Clean and bright",
+  dark: "Easy on the eyes",
+};
+
 function renderThemeGrid() {
   themeGrid.innerHTML = "";
   const activeId = getActiveThemeId();
@@ -50,23 +89,19 @@ function renderThemeGrid() {
     card.className = `theme-card${id === activeId ? " active" : ""}`;
     card.dataset.themeId = id;
 
-    // Pick representative colors for swatches
-    const t = entry.theme;
-    const swatchColors = [
-      t.canvas.bg.hex,
-      t.gates.logic.hex,
-      t.gates.input.high.hex,
-      t.wires.high.hex,
-      t.accent.hex,
-    ];
-
     card.innerHTML = `
-      <div class="theme-swatches">
-        ${swatchColors.map(c => `<span class="theme-swatch" style="background:${c}"></span>`).join("")}
+      <div class="theme-card-icon ${id}-icon">
+        ${THEME_ICONS[id] || THEME_ICONS.dark}
       </div>
       <div class="theme-card-info">
         <span class="theme-card-name">${entry.label}</span>
-        <span class="theme-card-active-badge">Active</span>
+        <span class="theme-card-desc">${THEME_DESCRIPTIONS[id] || ""}</span>
+      </div>
+      <div class="theme-card-radio">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white"
+          stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
       </div>
     `;
 
@@ -78,6 +113,77 @@ function renderThemeGrid() {
     themeGrid.appendChild(card);
   }
 }
+
+// ─── Signal Color Grid ──────────────────────────────────────────
+function renderSignalColorGrid() {
+  signalColorGrid.innerHTML = "";
+  const current = getSignalColors();
+
+  for (const [key, label] of Object.entries(SIGNAL_STATE_LABELS)) {
+    const row = document.createElement("div");
+    row.className = "signal-color-row";
+
+    const hex = current[key];
+
+    row.innerHTML = `
+      <div class="signal-color-swatch-wrapper">
+        <span class="signal-color-swatch" style="background:${hex}"></span>
+        <input type="color" class="signal-color-input" value="${hex}" data-key="${key}">
+      </div>
+      <span class="signal-color-label">${label}</span>
+      <span class="signal-color-hex">${hex.toUpperCase()}</span>
+    `;
+
+    // Click swatch → open native picker
+    const swatch = row.querySelector(".signal-color-swatch");
+    const input = row.querySelector(".signal-color-input");
+    swatch.addEventListener("click", () => input.click());
+
+    // Update color on change
+    input.addEventListener("input", (e) => {
+      const newHex = e.target.value;
+      swatch.style.background = newHex;
+      row.querySelector(".signal-color-hex").textContent = newHex.toUpperCase();
+      setSignalColor(key, newHex);
+    });
+
+    signalColorGrid.appendChild(row);
+  }
+}
+
+// ─── Signal Colors Sub-Panel Logic ──────────────────────────────
+let _settingsModal = null;
+
+function openSignalColorsPanel() {
+  settingsOverlay.classList.remove("open");
+  signalColorsOverlay.classList.add("open");
+  renderSignalColorGrid();
+  state.isAnyModalOpen = true;
+}
+
+function closeSignalColorsPanel() {
+  signalColorsOverlay.classList.remove("open");
+  state.isAnyModalOpen = false;
+}
+
+function backToSettings() {
+  signalColorsOverlay.classList.remove("open");
+  settingsOverlay.classList.add("open");
+  renderThemeGrid();
+}
+
+openSignalColorsBtn.addEventListener("click", openSignalColorsPanel);
+signalBackBtn.addEventListener("click", backToSettings);
+signalCloseBtn.addEventListener("click", closeSignalColorsPanel);
+signalResetBtn.addEventListener("click", () => {
+  resetSignalColors();
+  renderSignalColorGrid();
+});
+
+// Close signal panel on overlay click
+signalColorsOverlay.addEventListener("click", (e) => {
+  if (e.target === signalColorsOverlay) closeSignalColorsPanel();
+});
 
 // ─── Sidebar collapse / expand ──────────────────────────────────
 const sidebar = document.getElementById("sidebar");
@@ -331,8 +437,7 @@ export function initToolbar(p, circuit, renderNodes, wires) {
 
   const settingsModal = createModal({
     overlay: settingsOverlay,
-    onOpen: () => { renderThemeGrid(); p.noLoop() },
-    onClose: () => p.loop(),
+    onOpen: () => { renderThemeGrid(); },
   });
 
   // Segmented mode switcher
@@ -407,6 +512,6 @@ export function initToolbar(p, circuit, renderNodes, wires) {
     openSaveModal: () => saveModal.open(),
     openWarningModal: () => warningModal.open(),
     openSettings: () => settingsModal.open(),
-    closeAllModals: () => { saveModal.close(); warningModal.close(); settingsModal.close(); },
+    closeAllModals: () => { saveModal.close(); warningModal.close(); settingsModal.close(); closeSignalColorsPanel(); },
   }
 }
