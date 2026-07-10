@@ -326,13 +326,132 @@ export function drawWire(renderNodes, wireInfo, nodeMap, p) {
   p.strokeWeight(1);
 }
 
+// Pin thickness at the gate end vs. the port end, scaled relative to the
+// port circle so it stays proportional across gate sizes / zoom levels.
+const PIN_THICK_AT_GATE = PORT_RADIUS * 0.5;
+const PIN_THICK_AT_PORT = PORT_RADIUS * 0.16;
+
+// The pin is drawn as three segments along its length: a short thick
+// stub at the gate, a tapered mid-section, then a thin stub at the port.
+// Fractions must sum to 1.
+const PIN_THICK_STUB_FRAC = 0.3;
+const PIN_TAPER_FRAC = 0.4;
+const PIN_THIN_STUB_FRAC = 0.3;
+
+/**
+ * Lightens (percent > 0) or darkens (percent < 0) a hex color by mixing
+ * it toward white or black. Returns an rgb() string.
+ */
+function shadeColor(hex, percent) {
+  hex = hex.replace(/^#/, "");
+  if (hex.length === 3) hex = hex.split("").map(c => c + c).join("");
+  let r = parseInt(hex.slice(0, 2), 16);
+  let g = parseInt(hex.slice(2, 4), 16);
+  let b = parseInt(hex.slice(4, 6), 16);
+
+  if (percent >= 0) {
+    r += (255 - r) * percent;
+    g += (255 - g) * percent;
+    b += (255 - b) * percent;
+  } else {
+    r *= 1 + percent;
+    g *= 1 + percent;
+    b *= 1 + percent;
+  }
+
+  r = Math.max(0, Math.min(255, r));
+  g = Math.max(0, Math.min(255, g));
+  b = Math.max(0, Math.min(255, b));
+  return `rgb(${r | 0}, ${g | 0}, ${b | 0})`;
+}
+
+/**
+ * Draws a smoothly flared "pin" with a rigid body and a flanged base,
+ * matching the 3D metallic look of the mockup.
+ *
+ * @param {Object} p - p5 instance
+ * @param {number} x1,y1 - point at the gate edge (thick end)
+ * @param {number} x2,y2 - point at the port (thin end)
+ * @param {string} baseColor - hex color the pin is built around
+ */
+function drawPin(p, x1, y1, x2, y2, baseColor) {
+  const ctx = p.drawingContext;
+
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const len = Math.hypot(dx, dy) || 1;
+  
+  // Unit direction along the pin, and unit normal perpendicular to it
+  const ux = dx / len;
+  const uy = dy / len;
+  const nx = -uy;
+  const ny = ux;
+
+  const thickStart = PIN_THICK_AT_GATE;
+  const thickEnd = PIN_THICK_AT_PORT;
+
+  const offset = (ptX, ptY, thickness, side) => ({
+    x: ptX + side * nx * (thickness / 2),
+    y: ptY + side * ny * (thickness / 2),
+  });
+
+  // Gate edge (thick end)
+  const top0 = offset(x1, y1, thickStart, 1);
+  const bottom0 = offset(x1, y1, thickStart, -1);
+
+  // Port edge (thin end)
+  const top3 = offset(x2, y2, thickEnd, 1);
+  const bottom3 = offset(x2, y2, thickEnd, -1);
+
+  // ASYMMETRIC TENSION: The secret to the flanged shape.
+  // A small base tension forces a quick flare at the gate.
+  // A large port tension forces the curve to stay thin/straight for most of its length.
+  const tensionBase = len * 0.15;
+  const tensionPort = len * 0.85; 
+
+  const topCp1 = { x: top0.x + ux * tensionBase, y: top0.y + uy * tensionBase };
+  const topCp2 = { x: top3.x - ux * tensionPort, y: top3.y - uy * tensionPort };
+
+  const bottomCp2 = { x: bottom3.x - ux * tensionPort, y: bottom3.y - uy * tensionPort };
+  const bottomCp1 = { x: bottom0.x + ux * tensionBase, y: bottom0.y + uy * tensionBase };
+
+  // High-contrast gradient to simulate a shiny metallic cylinder
+  const grad = ctx.createLinearGradient(top0.x, top0.y, bottom0.x, bottom0.y);
+  grad.addColorStop(0.0, shadeColor(baseColor, -0.6)); // Dark top rim
+  grad.addColorStop(0.25, shadeColor(baseColor, 0.6)); // Sharp, bright off-center highlight
+  grad.addColorStop(0.55, baseColor);                  // Mid-tone body
+  grad.addColorStop(1.0, shadeColor(baseColor, -0.7)); // Dark bottom shadow
+
+  ctx.save();
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  
+  ctx.moveTo(top0.x, top0.y);
+  
+  // Draw top curve
+  ctx.bezierCurveTo(topCp1.x, topCp1.y, topCp2.x, topCp2.y, top3.x, top3.y);
+  
+  // Cap at the port
+  ctx.lineTo(bottom3.x, bottom3.y);
+  
+  // Draw bottom curve
+  ctx.bezierCurveTo(bottomCp2.x, bottomCp2.y, bottomCp1.x, bottomCp1.y, bottom0.x, bottom0.y);
+  
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
 function drawOutputPort(renderNode, theme, p) {
   const gate = renderNode.gate;
   if (gate.type === "output") return;
   const totalOutputs = gate.outputCount;
+  const pinColor = theme.wires.ghost.hex;
+  const gateEdgeX = renderNode.x + renderNode.width;
 
   for (let i = 0; i < totalOutputs; i++) {
     const port = renderNode.getOutputPortByIndex(i, totalOutputs);
+    drawPin(p, gateEdgeX, port.y, port.x, port.y, pinColor);
     p.fill(theme.accent.hex);
     p.stroke(theme.text.primary.hex);
     p.strokeWeight(1.5);
@@ -344,9 +463,12 @@ function drawInputPort(renderNode, theme, p) {
   const gate = renderNode.gate;
   if (gate.type === "input" || gate.type === "clock") return;
   const totalInputs = gate.inputCount;
+  const pinColor = theme.wires.ghost.hex;
+  const gateEdgeX = renderNode.x;
 
   for (let i = 0; i < totalInputs; i++) {
     const port = renderNode.getInputPortByIndex(i, totalInputs);
+    drawPin(p, gateEdgeX, port.y, port.x, port.y, pinColor);
     p.fill(theme.accent.hex);
     p.stroke(theme.text.primary.hex);
     p.strokeWeight(1.5);
@@ -531,4 +653,4 @@ export function createGrid(width, height, theme, offset, size, p) {
   }
 
   return buffer;
-}
+} 

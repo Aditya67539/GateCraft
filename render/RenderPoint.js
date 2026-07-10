@@ -32,7 +32,7 @@ export class RenderPoint {
   getOutputPortByIndex(index, totalOutputs) {
     const spacing = this.height / totalOutputs;
     return {
-      x: this.x + this.width,
+      x: this.x + this.width + GRID_SIZE,
       y: this.y + spacing * index + spacing / 2,
     };
   }
@@ -46,7 +46,7 @@ export class RenderPoint {
   getInputPortByIndex(index, totalInputs) {
     const spacing = this.height / totalInputs;
     return {
-      x: this.x,
+      x: this.x - GRID_SIZE,
       y: this.y + spacing * index + spacing / 2
     };
   }
