@@ -140,7 +140,7 @@ function computeSize(gate) {
       const displayW = Math.round(9 * GRID_SIZE * displayScale);
       const displayH = Math.round(11 * GRID_SIZE * displayScale);
       const displayCount = gate.embeddedDisplays.length;
-      const displayGap = 0;
+      const displayGap = -16;
 
       // Label row at the top + padding around the display strip
       const labelRowH = GRID_SIZE * 1.5;

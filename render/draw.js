@@ -97,7 +97,7 @@ export function drawGate(renderNode, p, status = null) {
   if (gate.type === "composite" && gate.embeddedDisplays && gate.embeddedDisplays.length > 0 && gate._displayArea) {
     // --- Label at the top ---
     const { displayW, displayH, labelRowH, displayPad, displayCount, displayGap } = gate._displayArea;
-    p.text(label, renderNode.x + renderNode.width / 2, renderNode.y + labelRowH / 2);
+    p.text(label, renderNode.x + renderNode.width / 2, renderNode.y + labelRowH / 1.5);
 
     // --- Embedded displays (centered strip) ---
     const displayStripW = displayCount * displayW + (displayCount - 1) * displayGap;
@@ -264,7 +264,7 @@ function drawEmbeddedDisplay(displayGate, x, y, width, height, p) {
 
   // Background
   p.fill("#090808");
-  p.rect(x, y, width, height);
+  p.rect(x, y, width, height, 8);
 
   let colors = displayGate.output.map(segment => {
     return segment ? theme.gates.output.e.hex : "#2a1a1a";
