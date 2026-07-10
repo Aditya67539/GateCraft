@@ -32,7 +32,7 @@ export class RenderPoint {
   getOutputPortByIndex(index, totalOutputs) {
     const spacing = this.height / totalOutputs;
     return {
-      x: this.x + this.width,
+      x: this.x + this.width + GRID_SIZE,
       y: this.y + spacing * index + spacing / 2,
     };
   }
@@ -46,18 +46,19 @@ export class RenderPoint {
   getInputPortByIndex(index, totalInputs) {
     const spacing = this.height / totalInputs;
     return {
-      x: this.x,
+      x: this.x - GRID_SIZE,
       y: this.y + spacing * index + spacing / 2
     };
   }
 
   getBounds(padding = 4) {
-    return {
-      left:   (this.x - PORT_RADIUS / 2 - padding / 2),
-      right:  (this.x + this.width + PORT_RADIUS / 2 + padding / 2),
-      top:    (this.y - padding),
-      bottom: (this.y + this.height + padding),
-    }
+    const top = this.y - padding;
+    const bottom = this.y + this.height + padding;
+    let left = this.x - PORT_RADIUS / 2 - padding / 2;
+    let right = this.x + this.width + PORT_RADIUS / 2 + padding / 2;
+    if (this.gate.inputCount !== 0) left -= GRID_SIZE;
+    if (this.gate.outputCount !== 0) right += GRID_SIZE;
+    return { left, right, top, bottom };
   }
 }
 
@@ -139,7 +140,7 @@ function computeSize(gate) {
       const displayW = Math.round(9 * GRID_SIZE * displayScale);
       const displayH = Math.round(11 * GRID_SIZE * displayScale);
       const displayCount = gate.embeddedDisplays.length;
-      const displayGap = 0;
+      const displayGap = -16;
 
       // Label row at the top + padding around the display strip
       const labelRowH = GRID_SIZE * 1.5;

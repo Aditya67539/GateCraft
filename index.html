@@ -229,12 +229,70 @@
         </button>
       </div>
 
+      <!-- Appearance Section -->
       <div class="settings-section">
-        <p class="settings-label">Theme</p>
+        <p class="settings-label">Appearance</p>
+        <div class="settings-divider"></div>
         <div class="theme-grid" id="theme-grid">
           <!-- Populated dynamically by toolbar.js -->
         </div>
       </div>
+
+      <!-- Signal Colors Section -->
+      <div class="settings-section">
+        <p class="settings-label">Signal Colors</p>
+        <div class="settings-divider"></div>
+        <button class="signal-colors-btn" id="btn-open-signal-colors">
+          <span class="signal-colors-btn-icon">
+            <span class="signal-dot" style="background:#ef4444"></span>
+            <span class="signal-dot" style="background:#22c55e"></span>
+            <span class="signal-dot" style="background:#3b82f6"></span>
+            <span class="signal-dot" style="background:#a1a1aa"></span>
+          </span>
+          <span class="signal-colors-btn-info">
+            <span class="signal-colors-btn-title">Customize 5-State Signal Colors</span>
+            <span class="signal-colors-btn-desc">Configure colors for: 0, 1, X, Z, E</span>
+          </span>
+          <svg class="signal-colors-btn-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Signal Color Customization Panel ─────────────────────── -->
+  <div class="settings-overlay" id="signal-colors-overlay">
+    <div class="settings-panel signal-colors-panel" id="signal-colors-panel">
+      <div class="settings-header">
+        <button class="signal-back-btn" id="signal-colors-back-btn" aria-label="Back to settings">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </button>
+        <h3 class="settings-title">Signal Colors</h3>
+        <button class="settings-close-btn" id="signal-colors-close-btn" aria-label="Close">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="signal-color-grid" id="signal-color-grid">
+        <!-- Populated dynamically by toolbar.js -->
+      </div>
+
+      <button class="signal-reset-btn" id="signal-reset-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="1 4 1 10 7 10"/>
+          <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+        </svg>
+        Reset to Defaults
+      </button>
     </div>
   </div>
   <!-- ── Composite Gate Context Menu ─────────────────────────── -->
