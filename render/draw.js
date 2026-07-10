@@ -24,6 +24,7 @@ export function drawGate(renderNode, p, status = null) {
     drawDisplay(renderNode, p);
     drawInputPort(renderNode, theme, p);
     drawOutputPort(renderNode, theme, p);
+    if (status) drawOverlay(renderNode, status, p);
     
     p.fill(0);
     p.stroke(0);
@@ -114,29 +115,23 @@ export function drawGate(renderNode, p, status = null) {
   drawOutputPort(renderNode, theme, p);
   drawInputPort(renderNode, theme, p);
 
-  if (status) {
-    const bounds = renderNode.getBounds();
-    const bw = bounds.right - bounds.left;
-    const bh = bounds.bottom - bounds.top;
-
-    if (status === "valid") {
-      p.noStroke();
-      p.fill(255, 255, 255, 50);
-      p.rect(bounds.left, bounds.top, bw, bh);
-    } else if (status === "invalid") {
-      p.noStroke();
-      p.fill(180, 45, 45, 55);
-      p.rect(bounds.left, bounds.top, bw, bh);
-    } else if (status === "selected") {
-      p.noStroke();
-      p.fill(255, 255, 255, 30);
-      p.rect(bounds.left, bounds.top, bw, bh);
-    }
-  }
+  if (status) drawOverlay(renderNode, status, p);
 
   p.fill(0);
   p.stroke(0);
   p.strokeWeight(1);
+}
+
+function drawOverlay(node, status, p) {
+  const bounds = node.getBounds();
+  const bw = bounds.right - bounds.left;
+  const bh = bounds.bottom - bounds.top;
+
+  p.noStroke();
+  if (status === "valid") p.fill(255, 255, 255, 50);
+  else if (status === "invalid") p.fill(180, 45, 45, 55);
+  else if (status === "selected") p.fill(255, 255, 255, 30);
+  p.rect(bounds.left, bounds.top, bw, bh);
 }
 
 function drawHorizontalSegment(x, y, width, thickness, bevel, color, p) {
