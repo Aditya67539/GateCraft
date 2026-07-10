@@ -34,15 +34,56 @@ export function drawGate(renderNode, p, status = null) {
   const gate = renderNode.gate;
   const isOn = Array.isArray(gate.output) ? gate.output.some(Boolean) : gate.output;
   let color;
+  let useGradient = false;
   if (gate.type === "input" || gate.type === "clock") {
     color = isOn ? theme.gates.input.high.hex : theme.gates.input.low.hex;
   } else if (gate.type === "output") {
     color = isOn ? theme.gates.output.high.hex : theme.gates.output.low.hex;
   } else {
     color = theme.gates.logic.hex;
+    useGradient = true;
   }
-  p.fill(color);
-  p.rect(renderNode.x, renderNode.y, renderNode.width, renderNode.height);
+
+  if (useGradient && theme.gates.logic.gradientTop) {
+    // Use Canvas 2D API for a vertical gradient fill + stroke
+    const ctx = p.drawingContext;
+    const grad = ctx.createLinearGradient(
+      renderNode.x, renderNode.y,
+      renderNode.x, renderNode.y + renderNode.height
+    );
+    grad.addColorStop(0, theme.gates.logic.gradientTop);
+    grad.addColorStop(1, theme.gates.logic.gradientBottom);
+    ctx.save();
+    ctx.fillStyle = grad;
+    // Draw rounded rect via Canvas API (matches p5's rect with corner radius)
+    const r = 8;
+    const x = renderNode.x, y = renderNode.y;
+    const w = renderNode.width, h = renderNode.height;
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+    ctx.fill();
+    // Border stroke
+    if (theme.gates.logic.stroke) {
+      ctx.strokeStyle = theme.gates.logic.stroke;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+    ctx.restore();
+  } else {
+    if (theme.gates.logic.stroke) {
+      p.stroke(theme.gates.logic.stroke);
+      p.strokeWeight(1.5);
+    } else {
+      p.noStroke();
+    }
+    p.fill(color);
+    p.rect(renderNode.x, renderNode.y, renderNode.width, renderNode.height, 8);
+  }
 
   // Compute label color with good contrast against the gate fill
   const labelColor = contrastText(color);

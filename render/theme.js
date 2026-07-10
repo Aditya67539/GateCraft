@@ -63,7 +63,12 @@ function toColorObjMap(hexMap) {
 const darkPalette = {
   base:    { hex: "#1c1c1f" }, // canvas background
   mantle:  { hex: "#28282c" }, // grid
-  logic:   { hex: "#2c2c33" }, // uniform gate body
+  logic:   { 
+    hex: "#2A2A33", 
+    gradientTop: "#32323a", 
+    gradientBottom: "#25252E",
+    stroke: "#3f3f46",       // subtle — gradient already defines the shape
+  },
   panel:   { hex: "#141416" },
   surface: { hex: "#222226" },
   accent:  { hex: "#3b82f6" },
@@ -71,13 +76,18 @@ const darkPalette = {
 };
 
 const lightPalette = {
-  base:    { hex: "#f4f4f5" }, // canvas background
-  mantle:  { hex: "#e4e4e7" }, // grid
-  logic:   { hex: "#ffffff" }, // uniform gate body
-  panel:   { hex: "#ffffff" },
-  surface: { hex: "#f4f4f5" },
+  base:    { hex: "#eceef2" },
+  mantle:  { hex: "#dde1e8" },
+  logic:   { 
+    hex: "#ffffff", 
+    gradientTop: "#ffffff", 
+    gradientBottom: "#eef0f4",
+    stroke: "#c3c8d1",       // load-bearing — defines the edge against base
+  },
+  panel:   { hex: "#f8f9fb" },
+  surface: { hex: "#e2e5ea" },
   accent:  { hex: "#2563eb" },
-  ghost:   { hex: "#c9c9cf" },
+  ghost:   { hex: "#a8adb8" },
 };
 
 // ─────────────────────────────────────────────────────────────────
