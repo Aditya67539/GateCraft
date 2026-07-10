@@ -196,9 +196,11 @@ function drawDisplay(renderNode, p) {
   const hSegW = digitW - T;            // Width of horizontal segments
   const vSegH = digitH / 2 - T / 2;    // Height of vertical segments
 
-  // Background
-  p.fill("#262220");
-  p.rect(x, y, width, height);
+  p.strokeWeight(4);
+  p.stroke(62, 63, 73);
+  p.fill("#090808");
+  p.rect(x, y, width, height, 8);
+  p.noStroke();
 
   let colors = gate.output.map(segment => {
     return segment ? theme.gates.output.e.hex : "#2a1a1a";
