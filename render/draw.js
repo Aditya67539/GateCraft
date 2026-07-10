@@ -104,6 +104,10 @@ export function drawGate(renderNode, p, status = null) {
     const stripStartX = renderNode.x + (renderNode.width - displayStripW) / 2;
     const dispY = renderNode.y + labelRowH + displayPad;
 
+    const borderWidth = (displayCount * displayW) + (displayGap * (displayCount - 1));
+
+    drawDisplayBorder(stripStartX, dispY, borderWidth, displayH, p);
+
     for (let i = 0; i < displayCount; i++) {
       const dispX = stripStartX + i * (displayW + displayGap);
       drawEmbeddedDisplay(gate.embeddedDisplays[i].gate, dispX, dispY, displayW, displayH, p);
@@ -132,6 +136,13 @@ function drawOverlay(node, status, p) {
   else if (status === "invalid") p.fill(180, 45, 45, 55);
   else if (status === "selected") p.fill(255, 255, 255, 30);
   p.rect(bounds.left, bounds.top, bw, bh);
+}
+
+function drawDisplayBorder(x, y, w, h, p) {
+  p.strokeWeight(4);
+  p.stroke(62, 63, 73);
+  p.rect(x, y, w, h, 8);
+  p.noStroke();
 }
 
 function drawHorizontalSegment(x, y, width, thickness, bevel, color, p) {
