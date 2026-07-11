@@ -51,6 +51,48 @@ void init(
 }
 
 
+/*  Truth tables for 5-value logic: LOW=0, HIGH=1, X=2, Z=3, E=4
+ *  Z (high-impedance) behaves like X when driving a gate input.
+ *  E (error) propagates unless a dominating value forces the result.
+ */
+//                          LOW  HIGH  X   Z   E
+static const uint8_t NOTTABLE[5] = { 1, 0, 2, 2, 4 };
+
+static const uint8_t ANDTABLE[5][5] = {
+    //                      LOW  HIGH  X   Z   E
+    /* LOW  */ {             0,   0,   0,  0,  0 },
+    /* HIGH */ {             0,   1,   2,  2,  4 },
+    /* X    */ {             0,   2,   2,  2,  4 },
+    /* Z    */ {             0,   2,   2,  2,  4 },
+    /* E    */ {             0,   4,   4,  4,  4 },
+};
+
+static const uint8_t ORTABLE[5][5] = {
+    //                      LOW  HIGH  X   Z   E
+    /* LOW  */ {             0,   1,   2,  2,  4 },
+    /* HIGH */ {             1,   1,   1,  1,  1 },
+    /* X    */ {             2,   1,   2,  2,  4 },
+    /* Z    */ {             2,   1,   2,  2,  4 },
+    /* E    */ {             4,   1,   4,  4,  4 },
+};
+
+static inline uint8_t not(uint8_t a) {
+    return NOTTABLE[a];
+}
+
+static inline uint8_t andPair(uint8_t a, uint8_t b) {
+    return ANDTABLE[a][b];
+}
+
+static inline uint8_t orPair(uint8_t a, uint8_t b) {
+    return ORTABLE[a][b];
+}
+
+static inline uint8_t xorPair(uint8_t a, uint8_t b) {
+    return orPair(andPair(a, not(b)), andPair(not(a), b));
+}
+
+
 uint8_t evaluateGate(uint8_t type, uint8_t *inputs, uint8_t inputCount) {
     uint8_t output;
 
@@ -64,50 +106,50 @@ uint8_t evaluateGate(uint8_t type, uint8_t *inputs, uint8_t inputCount) {
     case 3:
         output = 1;
         for (int i = 0; i < inputCount; i++) {
-            output = output & inputs[i];
+            output = andPair(output, inputs[i]);
         }
         break;
     // OR gate
     case 4:
         output = 0;
         for (int i = 0; i < inputCount; i++) {
-            output = output | inputs[i];
+            output = orPair(output, inputs[i]);
         }
         break;
     // NOT gate
     case 5:
-        output = inputs[0] == 0 ? 1 : 0;
+        output = not(inputs[0]);
         break;
     // NAND gate
     case 6:
         output = 1;
         for (int i = 0; i < inputCount; i++) {
-            output = output & inputs[i];
+            output = andPair(output, inputs[i]);
         }
-        output = output == 0 ? 1 : 0;
+        output = not(output);
         break;
     // NOR gate
     case 7:
         output = 0;
         for (int i = 0; i < inputCount; i++) {
-            output = output | inputs[i];
+            output = orPair(output, inputs[i]);
         }
-        output = output == 0 ? 1 : 0;
+        output = not(output);
         break;
-    // XOR gate
+    // 2OR gate
     case 8:
         output = 0;
         for (int i = 0; i < inputCount; i++) {
-            output = output ^ inputs[i];
+            output = xorPair(output, inputs[i]);
         }
         break;
-    // XNOR gate
+    // 2NOR gate
     case 9:
         output = 0;
         for (int i = 0; i < inputCount; i++) {
-            output = output ^ inputs[i];
+            output = xorPair(output, inputs[i]);
         }
-        output = output == 0 ? 1 : 0;
+        output = not(output);
         break;
     // 7 Segment Display
     case 11:

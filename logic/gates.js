@@ -1,6 +1,9 @@
 import { Wire } from "./wire.js";
 import { evaluateAll } from "./evaluate.js";
-import { GATE_DEFS } from "../constants.js";
+import { GATE_DEFS, SIGNAL } from "../constants.js";
+
+
+const { LOW, HIGH, X, Z, E } = SIGNAL;
 
 /**
  * Base class for generating unique gate IDs. 
@@ -10,12 +13,12 @@ class Logic {
 }
 
 export class Input {
-  constructor(value) {
+  constructor() {
     this.id = Logic.nextId++;
     this.type = "input";
     this.outputCount = GATE_DEFS[this.type].outputs;
     this.inputCount = GATE_DEFS[this.type].inputs;
-    this.output = value;
+    this.output = LOW;
   }
 
   setValue(newValue) {
@@ -28,14 +31,15 @@ export class Input {
 }
 
 export class Clock extends Input {
-  constructor(value) {
-    super(value);
+  constructor() {
+    super();
     this.type = "clock";
     this.intervalId = null;
   }
 
   tick() {
-    super.setValue(!this.output);
+    const signal = this.output === LOW ? HIGH : LOW;
+    super.setValue(signal);
   }
 }
 
@@ -64,80 +68,75 @@ export class Output extends ConnectableGate {
     this.inputCount = GATE_DEFS[this.type].inputs;
     this.outputCount = GATE_DEFS[this.type].outputs;
     this.inputs = new Array(this.inputCount).fill(undefined);
-    this.output = false;
-    this.tempOutput = false;
+    this.output = X;
+    this.tempOutput = X;
   }
 
   evaluate() {
-    if (this.inputs.length > 1) {
-      return { ok: false, error: "Output does not support multiple inputs!" };
-    }
-    this.tempOutput = this.inputs[0] ? this.inputs[0].signal : false;
+    this.tempOutput = this.inputs[0]?.signal ?? X;
     return { ok: true, output: this.tempOutput };
   }
 }
 
 export class Gate extends ConnectableGate {
-  constructor(type, inputs) {
+  constructor(type) {
     super();
     this.id = Logic.nextId++;
     this.type = type.toLowerCase();
     this.inputCount = GATE_DEFS[this.type].inputs;
     this.outputCount = GATE_DEFS[this.type].outputs;
     this.inputs = new Array(this.inputCount).fill(undefined);
-    // this.inputs = inputs;
-    this.output = false;
-    this.tempOutput = false;
+    this.output = X;
+    this.tempOutput = X;
   }
 
   evaluate() {
     const resolvedInputs = resolveInputs(this.inputs);
     switch (this.type) {
       case "and":
-        this.tempOutput = true;
+        this.tempOutput = HIGH;
         resolvedInputs.forEach(input => {
-          this.tempOutput = this.tempOutput && input;
+          this.tempOutput = andPair(this.tempOutput, input);
         });
         break;
       case "or":
-        this.tempOutput = false;
+        this.tempOutput = LOW;
         resolvedInputs.forEach(input => {
-          this.tempOutput = this.tempOutput || input;
+          this.tempOutput = orPair(this.tempOutput, input);
         });
         break;
       case "not":
         if (resolvedInputs.length > 1) {
           return { ok: false, error: "NOT operator does not support multiple inputs!" };
         }
-        this.tempOutput = !resolvedInputs[0];
+        this.tempOutput = not(resolvedInputs[0]);
         break;
       case "nand":
-        this.tempOutput = true;
+        this.tempOutput = HIGH;
         resolvedInputs.forEach(input => {
-          this.tempOutput = this.tempOutput && input;
+          this.tempOutput = andPair(this.tempOutput, input);
         });
-        this.tempOutput = !this.tempOutput;
+        this.tempOutput = not(this.tempOutput);
         break;
       case "nor":
-        this.tempOutput = false;
+        this.tempOutput = LOW;
         resolvedInputs.forEach(input => {
-          this.tempOutput = this.tempOutput || input;
+          this.tempOutput = orPair(this.tempOutput, input);
         });
-        this.tempOutput = !this.tempOutput;
+        this.tempOutput = not(this.tempOutput);
         break;
       case "xor":
-        let countXOR = 0;
+        this.tempOutput = LOW;
         resolvedInputs.forEach(input => {
-          if (input) countXOR += 1;
+          this.tempOutput = xorPair(this.tempOutput, input);
         });
-        this.tempOutput = countXOR % 2 ? true : false;
         break;
       case "xnor":
-        let countXNOR = 0;
+        this.tempOutput = LOW;
         resolvedInputs.forEach(input => {
-          if (input) countXNOR += 1;
+          this.tempOutput = xorPair(this.tempOutput, input);
         });
-        this.tempOutput = countXNOR % 2 ? false : true;
+        this.tempOutput = not(this.tempOutput);
         break;
       default:
         return { ok: false, error: "Invalid operation" };
@@ -156,8 +155,8 @@ export class CompositeGate extends ConnectableGate {
     this.circuitData = circuitData;
     this.inputOrder = circuitData.inputOrder;
     this.outputOrder = circuitData.outputOrder;
-    this.output = new Array(this.outputOrder.length).fill(false);
-    this.tempOutput = new Array(this.outputOrder.length).fill(false);
+    this.output = new Array(this.outputOrder.length).fill(X);
+    this.tempOutput = new Array(this.outputOrder.length).fill(X);
   }
 
   parseCircuitData() {
@@ -170,7 +169,7 @@ export class CompositeGate extends ConnectableGate {
     this.outputCount = this.internalOutputs.length;
 
     for (const wire of this.circuitData.builder.wires) {
-      wire.signal = false;
+      wire.signal = X;
     }
 
     // Recursively collect all embedded seven-segment displays
@@ -208,13 +207,13 @@ export class SevenSegmentDisplay extends ConnectableGate {
     this.inputCount = GATE_DEFS[this.type].inputs;
     this.outputCount = GATE_DEFS[this.type].outputs;
     this.inputs = new Array(this.inputCount).fill(undefined);
-    this.output = new Array(this.inputCount).fill(false);
-    this.tempOutput = new Array(this.inputCount).fill(false);
+    this.output = new Array(this.inputCount).fill(X);
+    this.tempOutput = new Array(this.inputCount).fill(X);
   }
 
   evaluate() {
     for (let i = 0; i < this.inputCount; i++) {
-      this.tempOutput[i] = this.inputs[i]?.signal ?? false;
+      this.tempOutput[i] = this.inputs[i]?.signal ?? X;
     }
     return { ok: true, output: this.tempOutput };
   }
@@ -229,14 +228,14 @@ export class SevenSegmentDisplay extends ConnectableGate {
  */
 export function createBasicGate(type) {
   return type === "input"
-    ? new Input(false)
+    ? new Input()
     : type === "output"
     ? new Output()
     : type === "clock"
-    ? new Clock(false)
+    ? new Clock()
     : type === "seven-seg"
     ? new SevenSegmentDisplay()
-    : new Gate(type, []);
+    : new Gate(type);
 }
 
 /**
@@ -291,7 +290,38 @@ function collectDisplays(gates, positionMap) {
 
 function resolveInputs(inputs) {
   return inputs.map(input => {
-    if (input instanceof Wire) return input.signal;
-    return false;
+    if (input instanceof Wire && input.signal !== Z) return input.signal;
+    return X;
   });
 }
+
+
+/*  Truth tables for 5-value logic: LOW=0, HIGH=1, X=2, Z=3, E=4
+ *  Z (high-impedance) behaves like X when driving a gate input.
+ *  E (error) propagates unless a dominating value forces the result.
+ */
+//                    LOW   HIGH   X     Z     E
+const NOTTABLE = [    HIGH, LOW,   X,    X,    E   ];
+
+const ANDTABLE = [
+  //                  LOW   HIGH   X     Z     E
+  /* LOW  */ [        LOW,  LOW,   LOW,  LOW,  LOW  ],
+  /* HIGH */ [        LOW,  HIGH,  X,    X,    E    ],
+  /* X    */ [        LOW,  X,     X,    X,    E    ],
+  /* Z    */ [        LOW,  X,     X,    X,    E    ],
+  /* E    */ [        LOW,  E,     E,    E,    E    ],
+];
+
+const ORTABLE = [
+  //                  LOW   HIGH   X     Z     E
+  /* LOW  */ [        LOW,  HIGH,  X,    X,    E    ],
+  /* HIGH */ [        HIGH, HIGH,  HIGH, HIGH, HIGH ],
+  /* X    */ [        X,    HIGH,  X,    X,    E    ],
+  /* Z    */ [        X,    HIGH,  X,    X,    E    ],
+  /* E    */ [        E,    HIGH,  E,    E,    E    ],
+];
+
+const not = (a) => NOTTABLE[a];
+const andPair = (a, b) => ANDTABLE[a][b];
+const orPair = (a, b) => ORTABLE[a][b];
+const xorPair = (a, b) => orPair(andPair(a, not(b)), andPair(not(a), b));

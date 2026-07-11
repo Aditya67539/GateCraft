@@ -3,6 +3,8 @@ import { getActiveTheme } from "./theme.js";
 import { getWirePorts } from "./wireGeometry.js";
 import { state } from "../state.js";
 
+const SIGNAL_KEYS = ["low", "high", "x", "z", "e"];
+
 /**
  * Return "#ffffff" or "#1a1a2e" depending on which has better contrast
  * against the given hex background color.
@@ -33,13 +35,15 @@ export function drawGate(renderNode, p, status = null) {
   }
   
   const gate = renderNode.gate;
-  const isOn = Array.isArray(gate.output) ? gate.output.some(Boolean) : gate.output;
+  const stateVal = Array.isArray(gate.output) ? gate.output[0] : gate.output;
+  const stateKey = SIGNAL_KEYS[stateVal] || "x";
+
   let color;
   let useGradient = false;
   if (gate.type === "input" || gate.type === "clock") {
-    color = isOn ? theme.gates.input.high.hex : theme.gates.input.low.hex;
+    color = theme.gates.input[stateKey].hex;
   } else if (gate.type === "output") {
-    color = isOn ? theme.gates.output.high.hex : theme.gates.output.low.hex;
+    color = theme.gates.output[stateKey].hex;
   } else {
     color = theme.gates.logic.hex;
     useGradient = true;
@@ -203,7 +207,9 @@ function drawDisplay(renderNode, p) {
   p.noStroke();
 
   let colors = gate.output.map(segment => {
-    return segment ? theme.gates.output.e.hex : "#2a1a1a";
+    if (segment === 0 || segment === 3) return "#2a1a1a";
+    const stateKey = SIGNAL_KEYS[segment] || "x";
+    return theme.gates.output[stateKey].hex;
   });
 
   // 0: Top
@@ -280,7 +286,9 @@ function drawEmbeddedDisplay(displayGate, x, y, width, height, p) {
   p.rect(x, y, width, height, 8);
 
   let colors = displayGate.output.map(segment => {
-    return segment ? theme.gates.output.e.hex : "#2a1a1a";
+    if (segment === 0 || segment === 3) return "#2a1a1a";
+    const stateKey = SIGNAL_KEYS[segment] || "x";
+    return theme.gates.output[stateKey].hex;
   });
 
   // 0: Top
@@ -320,7 +328,8 @@ export function drawWire(renderNodes, wireInfo, nodeMap, p) {
   const ports = getWirePorts(renderNodes, wireInfo.wire, nodeMap);
   p.strokeWeight(3);
 
-  let color = wireInfo.wire.signal ? theme.wires.high.hex : theme.wires.low.hex;
+  const stateKey = SIGNAL_KEYS[wireInfo.wire.signal] || "x";
+  let color = theme.wires[stateKey].hex;
   p.stroke(color);
 
   const waypointCount = wireInfo.waypoints.length;
@@ -513,7 +522,8 @@ export function drawGhostWire(wire, p) {
 
 export function drawWaypoint(wireInfo, waypoint, p) {
   const theme = getActiveTheme();
-  let color = wireInfo.wire.signal ? theme.wires.high.hex : theme.wires.low.hex;
+  const stateKey = SIGNAL_KEYS[wireInfo.wire.signal] || "x";
+  let color = theme.wires[stateKey].hex;
   p.fill(color);
   p.circle(waypoint.x, waypoint.y, 12);
 }

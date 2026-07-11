@@ -1,6 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { CircuitBuilder } from "../../logic/CircuitBuilder.js";
 import { buildCircuitFromData } from "../../persistence.js";
+import { SIGNAL } from "../../constants.js";
+
+const { LOW, HIGH, X, Z, E } = SIGNAL;
 
 /**
  * Helper: builds the raw circuit-data object for a half-adder.
@@ -91,10 +94,10 @@ describe("Composite Gate – Half Adder", () => {
 
     const testCases = [
       //  A      B     Sum    Carry
-      [false, false, false, false],
-      [true,  false, true,  false],
-      [false, true,  true,  false],
-      [true,  true,  false, true],
+      [LOW, LOW, LOW, LOW],
+      [HIGH,  LOW, HIGH,  LOW],
+      [LOW, HIGH,  HIGH,  LOW],
+      [HIGH,  HIGH,  LOW, HIGH],
     ];
 
     for (const [a, b, expSum, expCarry] of testCases) {
@@ -121,8 +124,8 @@ describe("Composite Gate – NOT wrapper", () => {
     outer.connectGates(notGate, out, 0, 0);
 
     const testCases = [
-      [false, true],
-      [true,  false],
+      [LOW, HIGH],
+      [HIGH,  LOW],
     ];
 
     for (const [a, expected] of testCases) {
@@ -170,7 +173,7 @@ describe("Composite Gate – Nested Composite", () => {
     top.connectGates(doubleNot, tOut, 0, 0);
 
     // Double-NOT should act as identity
-    for (const val of [false, true]) {
+    for (const val of [LOW, HIGH]) {
       tA.setValue(val);
       top.evaluate();
       expect(tOut.output).toBe(val);
@@ -194,23 +197,23 @@ describe("Composite Gate – Re-evaluation", () => {
     outer.connectGates(halfAdder, carryOut, 0, 1);
 
     // First: 1 + 1 = carry 1, sum 0
-    A.setValue(true);
-    B.setValue(true);
+    A.setValue(HIGH);
+    B.setValue(HIGH);
     outer.evaluate();
-    expect(sumOut.output).toBe(false);
-    expect(carryOut.output).toBe(true);
+    expect(sumOut.output).toBe(LOW);
+    expect(carryOut.output).toBe(HIGH);
 
     // Change to 1 + 0 = carry 0, sum 1
-    B.setValue(false);
+    B.setValue(LOW);
     outer.evaluate();
-    expect(sumOut.output).toBe(true);
-    expect(carryOut.output).toBe(false);
+    expect(sumOut.output).toBe(HIGH);
+    expect(carryOut.output).toBe(LOW);
 
     // Change to 0 + 0 = carry 0, sum 0
-    A.setValue(false);
+    A.setValue(LOW);
     outer.evaluate();
-    expect(sumOut.output).toBe(false);
-    expect(carryOut.output).toBe(false);
+    expect(sumOut.output).toBe(LOW);
+    expect(carryOut.output).toBe(LOW);
   });
 });
 
@@ -234,11 +237,11 @@ describe("Composite Gate – Multiple Outputs Wired Independently", () => {
     outer.connectGates(halfAdder, carryOut, 0, 1);     // carry → output
 
     const testCases = [
-      //  A      B     invertedSum  Carry
-      [false, false, true,         false],   // sum=0 → inv=1
-      [true,  false, false,        false],   // sum=1 → inv=0
-      [false, true,  false,        false],   // sum=1 → inv=0
-      [true,  true,  true,         true],    // sum=0 → inv=1
+      //A      B   invertedSum  Carry
+      [LOW,   LOW,   HIGH,      LOW],   // sum=0 → inv=1
+      [HIGH,  LOW,   LOW,       LOW],   // sum=1 → inv=0
+      [LOW,   HIGH,  LOW,       LOW],   // sum=1 → inv=0
+      [HIGH,  HIGH,  HIGH,      HIGH],    // sum=0 → inv=1
     ];
 
     for (const [a, b, expInvSum, expCarry] of testCases) {
@@ -307,16 +310,16 @@ describe("Composite Gate – buildCircuitFromData round-trip", () => {
     outer.connectGates(composite, oCarry, 0, 1);
 
     // Verify against truth table
-    oA.setValue(true);
-    oB.setValue(true);
+    oA.setValue(HIGH);
+    oB.setValue(HIGH);
     outer.evaluate();
-    expect(oSum.output).toBe(false);
-    expect(oCarry.output).toBe(true);
+    expect(oSum.output).toBe(LOW);
+    expect(oCarry.output).toBe(HIGH);
 
-    oA.setValue(true);
-    oB.setValue(false);
+    oA.setValue(HIGH);
+    oB.setValue(LOW);
     outer.evaluate();
-    expect(oSum.output).toBe(true);
-    expect(oCarry.output).toBe(false);
+    expect(oSum.output).toBe(HIGH);
+    expect(oCarry.output).toBe(LOW);
   });
 });

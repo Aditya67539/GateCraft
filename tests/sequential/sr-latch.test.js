@@ -1,5 +1,8 @@
 import { describe, it, expect, test } from "vitest";
 import { CircuitBuilder } from "../../logic/CircuitBuilder.js";
+import { SIGNAL } from "../../constants.js";
+
+const { LOW, HIGH, X, Z, E } = SIGNAL;
 
 describe("SR Latch", ()=> {
   it("follows truth table", () => {
@@ -24,10 +27,10 @@ describe("SR Latch", ()=> {
     builder.connectGates(nand2, notQ, 0);
 
     const testCases = [
-      [true, false, true, false],
-      [false, false, true, false],
-      [false, true, false, true],
-      [false, false, false, true],
+      [HIGH, LOW, HIGH, LOW],
+      [LOW, LOW, HIGH, LOW],
+      [LOW, HIGH, LOW, HIGH],
+      [LOW, LOW, LOW, HIGH],
     ];
 
     for (const [s, r, exp_q, exp_notq] of testCases) {

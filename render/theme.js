@@ -7,15 +7,15 @@ const DEFAULT_SIGNAL_COLORS = {
   dark: Object.freeze({
     high: "#00e676", // High (1) - Radiant Green
     low:  "#003d1e", // Low (0)  - low-brightness relative green
-    z:    "#94a3b8", // High-Z   - Slate Gray
-    x:    "#a855f7", // Unknown  - Vibrant Purple
+    z:    "#f59e0b", // High-Z   - Slate Gray
+    x:    "#94a3b8", // Unknown  - Vibrant Purple
     e:    "#e11d48", // Error    - Striking Crimson Red
   }),
   light: Object.freeze({
     high: "#0d7a3e", // High (1) - Forest Green (contrast on light bg)
     low:  "#94a3b8", // Low (0)  - Slate Gray
-    z:    "#64748b", // High-Z   - Muted Slate
-    x:    "#7c3aed", // Unknown  - Violet
+    z:    "#f59e0b", // High-Z   - Muted Slate
+    x:    "#64748b", // Unknown  - Violet
     e:    "#b91c1c", // Error    - Deep Red
   }),
 };

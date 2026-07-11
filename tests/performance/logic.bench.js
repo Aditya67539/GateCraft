@@ -1,6 +1,11 @@
 import { run, bench, group, flags } from "mitata";
 import { writeFileSync } from "node:fs";
 import { CircuitBuilder } from "../../logic/CircuitBuilder.js";
+import { SIGNAL } from "../../constants.js";
+
+const { LOW, HIGH, X, Z, E } = SIGNAL;
+
+const toggle = signal => signal === LOW ? HIGH : LOW;
 
 // ─── Builder Helpers ─────────────────────────────────────────────────────────
 
@@ -13,8 +18,8 @@ function buildANDGate(withWasm = true) {
   b.connectGates(A, gate, 0, null, false);
   b.connectGates(B, gate, 1, null, false);
   b.connectGates(gate, out, 0, null, false);
-  A.setValue(true);
-  B.setValue(true);
+  A.setValue(HIGH);
+  B.setValue(HIGH);
   if (withWasm) b.buildTypedData();
   return { builder: b, A, B, out };
 }
@@ -26,7 +31,7 @@ function buildNOTGate(withWasm = true) {
   const out = b.addBasicGate("output");
   b.connectGates(A, gate, 0, null, false);
   b.connectGates(gate, out, 0, null, false);
-  A.setValue(true);
+  A.setValue(HIGH);
   if (withWasm) b.buildTypedData();
   return { builder: b, A, out };
 }
@@ -40,8 +45,8 @@ function buildXORGate(withWasm = true) {
   b.connectGates(A, gate, 0, null, false);
   b.connectGates(B, gate, 1, null, false);
   b.connectGates(gate, out, 0, null, false);
-  A.setValue(true);
-  B.setValue(false);
+  A.setValue(HIGH);
+  B.setValue(LOW);
   if (withWasm) b.buildTypedData();
   return { builder: b, A, B, out };
 }
@@ -215,7 +220,7 @@ function buildRippleCarryAdder(bits, withWasm = true) {
 function buildWideFanout(width, withWasm = true) {
   const b = new CircuitBuilder();
   const src = b.addBasicGate("input");
-  src.setValue(true);
+  src.setValue(HIGH);
 
   for (let i = 0; i < width; i++) {
     const gate = b.addBasicGate("or");
@@ -235,7 +240,7 @@ function buildWideFanout(width, withWasm = true) {
 function buildDeepChain(depth, withWasm = true) {
   const b = new CircuitBuilder();
   const src = b.addBasicGate("input");
-  src.setValue(true);
+  src.setValue(HIGH);
 
   let prev = src;
   for (let i = 0; i < depth; i++) {
@@ -438,23 +443,23 @@ const compositeHASettle = buildCompositeHalfAdder();
 
 // Primitive gate evaluation
 group("Primitive Gate Evaluation", () => {
-  let andToggle = false;
+  let andToggle = LOW;
   bench("AND gate", () => {
-    andToggle = !andToggle;
+    andToggle = toggle(andToggle);
     andCircuit.A.setValue(andToggle);
     andCircuit.builder.evaluate();
   });
 
-  let notToggle = false;
+  let notToggle = LOW;
   bench("NOT gate", () => {
-    notToggle = !notToggle;
+    notToggle = toggle(notToggle);
     notCircuit.A.setValue(notToggle);
     notCircuit.builder.evaluate();
   });
 
-  let xorToggle = false;
+  let xorToggle = LOW;
   bench("XOR gate", () => {
-    xorToggle = !xorToggle;
+    xorToggle = toggle(xorToggle);
     xorCircuit.A.setValue(xorToggle);
     xorCircuit.builder.evaluate();
   });
@@ -463,46 +468,46 @@ group("Primitive Gate Evaluation", () => {
 
 // Combinational circuit evaluation
 group("Combinational Circuit Evaluation", () => {
-  let haToggle = false;
-  bench("warmup", () => { let w = false; for (let i = 0; i < 1000; i++) { w = !w; halfAdder.A.setValue(w); halfAdder.B.setValue(false); halfAdder.builder.evaluate(); } });
+  let haToggle = LOW;
+  bench("warmup", () => { let w = LOW; for (let i = 0; i < 1000; i++) { w = toggle(w); halfAdder.A.setValue(w); halfAdder.B.setValue(LOW); halfAdder.builder.evaluate(); } });
 
   bench("Half Adder", () => {
-    haToggle = !haToggle;
+    haToggle = toggle(haToggle);
     halfAdder.A.setValue(haToggle);
-    halfAdder.B.setValue(false);
+    halfAdder.B.setValue(LOW);
     halfAdder.builder.evaluate();
   });
 
-  let faToggle = false;
+  let faToggle = LOW;
   bench("Full Adder", () => {
-    faToggle = !faToggle;
+    faToggle = toggle(faToggle);
     fullAdder.A.setValue(faToggle);
-    fullAdder.B.setValue(true);
-    fullAdder.C.setValue(false);
+    fullAdder.B.setValue(HIGH);
+    fullAdder.C.setValue(LOW);
     fullAdder.builder.evaluate();
   });
 
-  let rca4Toggle = false;
+  let rca4Toggle = LOW;
   bench("4-bit Ripple-Carry Adder", () => {
-    rca4Toggle = !rca4Toggle;
+    rca4Toggle = toggle(rca4Toggle);
     rca4.A[0].setValue(rca4Toggle);
-    rca4.A[1].setValue(false);
+    rca4.A[1].setValue(LOW);
     rca4.builder.evaluate();
   });
 
-  let rca16Toggle = false;
+  let rca16Toggle = LOW;
   bench("16-bit Ripple-Carry Adder", () => {
-    rca16Toggle = !rca16Toggle;
+    rca16Toggle = toggle(rca16Toggle);
     rca16.A[0].setValue(rca16Toggle);
-    rca16.A[15].setValue(false);
+    rca16.A[15].setValue(LOW);
     rca16.builder.evaluate();
   });
 
-  let rca32Toggle = false;
+  let rca32Toggle = LOW;
   bench("32-bit Ripple-Carry Adder", () => {
-    rca32Toggle = !rca32Toggle;
+    rca32Toggle = toggle(rca32Toggle);
     rca32.A[0].setValue(rca32Toggle);
-    rca32.A[31].setValue(false);
+    rca32.A[31].setValue(LOW);
     rca32.builder.evaluate();
   });
 });
@@ -510,35 +515,35 @@ group("Combinational Circuit Evaluation", () => {
 
 // Sequential circuit evaluation
 group("Sequential Circuit Evaluation", () => {
-  let srToggle = false;
+  let srToggle = LOW;
   bench("SR Latch", () => {
-    srToggle = !srToggle;
+    srToggle = toggle(srToggle);
     srLatch.S.setValue(srToggle);
-    srLatch.R.setValue(!srToggle);
+    srLatch.R.setValue(toggle(srToggle));
     srLatch.builder.evaluate();
   });
 
   bench("SR Latch — Set then Hold", () => {
-    srLatch.S.setValue(true);
-    srLatch.R.setValue(false);
+    srLatch.S.setValue(HIGH);
+    srLatch.R.setValue(LOW);
     srLatch.builder.evaluate();
-    srLatch.S.setValue(false);
+    srLatch.S.setValue(LOW);
     srLatch.builder.evaluate();
   });
 
-  let dToggle = false;
+  let dToggle = LOW;
   bench("D Latch", () => {
-    dToggle = !dToggle;
-    dLatch.E.setValue(true);
+    dToggle = toggle(dToggle);
+    dLatch.E.setValue(HIGH);
     dLatch.D.setValue(dToggle);
     dLatch.builder.evaluate();
   });
 
   bench("D Latch — Write then Hold", () => {
-    dLatch.E.setValue(true);
-    dLatch.D.setValue(true);
+    dLatch.E.setValue(HIGH);
+    dLatch.D.setValue(HIGH);
     dLatch.builder.evaluate();
-    dLatch.E.setValue(false);
+    dLatch.E.setValue(LOW);
     dLatch.builder.evaluate();
   });
 });
@@ -576,70 +581,70 @@ group("Circuit Construction (WASM + TypedData)", () => {
 
 // Scaling: fan-out and depth
 group("Scaling — Fan-out", () => {
-  let fan16Toggle = false;
+  let fan16Toggle = LOW;
   bench("16-wide fan-out evaluate", () => {
-    fan16Toggle = !fan16Toggle;
+    fan16Toggle = toggle(fan16Toggle);
     fan16.src.setValue(fan16Toggle);
     fan16.builder.evaluate();
   });
 
-  let fan64Toggle = false;
+  let fan64Toggle = LOW;
   bench("64-wide fan-out evaluate", () => {
-    fan64Toggle = !fan64Toggle;
+    fan64Toggle = toggle(fan64Toggle);
     fan64.src.setValue(fan64Toggle);
     fan64.builder.evaluate();
   });
 
-  let fan256Toggle = false;
+  let fan256Toggle = LOW;
   bench("256-wide fan-out evaluate", () => {
-    fan256Toggle = !fan256Toggle;
+    fan256Toggle = toggle(fan256Toggle);
     fan256.src.setValue(fan256Toggle);
     fan256.builder.evaluate();
   });
-  let fan1024Toggle = false;
+  let fan1024Toggle = LOW;
   bench("1024-wide fan-out evaluate", () => {
-    fan1024Toggle = !fan1024Toggle;
+    fan1024Toggle = toggle(fan1024Toggle);
     fan1024.src.setValue(fan1024Toggle);
     fan1024.builder.evaluate();
   });
-  let fan4096Toggle = false;
+  let fan4096Toggle = LOW;
   bench("4096-wide fan-out evaluate", () => {
-    fan4096Toggle = !fan4096Toggle;
+    fan4096Toggle = toggle(fan4096Toggle);
     fan4096.src.setValue(fan4096Toggle);
     fan4096.builder.evaluate();
   });
 });
 
 group("Scaling — Chain Depth", () => {
-  let chain16Toggle = false;
+  let chain16Toggle = LOW;
   bench("16-deep NOT chain evaluate", () => {
-    chain16Toggle = !chain16Toggle;
+    chain16Toggle = toggle(chain16Toggle);
     chain16.src.setValue(chain16Toggle);
     chain16.builder.evaluate();
   });
 
-  let chain64Toggle = false;
+  let chain64Toggle = LOW;
   bench("64-deep NOT chain evaluate", () => {
-    chain64Toggle = !chain64Toggle;
+    chain64Toggle = toggle(chain64Toggle);
     chain64.src.setValue(chain64Toggle);
     chain64.builder.evaluate();
   });
 
-  let chain256Toggle = false;
+  let chain256Toggle = LOW;
   bench("256-deep NOT chain evaluate", () => {
-    chain256Toggle = !chain256Toggle;
+    chain256Toggle = toggle(chain256Toggle);
     chain256.src.setValue(chain256Toggle);
     chain256.builder.evaluate();
   });
-  let chain1024Toggle = false;
+  let chain1024Toggle = LOW;
   bench("1024-deep NOT chain evaluate", () => {
-    chain1024Toggle = !chain1024Toggle;
+    chain1024Toggle = toggle(chain1024Toggle);
     chain1024.src.setValue(chain1024Toggle);
     chain1024.builder.evaluate();
   });
-  let chain4096Toggle = false;
+  let chain4096Toggle = LOW;
   bench("4096-deep NOT chain evaluate", () => {
-    chain4096Toggle = !chain4096Toggle;
+    chain4096Toggle = toggle(chain4096Toggle);
     chain4096.src.setValue(chain4096Toggle);
     chain4096.builder.evaluate();
   });
@@ -648,32 +653,32 @@ group("Scaling — Chain Depth", () => {
 
 // Composite gate evaluation
 group("Composite Gate Evaluation", () => {
-  let compHAToggle = false;
+  let compHAToggle = LOW;
   bench("Composite Half Adder", () => {
-    compHAToggle = !compHAToggle;
+    compHAToggle = toggle(compHAToggle);
     compositeHA.A.setValue(compHAToggle);
-    compositeHA.B.setValue(false);
+    compositeHA.B.setValue(LOW);
     compositeHA.builder.evaluate();
   });
 
-  let compRCAToggle = false;
+  let compRCAToggle = LOW;
   bench("Composite 4-bit Ripple-Carry Adder", () => {
-    compRCAToggle = !compRCAToggle;
+    compRCAToggle = toggle(compRCAToggle);
     compositeRCA4.A[0].setValue(compRCAToggle);
-    compositeRCA4.A[1].setValue(false);
-    compositeRCA4.A[2].setValue(true);
-    compositeRCA4.A[3].setValue(true);
-    compositeRCA4.B[0].setValue(true);
-    compositeRCA4.B[1].setValue(true);
-    compositeRCA4.B[2].setValue(false);
-    compositeRCA4.B[3].setValue(false);
-    compositeRCA4.Cin.setValue(false);
+    compositeRCA4.A[1].setValue(LOW);
+    compositeRCA4.A[2].setValue(HIGH);
+    compositeRCA4.A[3].setValue(HIGH);
+    compositeRCA4.B[0].setValue(HIGH);
+    compositeRCA4.B[1].setValue(HIGH);
+    compositeRCA4.B[2].setValue(LOW);
+    compositeRCA4.B[3].setValue(LOW);
+    compositeRCA4.Cin.setValue(LOW);
     compositeRCA4.builder.evaluate();
   });
 
-  let nestedToggle = false;
+  let nestedToggle = LOW;
   bench("Nested Composite (double-NOT)", () => {
-    nestedToggle = !nestedToggle;
+    nestedToggle = toggle(nestedToggle);
     nestedComp.A.setValue(nestedToggle);
     nestedComp.builder.evaluate();
   });

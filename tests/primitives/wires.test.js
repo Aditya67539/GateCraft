@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { CircuitBuilder } from "../../logic/CircuitBuilder.js";
+import { SIGNAL } from "../../constants.js";
+
+const { LOW, HIGH, X, Z, E } = SIGNAL;
 
 // ─── disconnectWires ────────────────────────────────────────────────────────
 
@@ -449,15 +452,15 @@ describe("removeGate", () => {
     builder.connectGates(A, notGate, 0);
     builder.connectGates(notGate, out, 0);
 
-    A.setValue(true);
+    A.setValue(HIGH);
     builder.evaluate();
-    expect(out.output).toBe(false); // NOT(true) = false
+    expect(out.output).toBe(LOW); // NOT(true) = false
 
     builder.removeGate(notGate.id);
     builder.connectGates(A, out, 0);
 
     builder.evaluate();
-    expect(out.output).toBe(true); // Direct: true
+    expect(out.output).toBe(HIGH); // Direct: true
   });
 });
 
@@ -619,11 +622,11 @@ describe("connectGates", () => {
     const A = builder.addBasicGate("input");
     const out = builder.addBasicGate("output");
 
-    A.setValue(true);
+    A.setValue(HIGH);
     builder.connectGates(A, out, 0, null, false);
 
     // Without settling, output should still be the default
-    expect(out.output).toBe(false);
+    expect(out.output).toBe(X);
   });
 
   it("connects to a composite gate with fromOutputIndex", () => {
