@@ -1,8 +1,10 @@
 import { state } from "../state.js";
 import { Input } from "../logic/gates.js";
-import { CLOCK_TIMER, FREQUENCY } from "../constants.js";
+import { CLOCK_TIMER, FREQUENCY, SIGNAL } from "../constants.js";
 import { initWire, getWirePorts, setCustomWaypoints } from "../render/wireGeometry.js";
 import { createBasicNode, createCompositeNode, rebuildNodeMap, snapPointToGrid, spawnBasicNode, wouldOverlap } from "../render/RenderPoint.js";
+
+const { LOW, HIGH, X, Z, E } = SIGNAL;
 
 function cleanupGhostWire() {
   if (state.ghostWireCleanup) {
@@ -95,7 +97,8 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
       }
     } else if (state.mode === "run") {
       if (state.dragging && state.dragging.gate.type === "input") {
-        state.dragging.gate.setValue(!state.dragging.gate.output);
+        const signal = state.dragging.gate.output === LOW ? HIGH : LOW;
+        state.dragging.gate.setValue(signal);
         circuit.evaluate();
       } else if (state.dragging && state.dragging.gate.type === "clock") {
         if (state.dragging.intervalId != null) {
