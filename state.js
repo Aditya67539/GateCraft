@@ -18,6 +18,10 @@ const _state = {
   labelEditing: false,
   gridDirty: false,
   isAnyModalOpen: false,
+  cameraX: 0,
+  cameraY: 0,
+  zoom: 1,
+  isPanning: false,
 };
 
 /**
