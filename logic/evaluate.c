@@ -55,8 +55,8 @@ void init(
  *  Z (high-impedance) behaves like X when driving a gate input.
  *  E (error) propagates unless a dominating value forces the result.
  */
-//                          LOW  HIGH  X   Z   E
-static const uint8_t NOTTABLE[5] = { 1, 0, 2, 2, 4 };
+//                                   LOW  HIGH  X   Z   E
+static const uint8_t NOTTABLE[5] = {  1,   0,   2,  2,  4 };
 
 static const uint8_t ANDTABLE[5][5] = {
     //                      LOW  HIGH  X   Z   E
@@ -76,6 +76,15 @@ static const uint8_t ORTABLE[5][5] = {
     /* E    */ {             4,   1,   4,  4,  4 },
 };
 
+static const uint8_t TRISTATEBUFFER[5][5] = {
+    //                      LOW  HIGH  X   Z   E
+    /* enable = LOW  */ {    3,   3,   3,  3,  4 },
+    /* enable = HIGH */ {    0,   1,   2,  2,  4 },
+    /* enable = X    */ {    2,   2,   2,  2,  4 },
+    /* enable = Z    */ {    2,   2,   2,  2,  4 },
+    /* enable = E    */ {    4,   4,   4,  4,  4 },
+};
+
 static inline uint8_t not(uint8_t a) {
     return NOTTABLE[a];
 }
@@ -90,6 +99,10 @@ static inline uint8_t orPair(uint8_t a, uint8_t b) {
 
 static inline uint8_t xorPair(uint8_t a, uint8_t b) {
     return orPair(andPair(a, not(b)), andPair(not(a), b));
+}
+
+static inline uint8_t triStateBufferPair(uint8_t a, uint8_t b) {
+    return TRISTATEBUFFER[a][b];
 }
 
 
@@ -154,6 +167,10 @@ uint8_t evaluateGate(uint8_t type, uint8_t *inputs, uint8_t inputCount) {
     // 7 Segment Display
     case 11:
         output = 0;
+        break;
+    // Tri-State Buffer
+    case 12:
+        output = triStateBufferPair(inputs[0], inputs[1]);
         break;
     default:
         break;

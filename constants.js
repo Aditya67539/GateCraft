@@ -16,6 +16,7 @@ export const GATE_DEFS = {
   input:       { inputs: 0, outputs: 1 },
   output:      { inputs: 1, outputs: 0 },
   "seven-seg": { inputs: 8, outputs: 0 },
+  "Tri-state Buffer": { inputs: 2, outputs: 1 },
 };
 export const FREQUENCY = 1; // Hertz
 export const CLOCK_TIMER = 120 /* seconds */ * 1000; // ms

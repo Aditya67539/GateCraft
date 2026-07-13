@@ -194,6 +194,7 @@ const Types = Object.freeze({
   xnor: 9,
   composite: 10,
   "seven-seg": 11,
+  "Tri-state Buffer": 12,
 });
 
 function encodeType(type) {
@@ -303,6 +304,9 @@ export function flatten(circuit, acc, inputOrder = [], outputOrder = [], gateCou
 
 
   // --- Pass 3: process wires with boundary remapping ---
+  // Track which input slots are connected per gate (for Pass 4)
+  const connectedSlots = {};
+
   for (const wire of circuit.wires) {
     let fromIndex;
     if (indexMap[wire.from.id].isComposite) {
@@ -322,6 +326,12 @@ export function flatten(circuit, acc, inputOrder = [], outputOrder = [], gateCou
       toIndex = indexMap[wire.to.id];
     }
 
+    // Track which input slot this wire fills on the destination gate
+    if (typeof toIndex === 'number') {
+      if (!connectedSlots[toIndex]) connectedSlots[toIndex] = new Set();
+      connectedSlots[toIndex].add(wire.toInputIndex);
+    }
+
     const wireIndex = acc.wireSignal.length;
 
     acc.wireMap.set(wire, wireIndex);
@@ -338,6 +348,52 @@ export function flatten(circuit, acc, inputOrder = [], outputOrder = [], gateCou
       acc.fanin.set(toIndex, []);
     }
     acc.fanin.get(toIndex).push(wireIndex);
+  }
+
+  // --- Pass 4: inject phantom wires for disconnected inputs ---
+  // Gates with disconnected inputs need phantom wires carrying X so the
+  // WASM evaluator sees the correct input count.
+  let constantXIndex = null;
+
+  for (const gate of circuit.getGates()) {
+    if (gate.type === "composite" || gate.type === "input" || gate.type === "clock") continue;
+    const expectedCount = gate.inputCount || 0;
+    if (expectedCount === 0) continue;
+
+    const gateIndex = indexMap[gate.id];
+    if (typeof gateIndex !== 'number') continue;
+
+    const filled = connectedSlots[gateIndex] || new Set();
+    if (filled.size >= expectedCount) continue;
+
+    // Lazily create a single constant-X source gate
+    if (constantXIndex === null) {
+      constantXIndex = gateCount;
+      acc.gateTypes.push(encodeType("input"));
+      acc.outputOffset.push(acc.allOutputs.length);
+      acc.allOutputs.push(X);
+      gateCount++;
+    }
+
+    // Add phantom wires for each missing input slot
+    for (let slot = 0; slot < expectedCount; slot++) {
+      if (filled.has(slot)) continue;
+
+      const wireIndex = acc.wireSignal.length;
+      acc.wireFrom.push(constantXIndex);
+      acc.wireTo.push(gateIndex);
+      acc.wireSignal.push(X);
+
+      if (!acc.fanout.has(constantXIndex)) {
+        acc.fanout.set(constantXIndex, []);
+      }
+      acc.fanout.get(constantXIndex).push(wireIndex);
+
+      if (!acc.fanin.has(gateIndex)) {
+        acc.fanin.set(gateIndex, []);
+      }
+      acc.fanin.get(gateIndex).push(wireIndex);
+    }
   }
 
   return { indexMap, boundaryMap, nextGateCount: gateCount };

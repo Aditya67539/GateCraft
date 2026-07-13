@@ -92,6 +92,10 @@ const sketch = (p) => {
               gate.internalInputs[j].label
             ) {
               hoveredLabel = gate.internalInputs[j].label;
+            } else if ( gate.type === "Tri-state Buffer" ) {
+              if (j === 0) hoveredLabel = "enable";
+              else if (j === 1) hoveredLabel = "data";
+              else hoveredLabel = "in";
             } else {
               hoveredLabel = "in";
             }
