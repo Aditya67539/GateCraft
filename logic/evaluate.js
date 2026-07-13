@@ -194,6 +194,7 @@ const Types = Object.freeze({
   xnor: 9,
   composite: 10,
   "seven-seg": 11,
+  "Tri-state Buffer": 12,
 });
 
 function encodeType(type) {
