@@ -60,6 +60,25 @@ class ConnectableGate {
   }
 }
 
+export class TriStateBuffer extends ConnectableGate {
+  constructor() {
+    super();
+    this.id = Logic.nextId++;
+    this.type = "Tri-state Buffer";
+    this.inputCount = GATE_DEFS[this.type].inputs;
+    this.outputCount = GATE_DEFS[this.type].outputs;
+    this.inputs = new Array(this.inputCount).fill(undefined);
+    this.output = X;
+    this.tempOutput = X;
+  }
+
+  evaluate() {
+    const resolvedInputs = resolveInputs(this.inputs);
+    this.tempOutput = triStateBufferPair(resolvedInputs[0], resolvedInputs[1]);
+    return { ok: true, output: this.tempOutput };
+  }
+}
+
 export class Output extends ConnectableGate {
   constructor() {
     super();
@@ -235,6 +254,8 @@ export function createBasicGate(type) {
     ? new Clock()
     : type === "seven-seg"
     ? new SevenSegmentDisplay()
+    : type === "Tri-state Buffer"
+    ? new TriStateBuffer()
     : new Gate(type);
 }
 
@@ -321,7 +342,17 @@ const ORTABLE = [
   /* E    */ [        E,    HIGH,  E,    E,    E    ],
 ];
 
+const TRISTATEBUFFER = [
+  //                     LOW  HIGH   X    Z    E
+  /* enable = LOW  */ [  Z,   Z,     Z,   Z,   E ],
+  /* enable = HIGH */ [  LOW, HIGH,  X,   X,   E ],
+  /* enable = X    */ [  X,   X,     X,   X,   E ],
+  /* enable = Z    */ [  X,   X,     X,   X,   E ],
+  /* enable = E    */ [  E,   E,     E,   E,   E ],
+];
+
 const not = (a) => NOTTABLE[a];
 const andPair = (a, b) => ANDTABLE[a][b];
 const orPair = (a, b) => ORTABLE[a][b];
 const xorPair = (a, b) => orPair(andPair(a, not(b)), andPair(not(a), b));
+const triStateBufferPair = (enable, data) => TRISTATEBUFFER[enable][data];
