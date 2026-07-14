@@ -43,7 +43,7 @@ const sketch = (p) => {
     registerKeyboardHandlers(p, circuit, renderNodes, wires, toolbarActions);
 
     const theme = getActiveTheme();    
-    gridBuffer = createGrid(WIDTH, HEIGHT, theme, GRID_OFFSET, GRID_SIZE, p);
+    gridBuffer = createGrid(WIDTH + GRID_SIZE * 2, HEIGHT + GRID_SIZE * 2, theme, GRID_OFFSET, GRID_SIZE, p);
   }
 
   p.draw = function () {
@@ -52,10 +52,16 @@ const sketch = (p) => {
     const theme = getActiveTheme();
     p.background(theme.canvas.bg.hex);
     if (state.gridDirty) {
-      gridBuffer = createGrid(WIDTH, HEIGHT, theme, GRID_OFFSET, GRID_SIZE, p);
+      gridBuffer = createGrid(WIDTH + GRID_SIZE * 2, HEIGHT + GRID_SIZE * 2, theme, GRID_OFFSET, GRID_SIZE, p);
       state.gridDirty = false;
     }
-    p.image(gridBuffer, 0, 0);
+
+    let shiftX = state.cameraX % GRID_SIZE;
+    let shiftY = state.cameraY % GRID_SIZE;
+    if (shiftX > 0) shiftX -= GRID_SIZE;
+    if (shiftY > 0) shiftY -= GRID_SIZE;
+
+    p.image(gridBuffer, shiftX, shiftY);
     p.translate(state.cameraX, state.cameraY);
 
     setFont(theme, p);
