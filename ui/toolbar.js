@@ -1,5 +1,5 @@
 import { spawnBasicNode, spawnCompositeNode } from "../render/RenderPoint.js";
-import { state } from "../state.js";
+import { state, screenToWorld } from "../state.js";
 import {
   saveCompositeGate,
   loadCompositeGate,
@@ -352,7 +352,7 @@ function hideTooltip() {
   }, 50);
 }
 
-function refreshCompositeSection() {
+function refreshCompositeSection(p = null) {
   compositeBtnGrid.innerHTML = "";
 
   const names = listCompositeGates();
@@ -376,7 +376,8 @@ function refreshCompositeSection() {
       if (!circuit) return;
       const compositeGate = buildCircuitFromData(circuit.circuitData, circuit.renderData);
       state.justPlacedFromToolbar = true;
-      spawnCompositeNode(name, compositeGate, 0, 0);
+      const { x: worldMouseX, y: worldMouseY } = p ? screenToWorld(p.mouseX, p.mouseY) : { x: 0, y: 0 };
+      spawnCompositeNode(name, compositeGate, worldMouseX, worldMouseY);
     });
 
     // Right-click: show context menu
@@ -453,7 +454,8 @@ export function initToolbar(p, circuit, renderNodes, wires) {
       const type = button.dataset.type;
       if (!type) return;          // skip composite-btn clicks (no data-type)
       state.justPlacedFromToolbar = true;
-      spawnBasicNode(type, p.mouseX, p.mouseY);
+      const { x: worldMouseX, y: worldMouseY } = screenToWorld(p.mouseX, p.mouseY);
+      spawnBasicNode(type, worldMouseX, worldMouseY);
     });
   });
 
@@ -476,7 +478,7 @@ export function initToolbar(p, circuit, renderNodes, wires) {
   settingsCloseBtn.addEventListener("click", () => settingsModal.close());
 
   // Initial population of composite section
-  refreshCompositeSection();
+  refreshCompositeSection(p);
 
   // ─── Global custom tooltip for all [title] elements ───────────
   // Replaces native browser tooltips with the styled glassmorphism tooltip.

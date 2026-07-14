@@ -22,13 +22,14 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
     if (state.justPlacedFromToolbar) {
       state.justPlacedFromToolbar = false;
     }
-    state.dragging = renderNodes.find(n => n.containsPoint(p.mouseX, p.mouseY));
+    const world = screenToWorld(p.mouseX, p.mouseY);
+    state.dragging = renderNodes.find(n => n.containsPoint(world.x, world.y));
     bringToFront(renderNodes, state.dragging);
 
     if (state.mode === "edit") {
       // Check input ports
       if (state.drawingWire) {
-        let wireConnection = findNearInputPort(p.mouseX, p.mouseY, p, renderNodes);
+        let wireConnection = findNearInputPort(world.x, world.y, p, renderNodes);
         if (wireConnection) {
           const outputIndex = state.drawingWire.fromOutputIndex;
           const inputIndex = wireConnection.index;
@@ -50,8 +51,8 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
         state.drawingWire = null;
         cleanupGhostWire();
       } else {
-        state.drawingWire = findNearOutputPort(p.mouseX, p.mouseY, p, renderNodes);
-        state.changingWayPoint = findNearWaypoint(p.mouseX, p.mouseY, p, wires);
+        state.drawingWire = findNearOutputPort(world.x, world.y, p, renderNodes);
+        state.changingWayPoint = findNearWaypoint(world.x, world.y, p, wires);
 
         // ── Update persistent selection ──────────────────────────
         if (state.dragging) {
@@ -62,7 +63,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
         }
 
         if (!state.drawingWire && !state.changingWayPoint && state.dragging) {
-          const { x, y } = snapPointToGrid(p.mouseX, p.mouseY);
+          const { x, y } = snapPointToGrid(world.x, world.y);
           state.offsetX = x - state.dragging.x;
           state.offsetY = y - state.dragging.y;
 
@@ -132,7 +133,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
 
       if (event.shiftKey) {
         const gateType = state.ghostNode.gate.type;
-        const { x, y } = snapPointToGrid(p.mouseX, p.mouseY);
+        const { x, y } = snapPointToGrid(world.x, world.y);
         if (gateType !== "composite") {
           state.ghostNode = createBasicNode(gateType, x, y);
         } else {
@@ -160,7 +161,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
 
         rebuildNodeMap(renderNodes, nodeMap);
       } else {
-        const wireInfo = getWireAtPoint(p.mouseX, p.mouseY, renderNodes, wires, nodeMap);
+        const wireInfo = getWireAtPoint(world.x, world.y, renderNodes, wires, nodeMap);
         if (wireInfo) {
           circuit.removeWire(wireInfo.wire);
           wires.splice(wires.indexOf(wireInfo), 1);
@@ -171,6 +172,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
 
   p.mouseDragged = function () {
     if (state.mode === "edit") {
+      const worldDrag = screenToWorld(p.mouseX, p.mouseY);
       if (state.dragging) {
         if (!state.changingPos) {
           state.currentX = state.dragging.x;
@@ -185,7 +187,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
             }
           }
         }
-        const { x, y } = snapPointToGrid(p.mouseX, p.mouseY);
+        const { x, y } = snapPointToGrid(worldDrag.x, worldDrag.y);
         state.dragging.x = x - state.offsetX;
         state.dragging.y = y - state.offsetY;
 
@@ -200,10 +202,9 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
             }
           }
         }
-      }
-      if (state.changingWayPoint) {
-        state.changingWayPoint.waypoint.x = p.mouseX;
-        state.changingWayPoint.waypoint.y = p.mouseY;
+      } else if (state.changingWayPoint) {
+        state.changingWayPoint.waypoint.x = worldDrag.x;
+        state.changingWayPoint.waypoint.y = worldDrag.y;
         if (state.changingWayPoint.otherWaypoint) {
           state.changingWayPoint.otherWaypoint.x = state.changingWayPoint.waypoint.x;
         }
@@ -244,8 +245,9 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
     // Convert page coords to p5 canvas coords
     const canvas = canvasHost.querySelector("canvas");
     const rect = canvas.getBoundingClientRect();
-    const mx = (e.clientX - rect.left) * (p.width / rect.width);
-    const my = (e.clientY - rect.top) * (p.height / rect.height);
+    const screenX = (e.clientX - rect.left) * (p.width / rect.width);
+    const screenY = (e.clientY - rect.top) * (p.height / rect.height);
+    const { x: mx, y: my } = screenToWorld(screenX, screenY);
     const target = renderNodes.find(n => n.containsPoint(mx, my));
     if (!target) return;
     const gateType = target.gate.type;

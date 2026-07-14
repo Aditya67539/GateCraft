@@ -1,4 +1,4 @@
-import { state } from "./state.js";
+import { state, screenToWorld } from "./state.js";
 import { drawGate, drawWaypoint, drawGhostWire, drawWire, drawPortTooltip, setFont, createGrid } from "./render/draw.js";
 import { registerMouseHandlers, isNearWaypoint, isNearPort } from "./input/mouseHandlers.js";
 import { initToolbar } from "./ui/toolbar.js";
@@ -47,8 +47,9 @@ const sketch = (p) => {
   }
 
   p.draw = function () {
-    mouse.x = p.mouseX;
-    mouse.y = p.mouseY;
+    const world = screenToWorld(p.mouseX, p.mouseY);
+    mouse.x = world.x;
+    mouse.y = world.y;
     const theme = getActiveTheme();
     p.background(theme.canvas.bg.hex);
     if (state.gridDirty) {
@@ -162,7 +163,8 @@ const sketch = (p) => {
       let status = wouldOverlap(state.ghostNode, renderNodes) ? "invalid" : "valid";
       drawGate(state.ghostNode, p, status);
       if (state.mode === "placing") {
-        const { x, y } = snapPointToGrid(p.mouseX, p.mouseY);
+        const { x: worldMouseX, y: worldMouseY } = screenToWorld(p.mouseX, p.mouseY);
+        const { x, y } = snapPointToGrid(worldMouseX, worldMouseY);
         state.ghostNode.x = x;
         state.ghostNode.y = y;
       }

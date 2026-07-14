@@ -1,7 +1,7 @@
 import { FONT_SIZE, GRID_SIZE, PORT_LABEL_SIZE, PORT_RADIUS } from "../constants.js";
 import { getActiveTheme } from "./theme.js";
 import { getWirePorts } from "./wireGeometry.js";
-import { state } from "../state.js";
+import { state, screenToWorld } from "../state.js";
 
 const SIGNAL_KEYS = ["low", "high", "x", "z", "e"];
 
@@ -27,13 +27,13 @@ export function drawGate(renderNode, p, status = null) {
     drawInputPort(renderNode, theme, p);
     drawOutputPort(renderNode, theme, p);
     if (status) drawOverlay(renderNode, status, p);
-    
+
     p.fill(0);
     p.stroke(0);
     p.strokeWeight(1);
     return;
   }
-  
+
   const gate = renderNode.gate;
   const stateVal = Array.isArray(gate.output) ? gate.output[0] : gate.output;
   const stateKey = SIGNAL_KEYS[stateVal] || "x";
@@ -181,7 +181,7 @@ function drawDisplay(renderNode, p) {
   const height = renderNode.height;
   const padding = GRID_SIZE;
   const thickness = GRID_SIZE;
-  
+
   const signWidth = thickness * 2;
   const signGap = padding * 0.5;
 
@@ -190,7 +190,7 @@ function drawDisplay(renderNode, p) {
   const digitY = y + padding;
   const digitW = width - padding * 2 - signWidth - signGap;
   const digitH = height - padding * 2;
-  
+
   // 2. Setup interlocking geometry variables
   const T = thickness;
   const bevel = T / 2;
@@ -215,27 +215,27 @@ function drawDisplay(renderNode, p) {
   // 0: Top
   p.fill(colors[0]);
   drawHorizontalSegment(digitX + T / 2 + gap, digitY, hSegW - 2 * gap, T, bevel, colors[0], p);
-  
+
   // 1: Top Right
   p.fill(colors[1]);
   drawVerticalSegment(digitX + digitW - T, digitY + T / 2 + gap, vSegH - 2 * gap, T, bevel, colors[1], p);
-  
+
   // 2: Bottom Right
   p.fill(colors[2]);
   drawVerticalSegment(digitX + digitW - T, midY + gap, vSegH - 2 * gap, T, bevel, colors[2], p);
-  
+
   // 3: Bottom
   p.fill(colors[3]);
   drawHorizontalSegment(digitX + T / 2 + gap, digitY + digitH - T, hSegW - 2 * gap, T, bevel, colors[3], p);
-  
+
   // 4: Bottom Left
   p.fill(colors[4]);
   drawVerticalSegment(digitX, midY + gap, vSegH - 2 * gap, T, bevel, colors[4], p);
-  
+
   // 5: Top Left
   p.fill(colors[5]);
   drawVerticalSegment(digitX, digitY + T / 2 + gap, vSegH - 2 * gap, T, bevel, colors[5], p);
-  
+
   // 6: Middle
   p.fill(colors[6]);
   drawHorizontalSegment(digitX + T / 2 + gap, midY - T / 2, hSegW - 2 * gap, T, bevel, colors[6], p);
@@ -397,7 +397,7 @@ function drawPin(p, x1, y1, x2, y2, baseColor) {
   const dx = x2 - x1;
   const dy = y2 - y1;
   const len = Math.hypot(dx, dy) || 1;
-  
+
   // Unit direction along the pin, and unit normal perpendicular to it
   const ux = dx / len;
   const uy = dy / len;
@@ -424,7 +424,7 @@ function drawPin(p, x1, y1, x2, y2, baseColor) {
   // A small base tension forces a quick flare at the gate.
   // A large port tension forces the curve to stay thin/straight for most of its length.
   const tensionBase = len * 0.15;
-  const tensionPort = len * 0.85; 
+  const tensionPort = len * 0.85;
 
   const topCp1 = { x: top0.x + ux * tensionBase, y: top0.y + uy * tensionBase };
   const topCp2 = { x: top3.x - ux * tensionPort, y: top3.y - uy * tensionPort };
@@ -442,18 +442,18 @@ function drawPin(p, x1, y1, x2, y2, baseColor) {
   ctx.save();
   ctx.fillStyle = grad;
   ctx.beginPath();
-  
+
   ctx.moveTo(top0.x, top0.y);
-  
+
   // Draw top curve
   ctx.bezierCurveTo(topCp1.x, topCp1.y, topCp2.x, topCp2.y, top3.x, top3.y);
-  
+
   // Cap at the port
   ctx.lineTo(bottom3.x, bottom3.y);
-  
+
   // Draw bottom curve
   ctx.bezierCurveTo(bottomCp2.x, bottomCp2.y, bottomCp1.x, bottomCp1.y, bottom0.x, bottom0.y);
-  
+
   ctx.closePath();
   ctx.fill();
   ctx.restore();
@@ -506,19 +506,20 @@ export function drawGhostWire(wire, p) {
   }
   p.stroke(theme.wires.ghost.hex);
   p.strokeWeight(3);
+  const mouseWorld = screenToWorld(p.mouseX, p.mouseY);
   if (state.ghostWire && state.ghostWire.length !== 0) {
     p.line(start.x, start.y, state.ghostWire[0].x, state.ghostWire[0].y);
     const waypoint_count = state.ghostWire.length;
     for (let i = 0; i < waypoint_count - 1; i++) {
       p.line(state.ghostWire[i].x, state.ghostWire[i].y, state.ghostWire[i + 1].x, state.ghostWire[i + 1].y);
     }
-    p.line(state.ghostWire[waypoint_count - 1].x, state.ghostWire[waypoint_count - 1].y, p.mouseX, p.mouseY);
+    p.line(state.ghostWire[waypoint_count - 1].x, state.ghostWire[waypoint_count - 1].y, mouseWorld.x, mouseWorld.y);
   } else {
-    p.line(start.x, start.y, p.mouseX, p.mouseY);
+    p.line(start.x, start.y, mouseWorld.x, mouseWorld.y);
   }
   p.stroke(0);
   p.strokeWeight(1);
-}  
+}
 
 export function drawWaypoint(wireInfo, waypoint, p) {
   const theme = getActiveTheme();
@@ -660,7 +661,7 @@ export function setFont(theme, p) {
 export function createGrid(width, height, theme, offset, size, p) {
   const buffer = p.createGraphics(width, height);
 
-  buffer.background(theme.canvas.bg.hex);
+  buffer.clear();
   buffer.stroke(theme.canvas.grid.hex);
   buffer.strokeWeight(3);
 
