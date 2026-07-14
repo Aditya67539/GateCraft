@@ -8,6 +8,7 @@ import { nodeMap } from "./input/mouseHandlers.js";
 import { GRID_OFFSET, GRID_SIZE } from "./constants.js";
 import { snapPointToGrid, wouldOverlap } from "./render/RenderPoint.js";
 import { registerKeyboardHandlers } from "./input/keyboardHandlers.js";
+import { drawMinimap } from "./render/minimap.js";
 
 let gridBuffer;
 applyTheme(getActiveTheme());
@@ -168,6 +169,8 @@ const sketch = (p) => {
     if (tooltipState.active && tooltipState.opacity > 0) {
       drawPortTooltip(tooltipState.label, tooltipState.port, tooltipState.opacity, tooltipState.portType, p);
     }
+
+    drawMinimap(p, renderNodes, state);
   }
 }
 
