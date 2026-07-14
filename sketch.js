@@ -64,6 +64,7 @@ const sketch = (p) => {
 
     p.image(gridBuffer, shiftX, shiftY);
     p.translate(state.cameraX, state.cameraY);
+    p.scale(state.zoom);
 
     setFont(theme, p);
     for (let i = 0; i < renderNodes.length; i++) {

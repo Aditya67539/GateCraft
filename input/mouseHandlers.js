@@ -237,6 +237,28 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
     state.isPanning = false;
   }
 
+  p.mouseWheel = function(event) {
+    // 1. Where are we looking BEFORE the zoom?
+    const { x, y } = screenToWorld(p.mouseX, p.mouseY);
+
+    // 2. Calculate the new zoom level
+    const zoomFactor = 1.1;
+    if (event.delta > 0) {
+      state.zoom /= zoomFactor; // Scroll down = Zoom out
+    } else {
+      state.zoom *= zoomFactor; // Scroll up = Zoom in
+    }
+
+    state.zoom = p.constrain(state.zoom, 0.2, 3);
+
+    // 3. Counter-pan the camera to pin the world to the mouse
+    state.cameraX = p.mouseX - (x * state.zoom);
+    state.cameraY = p.mouseY - (y * state.zoom);
+
+    // Return false to prevent the entire web page from scrolling
+    return false; 
+  }
+
   // Right-click on an input/output gate to edit its label
   const canvasHost = document.querySelector(".canvas-host");
   canvasHost.addEventListener("contextmenu", function (e) {
