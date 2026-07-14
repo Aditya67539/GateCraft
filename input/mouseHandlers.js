@@ -35,14 +35,14 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
           const outputIndex = state.drawingWire.fromOutputIndex;
           const inputIndex = wireConnection.index;
           if (inputIndex < 0 || inputIndex >= wireConnection.toNode.internalInputs) {
-            console.error("Invalid index!");
+            showToast("Invalid input index!", { type: "error" });
             return;
           }
           const fromGate = state.drawingWire.fromNode.gate;
           const toGate = wireConnection.toNode.gate;
           let result = circuit.connectGates(fromGate, toGate, inputIndex, outputIndex);
           if (!result.ok) {
-            console.error(result.error);
+            showToast(result.error, { type: "error" });
             return;
           };
           let wire = result.wire;

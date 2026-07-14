@@ -1,4 +1,5 @@
 import { SIGNAL } from '../constants.js';
+import { showToast } from '../ui/toast.js';
 
 const { LOW, HIGH, X, Z, E } = SIGNAL;
 
@@ -611,6 +612,7 @@ export async function initWasm() {
       instance.exports._initialize();
     }
   } catch (error) {
+    showToast("Failed to load or instantiate WebAssembly", { type: "error" });
     console.error("Failed to load or instantiate WebAssembly module:", error);
   }
 }
