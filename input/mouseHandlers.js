@@ -255,7 +255,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
       state.zoom *= zoomFactor; // Scroll up = Zoom in
     }
 
-    state.zoom = p.constrain(state.zoom, 0.2, 3);
+    state.zoom = p.constrain(state.zoom, 0.3, 3);
 
     // 3. Counter-pan the camera to pin the world to the mouse
     state.cameraX = p.mouseX - (x * state.zoom);
