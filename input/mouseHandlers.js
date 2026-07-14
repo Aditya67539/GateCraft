@@ -1,4 +1,4 @@
-import { state } from "../state.js";
+import { state, screenToWorld, worldToScreen } from "../state.js";
 import { Input } from "../logic/gates.js";
 import { CLOCK_TIMER, FREQUENCY, SIGNAL } from "../constants.js";
 import { initWire, getWirePorts, setCustomWaypoints } from "../render/wireGeometry.js";
@@ -94,6 +94,8 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
           const { waypoints, cleanup } = setCustomWaypoints(p);
           state.ghostWire = waypoints;
           state.ghostWireCleanup = cleanup;
+        } else if (!state.drawingWire && !state.changingWayPoint && !state.dragging) {
+          state.isPanning = true;
         }
       }
     } else if (state.mode === "run") {
@@ -205,6 +207,9 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
         if (state.changingWayPoint.otherWaypoint) {
           state.changingWayPoint.otherWaypoint.x = state.changingWayPoint.waypoint.x;
         }
+      } else if (state.isPanning) {
+        state.cameraX += (p.mouseX - p.pmouseX);
+        state.cameraY += (p.mouseY - p.pmouseY);
       }
     }
   }
@@ -228,6 +233,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
     state.currentY = 0;
     state.changingPos = false;
     state.connectedWiresWaypoints = null;
+    state.isPanning = false;
   }
 
   // Right-click on an input/output gate to edit its label

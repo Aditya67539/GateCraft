@@ -56,6 +56,8 @@ const sketch = (p) => {
       state.gridDirty = false;
     }
     p.image(gridBuffer, 0, 0);
+    p.translate(state.cameraX, state.cameraY);
+
     setFont(theme, p);
     for (let i = 0; i < renderNodes.length; i++) {
       let nodeStatus = null;
