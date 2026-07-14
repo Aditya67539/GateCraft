@@ -16,7 +16,6 @@ const _state = {
   connectedWires: null,
   connectedWiresWaypoints: null,
   labelEditing: false,
-  gridDirty: false,
   isAnyModalOpen: false,
   cameraX: 0,
   cameraY: 0,

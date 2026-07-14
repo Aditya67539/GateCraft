@@ -1,5 +1,5 @@
 import { state, screenToWorld } from "./state.js";
-import { drawGate, drawWaypoint, drawGhostWire, drawWire, drawPortTooltip, setFont, createGrid } from "./render/draw.js";
+import { drawGate, drawWaypoint, drawGhostWire, drawWire, drawPortTooltip, setFont, drawDynamicGrid } from "./render/draw.js";
 import { registerMouseHandlers, isNearWaypoint, isNearPort } from "./input/mouseHandlers.js";
 import { initToolbar } from "./ui/toolbar.js";
 import { getActiveTheme, applyTheme } from "./render/theme.js";
@@ -43,7 +43,6 @@ const sketch = (p) => {
     registerKeyboardHandlers(p, circuit, renderNodes, wires, toolbarActions);
 
     const theme = getActiveTheme();    
-    gridBuffer = createGrid(WIDTH + GRID_SIZE * 2, HEIGHT + GRID_SIZE * 2, theme, GRID_OFFSET, GRID_SIZE, p);
   }
 
   p.draw = function () {
@@ -52,17 +51,8 @@ const sketch = (p) => {
     mouse.y = world.y;
     const theme = getActiveTheme();
     p.background(theme.canvas.bg.hex);
-    if (state.gridDirty) {
-      gridBuffer = createGrid(WIDTH + GRID_SIZE * 2, HEIGHT + GRID_SIZE * 2, theme, GRID_OFFSET, GRID_SIZE, p);
-      state.gridDirty = false;
-    }
 
-    let shiftX = state.cameraX % GRID_SIZE;
-    let shiftY = state.cameraY % GRID_SIZE;
-    if (shiftX > 0) shiftX -= GRID_SIZE;
-    if (shiftY > 0) shiftY -= GRID_SIZE;
-
-    p.image(gridBuffer, shiftX, shiftY);
+    drawDynamicGrid(p, theme, state.cameraX, state.cameraY, state.zoom);
     p.translate(state.cameraX, state.cameraY);
     p.scale(state.zoom);
 
