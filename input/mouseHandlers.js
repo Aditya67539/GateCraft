@@ -3,6 +3,7 @@ import { Input } from "../logic/gates.js";
 import { CLOCK_TIMER, FREQUENCY, SIGNAL } from "../constants.js";
 import { initWire, getWirePorts, setCustomWaypoints } from "../render/wireGeometry.js";
 import { createBasicNode, createCompositeNode, rebuildNodeMap, snapPointToGrid, spawnBasicNode, wouldOverlap } from "../render/RenderPoint.js";
+import { showToast } from "../ui/toast.js";
 
 const { LOW, HIGH, X, Z, E } = SIGNAL;
 
@@ -404,6 +405,10 @@ function bringToFront(renderNodes, node) {
  * Commits on Enter or blur; cancels on Escape.
  */
 function openLabelEditor(renderNode, p) {
+  if (state.zoom < 0.6) {
+    showToast("Zoom in to edit label", { type: "warning" });
+    return;
+  }
   state.labelEditing = true;
   const canvasHost = document.querySelector(".canvas-host");
   const canvas = canvasHost.querySelector("canvas");
