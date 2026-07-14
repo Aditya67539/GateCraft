@@ -238,6 +238,11 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
   }
 
   p.mouseWheel = function(event) {
+    // Dismiss label editor on zoom — blur triggers commit → cleanup
+    if (state.labelEditing) {
+      document.activeElement?.blur();
+    }
+
     // 1. Where are we looking BEFORE the zoom?
     const { x, y } = screenToWorld(p.mouseX, p.mouseY);
 
