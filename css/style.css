@@ -437,6 +437,22 @@ body {
   transform: scale(0.96);
 }
 
+/* ─── Minimap Backdrop (blur glass) ────────────────────────── */
+.minimap-backdrop {
+  position: fixed;
+  z-index: 50;
+  pointer-events: none;
+  border-radius: 10px;
+  background: var(--surface);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border: 1px solid var(--border);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 4px 24px rgba(0, 0, 0, 0.35);
+  display: none; /* shown by JS */
+}
+
 /* ─── Canvas host ──────────────────────────────────────────── */
 .canvas-host {
   position: fixed;
