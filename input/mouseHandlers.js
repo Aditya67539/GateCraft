@@ -406,21 +406,27 @@ function openLabelEditor(renderNode, p) {
   const canvasRect = canvas.getBoundingClientRect();
   const scaleX = canvasRect.width / p.width;
   const scaleY = canvasRect.height / p.height;
-  // Position the input centered over the gate
-  const gateCenterX = renderNode.x + renderNode.width / 2;
-  const gateCenterY = renderNode.y + renderNode.height / 2;
-  const cssX = gateCenterX * scaleX;
-  const cssY = gateCenterY * scaleY;
-  const inputWidth = Math.max(renderNode.width * scaleX, 80);
+  // Position the input centered over the gate (convert world → screen)
+  const gateCenter = worldToScreen(
+    renderNode.x + renderNode.width / 2,
+    renderNode.y + renderNode.height / 2
+  );
+  const cssX = gateCenter.x * scaleX;
+  const cssY = gateCenter.y * scaleY;
+  const zoom = state.zoom;
+  const inputWidth = Math.max(renderNode.width * scaleX * zoom, 80);
   const input = document.createElement("input");
   input.type = "text";
   input.className = "gate-label-input";
   input.maxLength = 16;
   input.placeholder = renderNode.gate.type;
   input.value = renderNode.gate.label || "";
-  input.style.left = `${cssX - inputWidth / 2}px`;
-  input.style.top = `${cssY - 16}px`;
+  input.style.left = `${cssX}px`;
+  input.style.top = `${cssY}px`;
+  input.style.transform = "translate(-50%, -50%)";
   input.style.width = `${inputWidth}px`;
+  input.style.fontSize = `${13 * zoom}px`;
+  input.style.padding = `${4 * zoom}px ${8 * zoom}px`;
   canvasHost.appendChild(input);
   // Select all text for easy replacement
   requestAnimationFrame(() => {
