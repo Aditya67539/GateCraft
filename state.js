@@ -36,6 +36,29 @@ const _state = {
  *
  * Avoid manually updating mode display elsewhere in the codebase.
  */
+
+/**
+ * Convert screen-space coordinates to world-space (accounting for camera pan/zoom).
+ * Use when comparing mouse position against gate/port/wire positions.
+ */
+export function screenToWorld(sx, sy) {
+  return {
+    x: (sx - _state.cameraX) / _state.zoom,
+    y: (sy - _state.cameraY) / _state.zoom,
+  };
+}
+
+/**
+ * Convert world-space coordinates to screen-space (accounting for camera pan/zoom).
+ * Use when positioning HTML overlays on top of canvas-rendered objects.
+ */
+export function worldToScreen(wx, wy) {
+  return {
+    x: wx * _state.zoom + _state.cameraX,
+    y: wy * _state.zoom + _state.cameraY,
+  };
+}
+
 export const state = new Proxy(_state, {
   /**
    * Intercepts property assignments.
