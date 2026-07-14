@@ -1,5 +1,6 @@
 import { GRID_SIZE } from "../constants.js";
 import { isNearWaypoint } from "../input/mouseHandlers.js";
+import { screenToWorld } from "../state.js";
 
 export function initWire(renderNodes, wire, custom_waypoints, nodeMap) {
   let waypoints;
@@ -60,13 +61,14 @@ export function setCustomWaypoints(p) {
   let waypoints = [];
   function onKeyDown(e) {
     if (e.key === " ") {
+      const { x: wx, y: wy } = screenToWorld(p.mouseX, p.mouseY);
       if (waypoints.length !== 0) {
         const waypoint_count = waypoints.length;
-        if (!isNearWaypoint(p.mouseX, p.mouseY, waypoints[waypoint_count - 1], p)) {
-          waypoints.push({ x: p.mouseX, y: p.mouseY });
+        if (!isNearWaypoint(wx, wy, waypoints[waypoint_count - 1], p)) {
+          waypoints.push({ x: wx, y: wy });
         }
       } else {
-        waypoints.push({ x: p.mouseX, y: p.mouseY });
+        waypoints.push({ x: wx, y: wy });
       }
      }
   }

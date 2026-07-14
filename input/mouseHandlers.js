@@ -1,8 +1,9 @@
-import { state } from "../state.js";
+import { state, screenToWorld, worldToScreen } from "../state.js";
 import { Input } from "../logic/gates.js";
 import { CLOCK_TIMER, FREQUENCY, SIGNAL } from "../constants.js";
 import { initWire, getWirePorts, setCustomWaypoints } from "../render/wireGeometry.js";
 import { createBasicNode, createCompositeNode, rebuildNodeMap, snapPointToGrid, spawnBasicNode, wouldOverlap } from "../render/RenderPoint.js";
+import { showToast } from "../ui/toast.js";
 
 const { LOW, HIGH, X, Z, E } = SIGNAL;
 
@@ -22,13 +23,14 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
     if (state.justPlacedFromToolbar) {
       state.justPlacedFromToolbar = false;
     }
-    state.dragging = renderNodes.find(n => n.containsPoint(p.mouseX, p.mouseY));
+    const world = screenToWorld(p.mouseX, p.mouseY);
+    state.dragging = renderNodes.find(n => n.containsPoint(world.x, world.y));
     bringToFront(renderNodes, state.dragging);
 
     if (state.mode === "edit") {
       // Check input ports
       if (state.drawingWire) {
-        let wireConnection = findNearInputPort(p.mouseX, p.mouseY, p, renderNodes);
+        let wireConnection = findNearInputPort(world.x, world.y, p, renderNodes);
         if (wireConnection) {
           const outputIndex = state.drawingWire.fromOutputIndex;
           const inputIndex = wireConnection.index;
@@ -50,8 +52,8 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
         state.drawingWire = null;
         cleanupGhostWire();
       } else {
-        state.drawingWire = findNearOutputPort(p.mouseX, p.mouseY, p, renderNodes);
-        state.changingWayPoint = findNearWaypoint(p.mouseX, p.mouseY, p, wires);
+        state.drawingWire = findNearOutputPort(world.x, world.y, p, renderNodes);
+        state.changingWayPoint = findNearWaypoint(world.x, world.y, p, wires);
 
         // ── Update persistent selection ──────────────────────────
         if (state.dragging) {
@@ -62,7 +64,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
         }
 
         if (!state.drawingWire && !state.changingWayPoint && state.dragging) {
-          const { x, y } = snapPointToGrid(p.mouseX, p.mouseY);
+          const { x, y } = snapPointToGrid(world.x, world.y);
           state.offsetX = x - state.dragging.x;
           state.offsetY = y - state.dragging.y;
 
@@ -94,6 +96,8 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
           const { waypoints, cleanup } = setCustomWaypoints(p);
           state.ghostWire = waypoints;
           state.ghostWireCleanup = cleanup;
+        } else if (!state.drawingWire && !state.changingWayPoint && !state.dragging) {
+          state.isPanning = true;
         }
       }
     } else if (state.mode === "run") {
@@ -130,7 +134,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
 
       if (event.shiftKey) {
         const gateType = state.ghostNode.gate.type;
-        const { x, y } = snapPointToGrid(p.mouseX, p.mouseY);
+        const { x, y } = snapPointToGrid(world.x, world.y);
         if (gateType !== "composite") {
           state.ghostNode = createBasicNode(gateType, x, y);
         } else {
@@ -158,7 +162,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
 
         rebuildNodeMap(renderNodes, nodeMap);
       } else {
-        const wireInfo = getWireAtPoint(p.mouseX, p.mouseY, renderNodes, wires, nodeMap);
+        const wireInfo = getWireAtPoint(world.x, world.y, renderNodes, wires, nodeMap);
         if (wireInfo) {
           circuit.removeWire(wireInfo.wire);
           wires.splice(wires.indexOf(wireInfo), 1);
@@ -169,6 +173,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
 
   p.mouseDragged = function () {
     if (state.mode === "edit") {
+      const worldDrag = screenToWorld(p.mouseX, p.mouseY);
       if (state.dragging) {
         if (!state.changingPos) {
           state.currentX = state.dragging.x;
@@ -183,7 +188,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
             }
           }
         }
-        const { x, y } = snapPointToGrid(p.mouseX, p.mouseY);
+        const { x, y } = snapPointToGrid(worldDrag.x, worldDrag.y);
         state.dragging.x = x - state.offsetX;
         state.dragging.y = y - state.offsetY;
 
@@ -198,13 +203,15 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
             }
           }
         }
-      }
-      if (state.changingWayPoint) {
-        state.changingWayPoint.waypoint.x = p.mouseX;
-        state.changingWayPoint.waypoint.y = p.mouseY;
+      } else if (state.changingWayPoint) {
+        state.changingWayPoint.waypoint.x = worldDrag.x;
+        state.changingWayPoint.waypoint.y = worldDrag.y;
         if (state.changingWayPoint.otherWaypoint) {
           state.changingWayPoint.otherWaypoint.x = state.changingWayPoint.waypoint.x;
         }
+      } else if (state.isPanning) {
+        state.cameraX += (p.mouseX - p.pmouseX);
+        state.cameraY += (p.mouseY - p.pmouseY);
       }
     }
   }
@@ -228,6 +235,34 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
     state.currentY = 0;
     state.changingPos = false;
     state.connectedWiresWaypoints = null;
+    state.isPanning = false;
+  }
+
+  p.mouseWheel = function(event) {
+    // Dismiss label editor on zoom — blur triggers commit → cleanup
+    if (state.labelEditing) {
+      document.activeElement?.blur();
+    }
+
+    // 1. Where are we looking BEFORE the zoom?
+    const { x, y } = screenToWorld(p.mouseX, p.mouseY);
+
+    // 2. Calculate the new zoom level
+    const zoomFactor = 1.1;
+    if (event.delta > 0) {
+      state.zoom /= zoomFactor; // Scroll down = Zoom out
+    } else {
+      state.zoom *= zoomFactor; // Scroll up = Zoom in
+    }
+
+    state.zoom = p.constrain(state.zoom, 0.3, 3);
+
+    // 3. Counter-pan the camera to pin the world to the mouse
+    state.cameraX = p.mouseX - (x * state.zoom);
+    state.cameraY = p.mouseY - (y * state.zoom);
+
+    // Return false to prevent the entire web page from scrolling
+    return false; 
   }
 
   // Right-click on an input/output gate to edit its label
@@ -238,8 +273,9 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
     // Convert page coords to p5 canvas coords
     const canvas = canvasHost.querySelector("canvas");
     const rect = canvas.getBoundingClientRect();
-    const mx = (e.clientX - rect.left) * (p.width / rect.width);
-    const my = (e.clientY - rect.top) * (p.height / rect.height);
+    const screenX = (e.clientX - rect.left) * (p.width / rect.width);
+    const screenY = (e.clientY - rect.top) * (p.height / rect.height);
+    const { x: mx, y: my } = screenToWorld(screenX, screenY);
     const target = renderNodes.find(n => n.containsPoint(mx, my));
     if (!target) return;
     const gateType = target.gate.type;
@@ -369,6 +405,10 @@ function bringToFront(renderNodes, node) {
  * Commits on Enter or blur; cancels on Escape.
  */
 function openLabelEditor(renderNode, p) {
+  if (state.zoom < 0.6) {
+    showToast("Zoom in to edit label", { type: "warning" });
+    return;
+  }
   state.labelEditing = true;
   const canvasHost = document.querySelector(".canvas-host");
   const canvas = canvasHost.querySelector("canvas");
@@ -376,21 +416,27 @@ function openLabelEditor(renderNode, p) {
   const canvasRect = canvas.getBoundingClientRect();
   const scaleX = canvasRect.width / p.width;
   const scaleY = canvasRect.height / p.height;
-  // Position the input centered over the gate
-  const gateCenterX = renderNode.x + renderNode.width / 2;
-  const gateCenterY = renderNode.y + renderNode.height / 2;
-  const cssX = gateCenterX * scaleX;
-  const cssY = gateCenterY * scaleY;
-  const inputWidth = Math.max(renderNode.width * scaleX, 80);
+  // Position the input centered over the gate (convert world → screen)
+  const gateCenter = worldToScreen(
+    renderNode.x + renderNode.width / 2,
+    renderNode.y + renderNode.height / 2
+  );
+  const cssX = gateCenter.x * scaleX;
+  const cssY = gateCenter.y * scaleY;
+  const zoom = state.zoom;
+  const inputWidth = Math.max(renderNode.width * scaleX * zoom, 80);
   const input = document.createElement("input");
   input.type = "text";
   input.className = "gate-label-input";
   input.maxLength = 16;
   input.placeholder = renderNode.gate.type;
   input.value = renderNode.gate.label || "";
-  input.style.left = `${cssX - inputWidth / 2}px`;
-  input.style.top = `${cssY - 16}px`;
+  input.style.left = `${cssX}px`;
+  input.style.top = `${cssY}px`;
+  input.style.transform = "translate(-50%, -50%)";
   input.style.width = `${inputWidth}px`;
+  input.style.fontSize = `${13 * zoom}px`;
+  input.style.padding = `${4 * zoom}px ${8 * zoom}px`;
   canvasHost.appendChild(input);
   // Select all text for easy replacement
   requestAnimationFrame(() => {

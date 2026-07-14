@@ -194,7 +194,6 @@ export function setSignalColor(key, hex) {
   _signalOverrides[key] = hex;
   saveSignalOverrides();
 
-  state.gridDirty = true;
   applyTheme(getActiveTheme());
 }
 
@@ -209,7 +208,6 @@ export function getDefaultSignalColors() {
 export function resetSignalColors() {
   _signalOverrides = {};
   saveSignalOverrides();
-  state.gridDirty = true;
   applyTheme(getActiveTheme());
 }
 
@@ -230,8 +228,6 @@ function hexToRGB(hex) {
 
 export function applyTheme(theme) {
   const root = document.documentElement;
-
-  state.gridDirty = true;
 
   function flatten(obj, prefix = "theme") {
     for (const key in obj) {

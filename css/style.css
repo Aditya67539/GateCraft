@@ -437,6 +437,22 @@ body {
   transform: scale(0.96);
 }
 
+/* ─── Minimap Backdrop (blur glass) ────────────────────────── */
+.minimap-backdrop {
+  position: fixed;
+  z-index: 50;
+  pointer-events: none;
+  border-radius: 10px;
+  background: var(--surface);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border: 1px solid var(--border);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 4px 24px rgba(0, 0, 0, 0.35);
+  display: none; /* shown by JS */
+}
+
 /* ─── Canvas host ──────────────────────────────────────────── */
 .canvas-host {
   position: fixed;
@@ -1212,12 +1228,70 @@ body {
 
 @keyframes label-in {
   from {
-    transform: scale(0.9);
+    transform: translate(-50%, -50%) scale(0.9);
     opacity: 0;
   }
 
   to {
-    transform: scale(1);
+    transform: translate(-50%, -50%) scale(1);
     opacity: 1;
+  }
+}
+
+/* ─── Toast Notifications ──────────────────────────────────── */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 400;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  cursor: pointer;
+  padding: 10px 20px;
+  border-radius: 10px;
+  background: rgba(var(--theme-panel-bg-rgb, 22, 32, 54), 0.85);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow:
+    0 8px 28px rgba(0, 0, 0, 0.40),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+  color: var(--text);
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(12px) scale(0.96);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.toast--visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.toast--exit {
+  animation: toast-out 0.18s ease forwards;
+}
+
+/* Type accents — left border highlight */
+.toast--info    { border-left: 3px solid var(--accent); }
+.toast--success { border-left: 3px solid #22c55e; }
+.toast--warning { border-left: 3px solid #f59e0b; }
+.toast--error   { border-left: 3px solid var(--danger); }
+
+@keyframes toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
   }
 }

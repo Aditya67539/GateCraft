@@ -1,5 +1,5 @@
-import { state } from "./state.js";
-import { drawGate, drawWaypoint, drawGhostWire, drawWire, drawPortTooltip, setFont, createGrid } from "./render/draw.js";
+import { state, screenToWorld } from "./state.js";
+import { drawGate, drawWaypoint, drawGhostWire, drawWire, drawPortTooltip, setFont, drawDynamicGrid } from "./render/draw.js";
 import { registerMouseHandlers, isNearWaypoint, isNearPort } from "./input/mouseHandlers.js";
 import { initToolbar } from "./ui/toolbar.js";
 import { getActiveTheme, applyTheme } from "./render/theme.js";
@@ -8,6 +8,7 @@ import { nodeMap } from "./input/mouseHandlers.js";
 import { GRID_OFFSET, GRID_SIZE } from "./constants.js";
 import { snapPointToGrid, wouldOverlap } from "./render/RenderPoint.js";
 import { registerKeyboardHandlers } from "./input/keyboardHandlers.js";
+import { drawMinimap } from "./render/minimap.js";
 
 let gridBuffer;
 applyTheme(getActiveTheme());
@@ -43,19 +44,19 @@ const sketch = (p) => {
     registerKeyboardHandlers(p, circuit, renderNodes, wires, toolbarActions);
 
     const theme = getActiveTheme();    
-    gridBuffer = createGrid(WIDTH, HEIGHT, theme, GRID_OFFSET, GRID_SIZE, p);
   }
 
   p.draw = function () {
-    mouse.x = p.mouseX;
-    mouse.y = p.mouseY;
+    const world = screenToWorld(p.mouseX, p.mouseY);
+    mouse.x = world.x;
+    mouse.y = world.y;
     const theme = getActiveTheme();
     p.background(theme.canvas.bg.hex);
-    if (state.gridDirty) {
-      gridBuffer = createGrid(WIDTH, HEIGHT, theme, GRID_OFFSET, GRID_SIZE, p);
-      state.gridDirty = false;
-    }
-    p.image(gridBuffer, 0, 0);
+
+    drawDynamicGrid(p, theme, state.cameraX, state.cameraY, state.zoom);
+    p.translate(state.cameraX, state.cameraY);
+    p.scale(state.zoom);
+
     setFont(theme, p);
     for (let i = 0; i < renderNodes.length; i++) {
       let nodeStatus = null;
@@ -154,7 +155,8 @@ const sketch = (p) => {
       let status = wouldOverlap(state.ghostNode, renderNodes) ? "invalid" : "valid";
       drawGate(state.ghostNode, p, status);
       if (state.mode === "placing") {
-        const { x, y } = snapPointToGrid(p.mouseX, p.mouseY);
+        const { x: worldMouseX, y: worldMouseY } = screenToWorld(p.mouseX, p.mouseY);
+        const { x, y } = snapPointToGrid(worldMouseX, worldMouseY);
         state.ghostNode.x = x;
         state.ghostNode.y = y;
       }
@@ -167,6 +169,8 @@ const sketch = (p) => {
     if (tooltipState.active && tooltipState.opacity > 0) {
       drawPortTooltip(tooltipState.label, tooltipState.port, tooltipState.opacity, tooltipState.portType, p);
     }
+
+    drawMinimap(p, renderNodes, state);
   }
 }
 
