@@ -529,6 +529,39 @@ export function drawWaypoint(wireInfo, waypoint, p) {
   p.circle(waypoint.x, waypoint.y, 12);
 }
 
+export function drawDynamicGrid(p, theme, cameraX, cameraY, zoom) {
+  // 1. Calculate the scaled visual spacing of the grid
+  let currentGridSize = GRID_SIZE;
+  let scaledSpacing = currentGridSize * zoom;
+
+  // 2. LEVEL OF DETAIL
+  // If the user zooms out and the dots get closer than 15 pixels on screen, we double the grid size
+  while (scaledSpacing < 15) {
+    currentGridSize *= 2;
+    scaledSpacing = currentGridSize * zoom;
+  }
+
+  // 3. Modulo shift, using the new scaled spacing
+  let shiftX = cameraX % scaledSpacing;
+  let shiftY = cameraY % scaledSpacing;
+
+  // Keep the shift negative so it always safely starts offscreen
+  if (shiftX > 0) shiftX -= scaledSpacing;
+  if (shiftY > 0) shiftY -= scaledSpacing;
+
+  p.stroke(theme.canvas.grid.hex);
+
+  // By drawing this BEFORE p.scale(), the dots stay exactly 3px wide
+  // regardless of how far in or out the user zooms
+  p.strokeWeight(3);
+
+  for (let x = shiftX; x < p.width; x += scaledSpacing) {
+    for (let y = shiftY; y < p.height; y += scaledSpacing) {
+      p.point(x, y);
+    }
+  }
+}
+
 /**
  * Draws an animated tooltip above a port showing the parent gate's label or type.
  *
@@ -645,31 +678,3 @@ export function setFont(theme, p) {
     p.textFont(fontName);
   }
 }
-
-
-/**
- * Creates and returns a grid texture using a p5.Graphics buffer. 
- * 
- * @param {number} width - Width of the grid buffer in pixels. 
- * @param {number} height - Height of the grid buffer in pixels. 
- * @param {Object} theme - Theme configuration object. 
- * @param {number} offset - Starting offset for the grid buffer.
- * @param {number} size - Distance between grid points. 
- * @param {Object} p - The p5 instance used to create the graphics buffer. 
- * @returns A p5.Graphics buffer containing the rendered grid. 
- */
-export function createGrid(width, height, theme, offset, size, p) {
-  const buffer = p.createGraphics(width, height);
-
-  buffer.clear();
-  buffer.stroke(theme.canvas.grid.hex);
-  buffer.strokeWeight(3);
-
-  for (let i = offset; i < width; i += size) {
-    for (let j = offset; j < height; j += size) {
-      buffer.point(i, j);
-    }
-  }
-
-  return buffer;
-} 
