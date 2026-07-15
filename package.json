@@ -33,5 +33,11 @@
   "dependencies": {
     "mitata": "^1.0.34",
     "p5": "^2.3.0"
+  },
+  "imports": {
+    "#wasmLoader": {
+      "node": "./logic/wasmLoader.node.js",
+      "browser": "./logic/wasmLoader.browser.js"
+    }
   }
 }

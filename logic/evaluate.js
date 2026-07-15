@@ -1,10 +1,8 @@
 import { SIGNAL } from '../constants.js';
 import { showToast } from '../ui/toast.js';
+import { wasmInstance, wasmMemory } from './wasmCore.js';
 
 const { LOW, HIGH, X, Z, E } = SIGNAL;
-
-export var wasmMemory = null;
-export var wasmInstance = null;
 
 /**
  * Performs change-driven (delta-cycle) evaluation of the circuit. 
@@ -578,43 +576,6 @@ export function buildTypedArrays(acc) {
     wireTo,
     wireSignal,
   };
-}
-
-/**
- * Initializes the WebAssembly module and allocates shared memory.
- * @param {string} wasmUrl - Path to the WASM file.
- */
-export async function initWasm() {
-  if (wasmInstance) return;
-
-  wasmMemory = new WebAssembly.Memory({ initial: 256, maximum: 256 }); // 16MB
-
-  const env = { memory: wasmMemory };
-
-  try {
-    let wasmBuffer;
-    const wasmUrl = new URL('./evaluate.wasm', import.meta.url);
-
-    if (typeof process !== 'undefined' && process.versions && process.versions.node) {
-      // Node.js fallback
-      const fs = await import('fs');
-      wasmBuffer = fs.readFileSync(wasmUrl);
-    } else {
-      // Browser environment
-      const response = await fetch(wasmUrl);
-      wasmBuffer = await response.arrayBuffer();
-    }
-
-    const { instance } = await WebAssembly.instantiate(wasmBuffer, { env });
-    wasmInstance = instance;
-
-    if (instance.exports._initialize) {
-      instance.exports._initialize();
-    }
-  } catch (error) {
-    showToast("Failed to load or instantiate WebAssembly", { type: "error" });
-    console.error("Failed to load or instantiate WebAssembly module:", error);
-  }
 }
 
 /**
