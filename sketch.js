@@ -1,3 +1,4 @@
+import p5 from "p5";
 import { state, screenToWorld } from "./state.js";
 import { drawGate, drawWaypoint, drawGhostWire, drawWire, drawPortTooltip, setFont, drawDynamicGrid } from "./render/draw.js";
 import { registerMouseHandlers, isNearWaypoint, isNearPort } from "./input/mouseHandlers.js";
