@@ -113,10 +113,6 @@ function buildDarkTheme() {
       muted:   { hex: "#a1a1aa" },
       inverse: { hex: "#1c1c1f" },
     },
-    font: {
-      family: "'Inter', system-ui, sans-serif",
-      google: "Inter:wght@400;500;600;700",
-    },
     ui: {
       border:       { hex: "#ffffff", alpha: 0.08 },
       borderHover:  { hex: "#ffffff", alpha: 0.18 },
@@ -144,10 +140,6 @@ function buildLightTheme() {
       primary: { hex: "#18181b" },
       muted:   { hex: "#52525b" },
       inverse: { hex: "#f4f4f5" },
-    },
-    font: {
-      family: "'Inter', system-ui, sans-serif",
-      google: "Inter:wght@400;500;600;700",
     },
     ui: {
       border:       { hex: "#18181b", alpha: 0.10 },
@@ -235,9 +227,6 @@ export function applyTheme(theme) {
         const val = obj[key];
         const newPrefix = prefix ? `${prefix}-${key}` : key;
 
-        // Skip non-CSS properties
-        if (key === "family" || key === "google") continue;
-
         if (val && typeof val.hex === "string") {
           // Inject hex
           root.style.setProperty(`--${newPrefix}`, val.hex);
@@ -256,22 +245,6 @@ export function applyTheme(theme) {
   }
 
   flatten(theme);
-
-  // Apply font family
-  if (theme.font) {
-    root.style.setProperty("--theme-font-family", theme.font.family);
-
-    // Dynamically load the Google Font
-    const fontId = "theme-google-font";
-    let link = document.getElementById(fontId);
-    if (!link) {
-      link = document.createElement("link");
-      link.id = fontId;
-      link.rel = "stylesheet";
-      document.head.appendChild(link);
-    }
-    link.href = `https://fonts.googleapis.com/css2?family=${theme.font.google}&display=swap`;
-  }
 }
 
 /**

@@ -4,6 +4,9 @@
   "description": "A browser-based digital logic circuit simulator built with [p5.js](https://p5js.org/). Place logic gates, wire them together, toggle inputs, and watch signals propagate in real time — including support for sequential circuits like SR latches and T flip-flops.",
   "type": "module",
   "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
     "build:wasm": "emcc logic/evaluate.c -O3 --no-entry -s IMPORTED_MEMORY=1 -s EXPORTED_FUNCTIONS=\"['_init', '_evaluateFlat']\" -o logic/evaluate.wasm",
     "test": "vitest",
     "test:ci": "vitest run",
@@ -24,9 +27,17 @@
   },
   "homepage": "https://github.com/Aditya67539/GateCraft#readme",
   "devDependencies": {
+    "vite": "^8.1.4",
     "vitest": "^4.1.5"
   },
   "dependencies": {
-    "mitata": "^1.0.34"
+    "mitata": "^1.0.34",
+    "p5": "^2.3.0"
+  },
+  "imports": {
+    "#wasmLoader": {
+      "node": "./logic/wasmLoader.node.js",
+      "browser": "./logic/wasmLoader.browser.js"
+    }
   }
 }
