@@ -14,37 +14,40 @@ A browser-based digital logic circuit simulator built with [p5.js](https://p5js.
 
 ## Features
 
-- **7 gate types** — AND, OR, NOT, NAND, NOR, XOR, XNOR
-- **I/O components** — Input (toggle), Output (display), Clock (auto-oscillator)
+- **8 gate types** — AND, OR, NOT, NAND, NOR, XOR, XNOR, Tri-state Buffer
+- **I/O components** — Input (toggle), Output (display), Clock (auto-oscillator), Seven-Segment Display
+- **5-State Logic** — Supports High, Low, Z (high impedance), X (unknown), and E (error) signal states
 - **Composite gates** — Save any circuit as a reusable composite gate with labeled I/O ports; composites can be nested arbitrarily deep
 - **Persistence** — Composite gate definitions are stored in localStorage and appear in the sidebar for one-click reuse
 - **Wire routing** — Orthogonal wires with draggable waypoints; auto-routes around gates
 - **Signal propagation** — Color-coded wires (high / low colors adapt to the active theme)
 - **Sequential circuit support** — Iterative settling handles feedback loops that don't resolve in a single pass
-- **Grid system** — Dot grid background with snap-to-grid placement and movement for clean, aligned layouts
+- **Pan, Zoom & Minimap** — Infinite canvas with zoom controls and a minimap viewport indicator with a frosted glass backdrop
+- **Grid system** — Dynamic zoom-aware dot grid background with snap-to-grid placement and movement for clean, aligned layouts
 - **9 color themes** — Graphite, Forge, Terminal, Voltage, Neon, Ocean, Molten, Retro, Blueprint — switchable from the settings panel
 - **WebAssembly evaluation** — Core simulation runs in a compiled C → WASM engine with delta-cycle propagation for fast evaluation of large circuits
 - **3 editor modes** — Edit, Run, Delete
 - **Drag to reposition** — Gates and connected wires move together, snapping to the grid
+- **Toast notifications** — Reusable notification system for surfacing errors and application state
 
 ---
 
 ## Getting Started
 
-No build step or package manager needed. Just serve the files over HTTP.
+GateCraft uses Vite for fast development and building.
 
-**Using the VS Code Live Server extension:**
-```
-Right-click index.html → Open with Live Server
-```
+**Prerequisites:**
+- [Node.js](https://nodejs.org/) (v18 or newer recommended)
 
-**Using Python:**
+**Installation & Development:**
 ```bash
-python -m http.server 8000
-# then open http://localhost:8000
+git clone https://github.com/Aditya67539/GateCraft.git
+cd GateCraft
+npm install
+npm run dev
 ```
 
-> Opening `index.html` directly as a `file://` URL won't work because ES modules require an HTTP server.
+Then open the provided `http://localhost:5173` link in your browser.
 
 ---
 
@@ -56,6 +59,7 @@ python -m http.server 8000
 2. In **Edit** mode, click and drag over a gate's output port (right side) to start drawing a wire
 3. Click near the left side of another gate to complete the connection
 4. Drag gates to reposition them; wires follow automatically
+5. Use your mouse wheel or trackpad to zoom in and out. Click and drag on empty canvas to pan around.
 
 ### Running a circuit
 
@@ -77,13 +81,13 @@ Switch to **Delete** mode and click any gate to remove it along with all its con
 
 ### Changing themes
 
-Click the **Settings** (⚙) icon in the top toolbar to open the theme picker. Choose from 9 themes — each one reskins the entire UI including the canvas grid, gates, wires, and sidebar.
+Click the **Settings** (⚙) icon in the top toolbar to open the settings panel. From here, you can switch between 9 themes and configure signal colors — each theme reskins the entire UI including the canvas grid, gates, wires, and sidebar using CSS variables.
 
 ---
 
 ## Project Structure
 
-```
+```text
 gatecraft/
 ├── sketch.js              # Entry point — p5 setup() and draw(), grid rendering
 ├── state.js               # Shared mutable state (mode, dragging, ghostNode, gridDirty, etc.)
@@ -101,8 +105,9 @@ gatecraft/
 ├── render/
 │   ├── RenderPoint.js     # Visual wrapper — position, ports, hit-testing, grid snapping
 │   ├── draw.js            # drawGate, drawWire, createGrid
+│   ├── minimap.js         # Minimap and viewport indicator rendering
 │   ├── wireGeometry.js    # Waypoint computation and routing math
-│   └── theme.js           # 9 theme definitions, theme registry, applyTheme
+│   └── theme.js           # Theme registry and CSS variables injection
 │
 ├── input/
 │   └── mouseHandlers.js   # mousePressed, mouseDragged, mouseReleased (grid-snapped)
@@ -126,6 +131,7 @@ gatecraft/
 │   └── p5.min.js
 ├── .github/
 │   └── workflows/ci.yml   # CI pipeline (Node 20/22, vitest)
+├── vite.config.js         # Vite bundler configuration
 ├── package.json
 └── index.html
 ```
@@ -136,7 +142,7 @@ gatecraft/
 
 GateCraft uses a hybrid evaluation strategy:
 
-**`evaluateWasm`** (primary) — The circuit is flattened into typed arrays and evaluated inside a compiled C → WebAssembly module. Uses delta-cycle propagation: only re-evaluates gates whose upstream signals have changed. A `changed` flag skips JS ↔ WASM state synchronization when nothing has changed.
+**`evaluateWasm`** (primary) — The circuit is flattened into typed arrays and evaluated inside a compiled C → WebAssembly module. Uses delta-cycle propagation: only re-evaluates gates whose upstream signals have changed. A `changed` flag skips JS ↔ WASM state synchronization when nothing has changed. Now supports 5-state logic (`HIGH`, `LOW`, `Z`, `X`, `E`).
 
 **`evaluateAll`** (JS fallback) — Change-driven evaluation in pure JavaScript. Seeds from inputs/clocks and propagates downstream through a fanout map.
 
@@ -148,7 +154,6 @@ GateCraft uses a hybrid evaluation strategy:
 
 ### Running tests
 ```bash
-npm install
 npm test          # vitest in watch mode
 npm run test:ci   # single run (used in CI)
 ```
@@ -170,8 +175,9 @@ npm run build:wasm
 
 ## Tech Stack
 
+- [Vite](https://vitejs.dev/) — Next-generation frontend tooling and bundler
 - [p5.js](https://p5js.org/) — canvas rendering and mouse event integration
-- Vanilla JavaScript (ES modules) — no framework, no bundler
+- Vanilla JavaScript (ES modules)
 - WebAssembly (C → WASM via Emscripten) — high-performance circuit evaluation
 - HTML/CSS — layout and toolbar UI
 - [Vitest](https://vitest.dev/) — test runner
@@ -183,7 +189,6 @@ npm run build:wasm
 ## Roadmap / Ideas
 
 - [ ] Truth table generator
-- [ ] Zoom and pan on the canvas
 - [ ] Undo / redo
 - [ ] Export / import circuits as JSON files
 - [ ] Keyboard shortcuts
