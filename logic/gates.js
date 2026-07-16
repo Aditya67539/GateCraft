@@ -344,10 +344,10 @@ const ORTABLE = [
 
 const TRISTATEBUFFER = [
   //                     LOW  HIGH   X    Z    E
-  /* enable = LOW  */ [  Z,   Z,     Z,   Z,   E ],
+  /* enable = LOW  */ [  Z,   Z,     Z,   Z,   Z ],
   /* enable = HIGH */ [  LOW, HIGH,  X,   X,   E ],
-  /* enable = X    */ [  X,   X,     X,   X,   E ],
-  /* enable = Z    */ [  X,   X,     X,   X,   E ],
+  /* enable = X    */ [  X,   X,     X,   X,   X ],
+  /* enable = Z    */ [  X,   X,     X,   X,   X ],
   /* enable = E    */ [  E,   E,     E,   E,   E ],
 ];
 

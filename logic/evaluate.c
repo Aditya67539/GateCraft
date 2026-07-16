@@ -78,10 +78,10 @@ static const uint8_t ORTABLE[5][5] = {
 
 static const uint8_t TRISTATEBUFFER[5][5] = {
     //                      LOW  HIGH  X   Z   E
-    /* enable = LOW  */ {    3,   3,   3,  3,  4 },
+    /* enable = LOW  */ {    3,   3,   3,  3,  3 },
     /* enable = HIGH */ {    0,   1,   2,  2,  4 },
-    /* enable = X    */ {    2,   2,   2,  2,  4 },
-    /* enable = Z    */ {    2,   2,   2,  2,  4 },
+    /* enable = X    */ {    2,   2,   2,  2,  2 },
+    /* enable = Z    */ {    2,   2,   2,  2,  2 },
     /* enable = E    */ {    4,   4,   4,  4,  4 },
 };
 
