@@ -238,6 +238,36 @@ export class SevenSegmentDisplay extends ConnectableGate {
   }
 }
 
+export class Bus {
+  constructor() {
+    this.id = Logic.nextId++;
+    this.type = "bus";
+    this.inputCount = 0;
+    this.inputs = [];
+    this.output = Z;
+    this.tempOutput = Z;
+  }
+
+  connect(fromGate, toInputIndex = null, fromOutputIndex = null) {
+    const wire = new Wire(fromGate, this, this.inputCount++, fromOutputIndex);
+    this.inputs.push(wire);
+    return { ok: true, wire };
+  }
+
+  hasNoInputsConnected() {
+    return this.inputs.length === 0;
+  }
+
+  evaluate() {
+    const resolvedInputs = resolveInputs(this.inputs);
+    this.tempOutput = Z;
+    for (const input of resolvedInputs) {
+      this.tempOutput = busPair(this.tempOutput, input);
+    }
+    return { ok: true, output: this.tempOutput };
+  }
+}
+
 
 /**
  * Creates a basic gate instance based on the given type.
@@ -350,8 +380,18 @@ const TRISTATEBUFFER = [
   /* enable = E    */ [  E,   E,     E,   E,   E ],
 ];
 
+const BUSTABLE = [
+  //                     LOW   HIGH   X   Z     E
+  /* LOW  */ [           LOW,  E,     E,  LOW,  E ],
+  /* HIGH */ [           E,    HIGH,  E,  HIGH, E ],
+  /* X    */ [           E,    E,     X,  X,    E ],
+  /* Z    */ [           LOW,  HIGH,  X,  Z,    E ],
+  /* E    */ [           E,    E,     E,  E,    E ],
+]
+
 const not = (a) => NOTTABLE[a];
 const andPair = (a, b) => ANDTABLE[a][b];
 const orPair = (a, b) => ORTABLE[a][b];
 const xorPair = (a, b) => orPair(andPair(a, not(b)), andPair(not(a), b));
 const triStateBufferPair = (enable, data) => TRISTATEBUFFER[enable][data];
+const busPair = (a, b) => BUSTABLE[a][b];
