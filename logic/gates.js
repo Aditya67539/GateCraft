@@ -311,8 +311,7 @@ function collectDisplays(gates, positionMap) {
 
 function resolveInputs(inputs) {
   return inputs.map(input => {
-    if (input instanceof Wire && input.signal !== Z) return input.signal;
-    return X;
+    return input instanceof Wire ? input.signal : X;
   });
 }
 
