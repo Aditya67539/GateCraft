@@ -493,6 +493,30 @@ function drawInputPort(renderNode, theme, p) {
   }
 }
 
+export function getOctilinearSnap(x1, y1, x2, y2) {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+
+  const ax = Math.abs(dx);
+  const ay = Math.abs(dy);
+
+  const TAN30 = Math.tan(30 * Math.PI / 180);
+  const TAN60 = Math.tan(60 * Math.PI / 180);
+
+  let x = x2;
+  let y = y2;
+
+  if (ay <= ax * TAN30) y = y1;
+  else if (ay >= ax * TAN60) x = x1;
+  else {
+    const d = Math.min(ax, ay);
+    x = x1 + Math.sign(dx) * d;
+    y = y1 + Math.sign(dy) * d;
+  }
+
+  return { x, y };
+}
+
 export function drawGhostWire(wire, p) {
   const theme = getActiveTheme();
   const node = wire.fromNode;
@@ -507,15 +531,28 @@ export function drawGhostWire(wire, p) {
   p.stroke(theme.wires.ghost.hex);
   p.strokeWeight(3);
   const mouseWorld = screenToWorld(p.mouseX, p.mouseY);
+  const useSnap = p.keyIsDown(p.SHIFT);
   if (state.ghostWire && state.ghostWire.length !== 0) {
     p.line(start.x, start.y, state.ghostWire[0].x, state.ghostWire[0].y);
     const waypoint_count = state.ghostWire.length;
     for (let i = 0; i < waypoint_count - 1; i++) {
       p.line(state.ghostWire[i].x, state.ghostWire[i].y, state.ghostWire[i + 1].x, state.ghostWire[i + 1].y);
     }
-    p.line(state.ghostWire[waypoint_count - 1].x, state.ghostWire[waypoint_count - 1].y, mouseWorld.x, mouseWorld.y);
+    const x1 = state.ghostWire[waypoint_count - 1].x;
+    const y1 = state.ghostWire[waypoint_count - 1].y;
+
+    const endX = useSnap ? getOctilinearSnap(x1, y1, mouseWorld.x, mouseWorld.y).x : mouseWorld.x;
+    const endY = useSnap ? getOctilinearSnap(x1, y1, mouseWorld.x, mouseWorld.y).y : mouseWorld.y;
+    p.line(x1, y1, endX, endY);
+    
   } else {
-    p.line(start.x, start.y, mouseWorld.x, mouseWorld.y);
+    const x1 = start.x;
+    const y1 = start.y;
+
+    const endX = useSnap ? getOctilinearSnap(x1, y1, mouseWorld.x, mouseWorld.y).x : mouseWorld.x;
+    const endY = useSnap ? getOctilinearSnap(x1, y1, mouseWorld.x, mouseWorld.y).y : mouseWorld.y;
+
+    p.line(x1, y1, endX, endY);
   }
   p.stroke(0);
   p.strokeWeight(1);
