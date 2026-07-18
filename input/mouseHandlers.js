@@ -93,7 +93,11 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
             }
           }
         } else if (state.drawingWire && !state.changingWayPoint && !state.dragging) {
-          const { waypoints, cleanup } = setCustomWaypoints(p);
+          const fromNode = state.drawingWire.fromNode;
+          const startPort = fromNode.gate.type === "composite"
+            ? fromNode.getOutputPortByIndex(state.drawingWire.fromOutputIndex, fromNode.gate.outputCount)
+            : fromNode.getOutputPort();
+          const { waypoints, cleanup } = setCustomWaypoints(p, startPort);
           state.ghostWire = waypoints;
           state.ghostWireCleanup = cleanup;
         } else if (!state.drawingWire && !state.changingWayPoint && !state.dragging) {

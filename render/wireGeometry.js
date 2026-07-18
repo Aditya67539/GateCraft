@@ -1,6 +1,7 @@
 import { GRID_SIZE } from "../constants.js";
 import { isNearWaypoint } from "../input/mouseHandlers.js";
 import { screenToWorld } from "../state.js";
+import { getOctilinearSnap } from "./draw.js";
 
 export function initWire(renderNodes, wire, custom_waypoints, nodeMap) {
   let waypoints;
@@ -57,11 +58,29 @@ export function computeWayPoints(renderNodes, wire, nodeMap) {
   return waypoints;
 }
 
-export function setCustomWaypoints(p) {
+// Uses document.addEventListener instead of p5's keyPressed because p5 only
+// supports a single keyPressed callback per instance (already used by
+// keyboardHandlers.js for tool shortcuts). addEventListener is stackable
+// and can be cleanly removed on cleanup when wire drawing ends.
+export function setCustomWaypoints(p, startPort) {
   let waypoints = [];
   function onKeyDown(e) {
     if (e.key === " ") {
-      const { x: wx, y: wy } = screenToWorld(p.mouseX, p.mouseY);
+      const { x: rawX, y: rawY } = screenToWorld(p.mouseX, p.mouseY);
+      let wx = rawX;
+      let wy = rawY;
+
+      // Snap to octilinear angle when Shift is held.
+      // Reference point: last waypoint, or the wire's start port for the first one.
+      if (p.keyIsDown(p.SHIFT)) {
+        const prev = waypoints.length > 0
+          ? waypoints[waypoints.length - 1]
+          : startPort;
+        const snapped = getOctilinearSnap(prev.x, prev.y, rawX, rawY);
+        wx = snapped.x;
+        wy = snapped.y;
+      }
+
       if (waypoints.length !== 0) {
         const waypoint_count = waypoints.length;
         if (!isNearWaypoint(wx, wy, waypoints[waypoint_count - 1], p)) {
