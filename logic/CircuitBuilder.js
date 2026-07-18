@@ -63,16 +63,12 @@ export class CircuitBuilder {
    * @param {number} gateId - ID of the gate to remove
    */
   removeGate(gateId) {
-    // Find wires connected to this gate
-    const affectedWires = this.wires.filter(
-      w => w.from.id === gateId || w.to.id === gateId
-    );
-
-    // Disconnect each affected wire
-    for (const wire of affectedWires) {
-      const toGate = wire.to;
-      const index = wire.toInputIndex;
-      this.disconnectWires(toGate, index);
+    // Find wires connected to this gate and disconnect each of them
+    for (const wire of this.wires) {
+      if (wire.from.id === gateId || wire.to.id === gateId) {
+        const toGate = wire.to;
+        this.disconnectWires(toGate, wire);
+      }
     }
 
     // Remove all wires connected to this gate
@@ -112,10 +108,24 @@ export class CircuitBuilder {
    * Disconnects a wire from a gate's input. 
    * 
    * @param {Gate} toGate - Target gate whose input is being removed
-   * @param {number} removedIndex - Index of the input to remove
+   * @param {Wire} wire - Target wire that is being disconnected
    */
-  disconnectWires(toGate, removedIndex) {
-    toGate.inputs[removedIndex] = undefined;
+  disconnectWires(toGate, wire) {
+    const index = toGate.inputs.indexOf(wire);
+    if (index === -1) return;
+    if (toGate.type === "bus") {
+      toGate.inputs.splice(index, 1);
+      toGate.inputCount--;
+
+      for (const w of this.wires) {
+        if (w.to.id === toGate.id && w.toInputIndex > index) {
+          w.toInputIndex--;
+        }
+      }
+
+      return;
+    }
+    toGate.inputs[index] = undefined;
   }
 
   /**
@@ -125,9 +135,8 @@ export class CircuitBuilder {
    */
   removeWire(wire) {
     const toGate = wire.to;
-    const removedIndex = wire.toInputIndex;
 
-    this.disconnectWires(toGate, removedIndex);
+    this.disconnectWires(toGate, wire);
 
     this.wires = this.wires.filter(w => w !== wire);
     this.settle();
