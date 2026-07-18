@@ -382,9 +382,9 @@ const TRISTATEBUFFER = [
 
 const BUSTABLE = [
   //                     LOW   HIGH   X   Z     E
-  /* LOW  */ [           LOW,  E,     E,  LOW,  E ],
-  /* HIGH */ [           E,    HIGH,  E,  HIGH, E ],
-  /* X    */ [           E,    E,     X,  X,    E ],
+  /* LOW  */ [           LOW,  E,     X,  LOW,  E ],
+  /* HIGH */ [           E,    HIGH,  X,  HIGH, E ],
+  /* X    */ [           X,    X,     X,  X,    E ],
   /* Z    */ [           LOW,  HIGH,  X,  Z,    E ],
   /* E    */ [           E,    E,     E,  E,    E ],
 ]
