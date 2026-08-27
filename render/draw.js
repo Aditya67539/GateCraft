@@ -323,25 +323,6 @@ function drawEmbeddedDisplay(displayGate, x, y, width, height, p) {
   p.fill(colors[7]);
   drawHorizontalSegment(x + padding, midY - T / 2, signWidth, T, bevel, colors[7], p);
 }
-export function drawWire(renderNodes, wireInfo, nodeMap, p) {
-  const theme = getActiveTheme();
-  const ports = getWirePorts(renderNodes, wireInfo.wire, nodeMap);
-  p.strokeWeight(3);
-
-  const stateKey = SIGNAL_KEYS[wireInfo.wire.signal] || "x";
-  let color = theme.wires[stateKey].hex;
-  p.stroke(color);
-
-  const waypointCount = wireInfo.waypoints.length;
-  p.line(ports.start.x, ports.start.y, wireInfo.waypoints[0].x, wireInfo.waypoints[0].y);
-  for (let i = 0; i < waypointCount - 1; i++) {
-    p.line(wireInfo.waypoints[i].x, wireInfo.waypoints[i].y, wireInfo.waypoints[i + 1].x, wireInfo.waypoints[i + 1].y);
-  }
-  p.line(wireInfo.waypoints[waypointCount - 1].x, wireInfo.waypoints[waypointCount - 1].y, ports.end.x, ports.end.y);
-
-  p.stroke(0);
-  p.strokeWeight(1);
-}
 
 // Pin thickness at the gate end vs. the port end, scaled relative to the
 // port circle so it stays proportional across gate sizes / zoom levels.
@@ -517,43 +498,43 @@ export function getOctilinearSnap(x1, y1, x2, y2) {
   return { x, y };
 }
 
-export function drawGhostWire(wire, p) {
-  const theme = getActiveTheme();
-  const node = wire.fromNode;
-  let start;
-  if (node.gate.type === "composite") {
-    const index = wire.fromOutputIndex;
-    const outputCount = node.gate.outputCount;
-    start = node.getOutputPortByIndex(index, outputCount);
+function drawPolylineSegments(start, waypoints, end, p) {
+  if (waypoints?.length) {
+    const waypointCount = waypoints.length;
+    p.line(start.x, start.y, waypoints[0].x, waypoints[0].y);
+    for (let i = 0; i < waypointCount - 1; i++) {
+      p.line(waypoints[i].x, waypoints[i].y, waypoints[i + 1].x, waypoints[i + 1].y);
+    }
+    p.line(waypoints[waypointCount - 1].x, waypoints[waypointCount - 1].y, end.x, end.y);
   } else {
-    start = node.getOutputPort();
+    p.line(start.x, start.y, end.x, end.y);
   }
+}
+
+export function drawGhostPath(start, waypoints, end, p) {
+  const theme = getActiveTheme();
   p.stroke(theme.wires.ghost.hex);
   p.strokeWeight(3);
-  const mouseWorld = screenToWorld(p.mouseX, p.mouseY);
-  const useSnap = p.keyIsDown(p.SHIFT);
-  if (state.ghostWire && state.ghostWire.length !== 0) {
-    p.line(start.x, start.y, state.ghostWire[0].x, state.ghostWire[0].y);
-    const waypoint_count = state.ghostWire.length;
-    for (let i = 0; i < waypoint_count - 1; i++) {
-      p.line(state.ghostWire[i].x, state.ghostWire[i].y, state.ghostWire[i + 1].x, state.ghostWire[i + 1].y);
-    }
-    const x1 = state.ghostWire[waypoint_count - 1].x;
-    const y1 = state.ghostWire[waypoint_count - 1].y;
 
-    const endX = useSnap ? getOctilinearSnap(x1, y1, mouseWorld.x, mouseWorld.y).x : mouseWorld.x;
-    const endY = useSnap ? getOctilinearSnap(x1, y1, mouseWorld.x, mouseWorld.y).y : mouseWorld.y;
-    p.line(x1, y1, endX, endY);
-    
-  } else {
-    const x1 = start.x;
-    const y1 = start.y;
+  const applySnap = p.keyIsDown(p.SHIFT);
 
-    const endX = useSnap ? getOctilinearSnap(x1, y1, mouseWorld.x, mouseWorld.y).x : mouseWorld.x;
-    const endY = useSnap ? getOctilinearSnap(x1, y1, mouseWorld.x, mouseWorld.y).y : mouseWorld.y;
+  const from = waypoints?.length ? waypoints[waypoints.length - 1] : start;
+  const target = applySnap ? getOctilinearSnap(from.x, from.y, end.x, end.y) : end;
 
-    p.line(x1, y1, endX, endY);
-  }
+  drawPolylineSegments(start, waypoints, target, p);
+
+  p.stroke(0);
+  p.strokeWeight(1);
+}
+
+export function drawWire(renderNodes, wireInfo, nodeMap, p) {
+  const theme = getActiveTheme();
+  const ports = getWirePorts(renderNodes, wireInfo.wire, nodeMap);
+  const stateKey = SIGNAL_KEYS[wireInfo.wire.signal] || "x";
+  
+  p.strokeWeight(3);
+  p.stroke(theme.wires[stateKey].hex);
+  drawPolylineSegments(ports.start, wireInfo.waypoints, ports.end, p);
   p.stroke(0);
   p.strokeWeight(1);
 }

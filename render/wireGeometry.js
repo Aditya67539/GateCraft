@@ -10,7 +10,11 @@ export function initWire(renderNodes, wire, custom_waypoints, nodeMap) {
     waypoints = custom_waypoints;
     isCustomRouted = true;
   } else {
-    waypoints = computeWayPoints(renderNodes, wire, nodeMap);
+    const ports = getWirePorts(renderNodes, wire, nodeMap);
+    const spacing = (wire.toInputIndex + 1) * GRID_SIZE;
+    const startPort = { x: ports.start.x, y: ports.start.y };
+    const endPort = { x: ports.end.x, y: ports.end.y };
+    waypoints = computeWaypoints(startPort, endPort, spacing);
   }
   return { wire: wire, waypoints: waypoints, isCustomRouted: isCustomRouted };
 }
@@ -38,22 +42,19 @@ export function getWirePorts(renderNodes, wire, nodeMap) {
   return { start: start, end: end };
 }
 
-export function computeWayPoints(renderNodes, wire, nodeMap) {
-  let ports = getWirePorts(renderNodes, wire, nodeMap);
-  let spacing = (wire.toInputIndex + 1) * GRID_SIZE;
+export function computeWaypoints(startPort, endPort, spacing) {
   let waypoints = [];
-  if (ports.start.x <= ports.end.x) {
+  if (startPort.x <= endPort.x) {
     // 2 Waypoints
-    waypoints.push({ x: ports.end.x - spacing, y: ports.start.y });
-    waypoints.push({ x: ports.end.x - spacing, y: ports.end.y });
+    waypoints.push({ x: endPort.x - spacing, y: startPort.y });
+    waypoints.push({ x: endPort.x - spacing, y: endPort.y });
   } else {
     // 4 Waypoints
-    let direction = 1;
-    if (ports.start.y > ports.end.y) direction = -1;
-    waypoints.push({ x: ports.start.x + spacing, y: ports.start.y });
-    waypoints.push({ x: ports.start.x + spacing, y: ports.start.y + 3 * spacing * direction });
-    waypoints.push({ x: ports.end.x - spacing, y: ports.end.y - 3 * spacing * direction });
-    waypoints.push({ x: ports.end.x - spacing, y: ports.end.y });
+    let direction = startPort.y <= endPort.y ? 1 : -1;
+    waypoints.push({ x: startPort.x + spacing, y: startPort.y });
+    waypoints.push({ x: startPort.x + spacing, y: startPort.y + 3 * spacing * direction });
+    waypoints.push({ x: endPort.x - spacing, y: endPort.y - 3 * spacing * direction });
+    waypoints.push({ x: endPort.x - spacing, y: endPort.y });
   }
   return waypoints;
 }
