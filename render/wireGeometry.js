@@ -50,11 +50,12 @@ export function computeWaypoints(startPort, endPort, spacing) {
     waypoints.push({ x: endPort.x - spacing, y: endPort.y });
   } else {
     // 4 Waypoints
-    let direction = startPort.y <= endPort.y ? 1 : -1;
+    const corridorY = (startPort.y + endPort.y) / 2;
+
     waypoints.push({ x: startPort.x + spacing, y: startPort.y });
-    waypoints.push({ x: startPort.x + spacing, y: startPort.y + 3 * spacing * direction });
-    waypoints.push({ x: endPort.x - spacing, y: endPort.y - 3 * spacing * direction });
-    waypoints.push({ x: endPort.x - spacing, y: endPort.y });
+    waypoints.push({ x: startPort.x + spacing, y: corridorY });
+    waypoints.push({ x: endPort.x - spacing,   y: corridorY });
+    waypoints.push({ x: endPort.x - spacing,   y: endPort.y });
   }
   return waypoints;
 }
