@@ -4,6 +4,8 @@ import { CLOCK_TIMER, FREQUENCY, SIGNAL } from "../constants.js";
 import { initWire, getWirePorts, setCustomWaypoints } from "../render/wireGeometry.js";
 import { createBasicNode, createCompositeNode, rebuildNodeMap, snapPointToGrid, spawnBasicNode, wouldOverlap } from "../render/RenderPoint.js";
 import { showToast } from "../ui/toast.js";
+import { PlaceGateCommand } from "../history/commands.js";
+import { performCommand } from "../history/history.js";
 
 const { LOW, HIGH, X, Z, E } = SIGNAL;
 
@@ -129,12 +131,9 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
       }
     } else if (state.mode === "placing") {
       if (wouldOverlap(state.ghostNode, renderNodes)) return;
-      circuit.registerGate(state.ghostNode.gate);
-      renderNodes.push(state.ghostNode);
-      rebuildNodeMap(renderNodes, nodeMap);
 
-      document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
-      document.getElementById("btn-edit").classList.add("active");
+      const placeGateCommand = new PlaceGateCommand(circuit, renderNodes, state.ghostNode, nodeMap);
+      performCommand(placeGateCommand);
 
       if (event.shiftKey) {
         const gateType = state.ghostNode.gate.type;
@@ -149,6 +148,8 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
       } else {
         state.mode = "edit";
         state.ghostNode = null;
+        document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
+        document.getElementById("btn-edit").classList.add("active");
       }
     } else if (state.mode === "delete") {
       if (state.dragging) {
