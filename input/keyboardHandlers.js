@@ -1,5 +1,6 @@
 import { state } from "../state.js";
 import { changeMode, toggleSidebar } from "../ui/toolbar.js";
+import { undo, redo } from "../history/history.js";
 
 function buildKeyCombo(p) {
   const parts = [];
@@ -20,6 +21,8 @@ export function registerKeyboardHandlers(p, circuit, renderNodes, wires, actions
     "control+s": () => actions.openSaveModal(),
     "control+shift+x": () => actions.openWarningModal(),
     "control+,": () => actions.openSettings(),
+    "control+z": () => undo(),
+    "control+shift+z": () => redo(),
   }
 
   p.keyPressed = function (event) {
@@ -27,7 +30,10 @@ export function registerKeyboardHandlers(p, circuit, renderNodes, wires, actions
     if (document.activeElement?.tagName === "INPUT" && event.key !== "Escape") return;
 
     const combo = buildKeyCombo(p);
-    shortcuts[combo]?.();
+    if (shortcuts[combo]) {
+      event.preventDefault();
+      shortcuts[combo]();
+    }
   };
 
   // 2. Native Global Escape Listener
