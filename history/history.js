@@ -3,9 +3,11 @@ const redoStack = [];
 
 
 export function performCommand(command) {
-  command.do();
-  undoStack.push(command);
-  redoStack.length = 0;
+  const executed = command.do();
+  if (executed) {
+    undoStack.push(command);
+    redoStack.length = 0;
+  }
 }
 
 export function undo() {
@@ -20,8 +22,10 @@ export function redo() {
   if (redoStack.length === 0) return;
 
   const command = redoStack.pop();
-  command.do();
-  undoStack.push(command);
+  const executed = command.do();
+  if (executed) {
+    undoStack.push(command);
+  }
 }
 
 export function canUndo() {
