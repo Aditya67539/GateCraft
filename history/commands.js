@@ -39,3 +39,36 @@ export class PlaceGateCommand {
     rebuildNodeMap(this.renderNodes, this.nodeMap);
   }
 }
+
+
+/** @implements {Command} */
+export class ConnectWireCommand {
+  constructor(circuit, fromGate, toGate, inputIndex, outputIndex, ghostWire, renderNodes, nodeMap, wires) {
+    this.circuit = circuit;
+    this.fromGate = fromGate;
+    this.toGate = toGate;
+    this.inputIndex = inputIndex;
+    this.outputIndex = outputIndex;
+    this.ghostWire = ghostWire;
+    this.renderNodes = renderNodes;
+    this.nodeMap = nodeMap;
+    this.wires = wires;
+  }
+
+  do() {
+    const result = this.circuit.connectGates(this.fromGate, this.toGate, this.inputIndex, this.outputIndex);
+    if (!result.ok) {
+      showToast(result.error, { type: "error" });
+      return false;
+    }
+    let wire = result.wire;
+    this.wireInfo = initWire(this.renderNodes, wire, this.ghostWire, this.nodeMap);
+    this.wires.push(this.wireInfo);
+    return true;
+  }
+
+  undo() {
+    this.circuit.removeWire(this.wireInfo.wire);
+    this.wires.splice(this.wires.indexOf(this.wireInfo), 1);
+  }
+}

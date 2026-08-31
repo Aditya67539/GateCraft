@@ -4,7 +4,7 @@ import { CLOCK_TIMER, FREQUENCY, SIGNAL } from "../constants.js";
 import { initWire, getWirePorts, setCustomWaypoints } from "../render/wireGeometry.js";
 import { createBasicNode, createCompositeNode, rebuildNodeMap, snapPointToGrid, spawnBasicNode, wouldOverlap } from "../render/RenderPoint.js";
 import { showToast } from "../ui/toast.js";
-import { PlaceGateCommand } from "../history/commands.js";
+import { ConnectWireCommand, PlaceGateCommand } from "../history/commands.js";
 import { performCommand } from "../history/history.js";
 
 const { LOW, HIGH, X, Z, E } = SIGNAL;
@@ -42,14 +42,19 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
           }
           const fromGate = state.drawingWire.fromNode.gate;
           const toGate = wireConnection.toNode.gate;
-          let result = circuit.connectGates(fromGate, toGate, inputIndex, outputIndex);
-          if (!result.ok) {
-            showToast(result.error, { type: "error" });
-            return;
-          };
-          let wire = result.wire;
-          let wireInfo = initWire(renderNodes, wire, state.ghostWire, nodeMap);
-          wires.push(wireInfo);
+
+          const connectWireCommand = new ConnectWireCommand(
+            circuit,
+            fromGate,
+            toGate,
+            inputIndex,
+            outputIndex,
+            state.ghostWire,
+            renderNodes,
+            nodeMap,
+            wires,
+          );
+          performCommand(connectWireCommand);
         }
         state.drawingWire = null;
         cleanupGhostWire();
