@@ -4,7 +4,7 @@ import { CLOCK_TIMER, FREQUENCY, SIGNAL } from "../constants.js";
 import { initWire, getWirePorts, setCustomWaypoints } from "../render/wireGeometry.js";
 import { createBasicNode, createCompositeNode, rebuildNodeMap, snapPointToGrid, spawnBasicNode, wouldOverlap } from "../render/RenderPoint.js";
 import { showToast } from "../ui/toast.js";
-import { ConnectWireCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand } from "../history/commands.js";
+import { ConnectWireCommand, MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand } from "../history/commands.js";
 import { performCommand } from "../history/history.js";
 
 const { LOW, HIGH, X, Z, E } = SIGNAL;
@@ -225,14 +225,25 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
   }
 
   p.mouseReleased = function () {
-    if (state.dragging && wouldOverlap(state.dragging, renderNodes, state.dragging.gate.id)) {
-      state.dragging.x = state.currentX;
-      state.dragging.y = state.currentY;
-      if (state.connectedWires && state.connectedWiresWaypoints) {
-        for (let i = 0; i < state.connectedWires.length; i++) {
-          const waypoints = state.connectedWiresWaypoints.get(state.connectedWires[i].wire.wire.id);
-          state.connectedWires[i].wire.waypoints = waypoints;
+    if (state.dragging) {
+      if (wouldOverlap(state.dragging, renderNodes, state.dragging.gate.id)) {
+        state.dragging.x = state.currentX;
+        state.dragging.y = state.currentY;
+        if (state.connectedWires && state.connectedWiresWaypoints) {
+          for (let i = 0; i < state.connectedWires.length; i++) {
+            const waypoints = state.connectedWiresWaypoints.get(state.connectedWires[i].wire.wire.id);
+            state.connectedWires[i].wire.waypoints = waypoints;
+          }
         }
+      } else {
+        const moveNodeCommand = new MoveNodeCommand(
+          state.dragging,
+          state.currentX,
+          state.currentY,
+          state.dragging.x,
+          state.dragging.y,
+        );
+        performCommand(moveNodeCommand);
       }
     }
     state.dragging = null;

@@ -152,3 +152,26 @@ export class RemoveWireCommand {
     this.wires.push(this.wireInfo);
   }
 }
+
+
+/** @implements {Command} */
+export class MoveNodeCommand {
+  constructor(node, fromX, fromY, toX, toY) {
+    this.node = node;
+    this.fromX = fromX;
+    this.fromY = fromY;
+    this.toX = toX;
+    this.toY = toY;
+  }
+
+  do() {
+    this.node.x = this.toX;
+    this.node.y = this.toY;
+    return true;
+  }
+
+  undo() {
+    this.node.x = this.fromX;
+    this.node.y = this.fromY;
+  }
+}
