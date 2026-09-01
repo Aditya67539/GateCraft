@@ -7,7 +7,7 @@ import { showToast } from "../ui/toast.js";
  * @property {function(): boolean} do - Applies the change. Returns true if
  *   the change was applied, false if it was rejected (e.g. failed validation).
  *   A false return means the command must NOT be pushed onto the undo stack. 
- * @property {function(): boolean} undo - Reverses a change previously applied
+ * @property {function(): void} undo - Reverses a change previously applied
  *   by do(). Must fully undo do()'s effects, including any derived state
  *   that do() caused to be recomputed. 
  */
