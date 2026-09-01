@@ -235,7 +235,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
             state.connectedWires[i].wire.waypoints = waypoints;
           }
         }
-      } else {
+      } else if (state.changingPos) {
         const moveNodeCommand = new MoveNodeCommand(
           state.dragging,
           state.currentX,
