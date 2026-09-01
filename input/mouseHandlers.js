@@ -4,7 +4,7 @@ import { CLOCK_TIMER, FREQUENCY, SIGNAL } from "../constants.js";
 import { initWire, getWirePorts, setCustomWaypoints } from "../render/wireGeometry.js";
 import { createBasicNode, createCompositeNode, rebuildNodeMap, snapPointToGrid, spawnBasicNode, wouldOverlap } from "../render/RenderPoint.js";
 import { showToast } from "../ui/toast.js";
-import { ConnectWireCommand, PlaceGateCommand, RemoveWireCommand } from "../history/commands.js";
+import { ConnectWireCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand } from "../history/commands.js";
 import { performCommand } from "../history/history.js";
 
 const { LOW, HIGH, X, Z, E } = SIGNAL;
@@ -158,19 +158,17 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
       }
     } else if (state.mode === "delete") {
       if (state.dragging) {
-        const nodeId = renderNodes.indexOf(state.dragging);
-        const gateId = state.dragging.gate.id;
-
-        circuit.removeGate(gateId);
-        renderNodes.splice(nodeId, 1);
-
-        const toRemove = wires.filter(n => n.wire.from.id === state.dragging.gate.id || n.wire.to.id === state.dragging.gate.id);
-        toRemove.forEach(w => wires.splice(wires.indexOf(w), 1));
+        const removeGateCommand = new RemoveGateCommand(
+          renderNodes,
+          wires,
+          circuit,
+          state.dragging,
+          nodeMap,
+        );
+        performCommand(removeGateCommand);
 
         if (state.selectedNode === state.dragging) state.selectedNode = null;
         state.dragging = null;
-
-        rebuildNodeMap(renderNodes, nodeMap);
       } else {
         const wireInfo = getWireAtPoint(world.x, world.y, renderNodes, wires, nodeMap);
         if (wireInfo) {

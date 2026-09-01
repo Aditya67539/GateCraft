@@ -42,6 +42,57 @@ export class PlaceGateCommand {
 
 
 /** @implements {Command} */
+export class RemoveGateCommand {
+  constructor(renderNodes, wires, circuit, node, nodeMap) {
+    this.renderNodes = renderNodes;
+    this.wires = wires;
+    this.circuit = circuit;
+    this.node = node;
+    this.nodeMap = nodeMap;
+  }
+
+  do() {
+    const nodeIndex = this.renderNodes.indexOf(this.node);
+    const gateId = this.node.gate.id;
+
+    const wiresToRemove = this.wires.filter(n => n.wire.from.id === gateId || n.wire.to.id === gateId);
+
+    this.circuit.removeGate(gateId);
+    this.renderNodes.splice(nodeIndex, 1);
+    
+    wiresToRemove.forEach(w => this.wires.splice(this.wires.indexOf(w), 1));
+
+    rebuildNodeMap(this.renderNodes, this.nodeMap);
+    this.wiresRemoved = wiresToRemove;
+    return true;
+  }
+
+  undo() {
+    this.circuit.registerGate(this.node.gate);
+    this.renderNodes.push(this.node);
+
+    for (const w of this.wiresRemoved) {
+      const fromGate = w.wire.from;
+      const toGate = w.wire.to;
+      const inputIndex = w.wire.toInputIndex;
+      const outputIndex = w.wire.fromOutputIndex;
+
+      const result = this.circuit.connectGates(fromGate, toGate, inputIndex, outputIndex);
+      if (!result.ok) {
+        showToast(result.error, { type: "error" });
+        continue;
+      }
+
+      w.wire = result.wire;
+      this.wires.push(w);
+    }
+
+    rebuildNodeMap(this.renderNodes, this.nodeMap);
+  }
+}
+
+
+/** @implements {Command} */
 export class ConnectWireCommand {
   constructor(circuit, fromGate, toGate, inputIndex, outputIndex, ghostWire, renderNodes, nodeMap, wires) {
     this.circuit = circuit;
