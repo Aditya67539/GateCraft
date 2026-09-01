@@ -4,7 +4,7 @@ import { CLOCK_TIMER, FREQUENCY, SIGNAL } from "../constants.js";
 import { initWire, getWirePorts, setCustomWaypoints } from "../render/wireGeometry.js";
 import { createBasicNode, createCompositeNode, rebuildNodeMap, snapPointToGrid, spawnBasicNode, wouldOverlap } from "../render/RenderPoint.js";
 import { showToast } from "../ui/toast.js";
-import { ConnectWireCommand, PlaceGateCommand } from "../history/commands.js";
+import { ConnectWireCommand, PlaceGateCommand, RemoveWireCommand } from "../history/commands.js";
 import { performCommand } from "../history/history.js";
 
 const { LOW, HIGH, X, Z, E } = SIGNAL;
@@ -174,8 +174,8 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
       } else {
         const wireInfo = getWireAtPoint(world.x, world.y, renderNodes, wires, nodeMap);
         if (wireInfo) {
-          circuit.removeWire(wireInfo.wire);
-          wires.splice(wires.indexOf(wireInfo), 1);
+          const removeWireCommand = new RemoveWireCommand(circuit, wires, wireInfo);
+          performCommand(removeWireCommand);
         }
       }
     }

@@ -72,3 +72,32 @@ export class ConnectWireCommand {
     this.wires.splice(this.wires.indexOf(this.wireInfo), 1);
   }
 }
+
+
+/** @implements {Command} */
+export class RemoveWireCommand {
+  constructor(circuit, wires, wireInfo) {
+    this.circuit = circuit;
+    this.wires = wires;
+    this.wireInfo = wireInfo;
+  }
+
+  do() {
+    this.circuit.removeWire(this.wireInfo.wire);
+    this.wires.splice(this.wires.indexOf(this.wireInfo), 1);
+    return true;
+  }
+
+  undo() {
+    const fromGate = this.wireInfo.wire.from;
+    const toGate = this.wireInfo.wire.to;
+    const inputIndex = this.wireInfo.wire.toInputIndex;
+    const outputIndex = this.wireInfo.wire.fromOutputIndex;
+
+    const result = this.circuit.connectGates(fromGate, toGate, inputIndex, outputIndex);
+    if (!result.ok) return;
+
+    this.wireInfo.wire = result.wire;
+    this.wires.push(this.wireInfo);
+  }
+}
