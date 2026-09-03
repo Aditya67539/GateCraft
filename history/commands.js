@@ -104,6 +104,7 @@ export class ConnectWireCommand {
     this.renderNodes = renderNodes;
     this.nodeMap = nodeMap;
     this.wires = wires;
+    this.wireInfo = null;
   }
 
   do() {
@@ -113,7 +114,12 @@ export class ConnectWireCommand {
       return false;
     }
     let wire = result.wire;
-    this.wireInfo = initWire(this.renderNodes, wire, this.ghostWire, this.nodeMap);
+
+    if (this.wireInfo !== null) {
+      this.wireInfo.wire = result.wire;
+    } else {
+      this.wireInfo = initWire(this.renderNodes, wire, this.ghostWire, this.nodeMap);
+    }
     this.wires.push(this.wireInfo);
     return true;
   }
