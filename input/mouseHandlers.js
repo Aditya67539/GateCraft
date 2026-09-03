@@ -60,17 +60,17 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
         cleanupGhostWire();
       } else {
         state.drawingWire = findNearOutputPort(world.x, world.y, p, renderNodes);
-        state.changingWayPoint = findNearWaypoint(world.x, world.y, p, wires);
+        state.changingWaypoint = findNearWaypoint(world.x, world.y, p, wires);
 
         // ── Update persistent selection ──────────────────────────
         if (state.dragging) {
           state.selectedNode = state.dragging;
-        } else if (!state.drawingWire && !state.changingWayPoint) {
+        } else if (!state.drawingWire && !state.changingWaypoint) {
           // Clicked empty space or a wire — deselect
           state.selectedNode = null;
         }
 
-        if (!state.drawingWire && !state.changingWayPoint && state.dragging) {
+        if (!state.drawingWire && !state.changingWaypoint && state.dragging) {
           const { x, y } = snapPointToGrid(world.x, world.y);
           state.offsetX = x - state.dragging.x;
           state.offsetY = y - state.dragging.y;
@@ -99,7 +99,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
               });
             }
           }
-        } else if (state.drawingWire && !state.changingWayPoint && !state.dragging) {
+        } else if (state.drawingWire && !state.changingWaypoint && !state.dragging) {
           const fromNode = state.drawingWire.fromNode;
           const startPort = fromNode.gate.type === "composite"
             ? fromNode.getOutputPortByIndex(state.drawingWire.fromOutputIndex, fromNode.gate.outputCount)
@@ -107,7 +107,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
           const { waypoints, cleanup } = setCustomWaypoints(p, startPort);
           state.ghostWire = waypoints;
           state.ghostWireCleanup = cleanup;
-        } else if (!state.drawingWire && !state.changingWayPoint && !state.dragging) {
+        } else if (!state.drawingWire && !state.changingWaypoint && !state.dragging) {
           state.isPanning = true;
         }
       }
@@ -210,11 +210,11 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
             }
           }
         }
-      } else if (state.changingWayPoint) {
-        state.changingWayPoint.waypoint.x = worldDrag.x;
-        state.changingWayPoint.waypoint.y = worldDrag.y;
-        if (state.changingWayPoint.otherWaypoint) {
-          state.changingWayPoint.otherWaypoint.x = state.changingWayPoint.waypoint.x;
+      } else if (state.changingWaypoint) {
+        state.changingWaypoint.waypoint.x = worldDrag.x;
+        state.changingWaypoint.waypoint.y = worldDrag.y;
+        if (state.changingWaypoint.otherWaypoint) {
+          state.changingWaypoint.otherWaypoint.x = state.changingWaypoint.waypoint.x;
         }
       } else if (state.isPanning) {
         state.cameraX += (p.mouseX - p.pmouseX);
