@@ -3,11 +3,11 @@ import { isNearWaypoint } from "../input/mouseHandlers.js";
 import { screenToWorld } from "../state.js";
 import { getOctilinearSnap } from "./draw.js";
 
-export function initWire(renderNodes, wire, custom_waypoints, nodeMap) {
+export function initWire(renderNodes, wire, customWaypoints, nodeMap) {
   let waypoints;
   let isCustomRouted = false;
-  if (custom_waypoints && custom_waypoints.length !== 0) {
-    waypoints = custom_waypoints;
+  if (customWaypoints && customWaypoints.length !== 0) {
+    waypoints = customWaypoints;
     isCustomRouted = true;
   } else {
     const ports = getWirePorts(renderNodes, wire, nodeMap);
