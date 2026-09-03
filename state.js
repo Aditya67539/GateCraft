@@ -14,7 +14,7 @@ const _state = {
   drawingWire: null,
   changingWayPoint: null,
   connectedWires: null,
-  connectedWiresWaypoints: null,
+  connectedWireSnapshot: null,
   labelEditing: false,
   isAnyModalOpen: false,
   cameraX: 0,

@@ -162,22 +162,34 @@ export class RemoveWireCommand {
 
 /** @implements {Command} */
 export class MoveNodeCommand {
-  constructor(node, fromX, fromY, toX, toY) {
+  constructor(node, fromX, fromY, toX, toY, connectedWires, waypointSnapshot) {
     this.node = node;
     this.fromX = fromX;
     this.fromY = fromY;
     this.toX = toX;
     this.toY = toY;
+    this.connectedWires = connectedWires;
+    this.waypointSnapshot = waypointSnapshot;
   }
 
   do() {
     this.node.x = this.toX;
     this.node.y = this.toY;
+    if (this.connectedWires && this.waypointSnapshot?.toWaypoints) {
+      for (let i = 0; i < this.connectedWires.length; i++) {
+        this.connectedWires[i].wire.waypoints = this.waypointSnapshot.toWaypoints[i].map(wp => ({ ...wp }));
+      }
+    }
     return true;
   }
 
   undo() {
     this.node.x = this.fromX;
     this.node.y = this.fromY;
+    if (this.connectedWires && this.waypointSnapshot?.fromWaypoints) {
+      for (let i = 0; i < this.connectedWires.length; i++) {
+        this.connectedWires[i].wire.waypoints = this.waypointSnapshot.fromWaypoints[i].map(wp => ({ ...wp }));
+      }
+    }
   }
 }
