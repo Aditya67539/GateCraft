@@ -4,6 +4,8 @@ import { CLOCK_TIMER, FREQUENCY, SIGNAL } from "../constants.js";
 import { initWire, getWirePorts, setCustomWaypoints } from "../render/wireGeometry.js";
 import { createBasicNode, createCompositeNode, rebuildNodeMap, snapPointToGrid, spawnBasicNode, wouldOverlap } from "../render/RenderPoint.js";
 import { showToast } from "../ui/toast.js";
+import { ConnectWireCommand, MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand } from "../history/commands.js";
+import { performCommand } from "../history/history.js";
 
 const { LOW, HIGH, X, Z, E } = SIGNAL;
 
@@ -40,30 +42,35 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
           }
           const fromGate = state.drawingWire.fromNode.gate;
           const toGate = wireConnection.toNode.gate;
-          let result = circuit.connectGates(fromGate, toGate, inputIndex, outputIndex);
-          if (!result.ok) {
-            showToast(result.error, { type: "error" });
-            return;
-          };
-          let wire = result.wire;
-          let wireInfo = initWire(renderNodes, wire, state.ghostWire, nodeMap);
-          wires.push(wireInfo);
+
+          const connectWireCommand = new ConnectWireCommand(
+            circuit,
+            fromGate,
+            toGate,
+            inputIndex,
+            outputIndex,
+            state.ghostWire,
+            renderNodes,
+            nodeMap,
+            wires,
+          );
+          performCommand(connectWireCommand);
         }
         state.drawingWire = null;
         cleanupGhostWire();
       } else {
         state.drawingWire = findNearOutputPort(world.x, world.y, p, renderNodes);
-        state.changingWayPoint = findNearWaypoint(world.x, world.y, p, wires);
+        state.changingWaypoint = findNearWaypoint(world.x, world.y, p, wires);
 
         // ── Update persistent selection ──────────────────────────
         if (state.dragging) {
           state.selectedNode = state.dragging;
-        } else if (!state.drawingWire && !state.changingWayPoint) {
+        } else if (!state.drawingWire && !state.changingWaypoint) {
           // Clicked empty space or a wire — deselect
           state.selectedNode = null;
         }
 
-        if (!state.drawingWire && !state.changingWayPoint && state.dragging) {
+        if (!state.drawingWire && !state.changingWaypoint && state.dragging) {
           const { x, y } = snapPointToGrid(world.x, world.y);
           state.offsetX = x - state.dragging.x;
           state.offsetY = y - state.dragging.y;
@@ -92,7 +99,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
               });
             }
           }
-        } else if (state.drawingWire && !state.changingWayPoint && !state.dragging) {
+        } else if (state.drawingWire && !state.changingWaypoint && !state.dragging) {
           const fromNode = state.drawingWire.fromNode;
           const startPort = fromNode.gate.type === "composite"
             ? fromNode.getOutputPortByIndex(state.drawingWire.fromOutputIndex, fromNode.gate.outputCount)
@@ -100,8 +107,11 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
           const { waypoints, cleanup } = setCustomWaypoints(p, startPort);
           state.ghostWire = waypoints;
           state.ghostWireCleanup = cleanup;
-        } else if (!state.drawingWire && !state.changingWayPoint && !state.dragging) {
+        } else if (!state.drawingWire && !state.changingWaypoint && !state.dragging) {
           state.isPanning = true;
+        } else if (state.changingWaypoint) {
+          state.waypointSnapshot = {};
+          state.waypointSnapshot.fromWaypoint = structuredClone(state.changingWaypoint);
         }
       }
     } else if (state.mode === "run") {
@@ -129,12 +139,9 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
       }
     } else if (state.mode === "placing") {
       if (wouldOverlap(state.ghostNode, renderNodes)) return;
-      circuit.registerGate(state.ghostNode.gate);
-      renderNodes.push(state.ghostNode);
-      rebuildNodeMap(renderNodes, nodeMap);
 
-      document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
-      document.getElementById("btn-edit").classList.add("active");
+      const placeGateCommand = new PlaceGateCommand(circuit, renderNodes, state.ghostNode, nodeMap);
+      performCommand(placeGateCommand);
 
       if (event.shiftKey) {
         const gateType = state.ghostNode.gate.type;
@@ -149,27 +156,27 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
       } else {
         state.mode = "edit";
         state.ghostNode = null;
+        document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
+        document.getElementById("btn-edit").classList.add("active");
       }
     } else if (state.mode === "delete") {
       if (state.dragging) {
-        const nodeId = renderNodes.indexOf(state.dragging);
-        const gateId = state.dragging.gate.id;
-
-        circuit.removeGate(gateId);
-        renderNodes.splice(nodeId, 1);
-
-        const toRemove = wires.filter(n => n.wire.from.id === state.dragging.gate.id || n.wire.to.id === state.dragging.gate.id);
-        toRemove.forEach(w => wires.splice(wires.indexOf(w), 1));
+        const removeGateCommand = new RemoveGateCommand(
+          renderNodes,
+          wires,
+          circuit,
+          state.dragging,
+          nodeMap,
+        );
+        performCommand(removeGateCommand);
 
         if (state.selectedNode === state.dragging) state.selectedNode = null;
         state.dragging = null;
-
-        rebuildNodeMap(renderNodes, nodeMap);
       } else {
         const wireInfo = getWireAtPoint(world.x, world.y, renderNodes, wires, nodeMap);
         if (wireInfo) {
-          circuit.removeWire(wireInfo.wire);
-          wires.splice(wires.indexOf(wireInfo), 1);
+          const removeWireCommand = new RemoveWireCommand(circuit, wires, wireInfo);
+          performCommand(removeWireCommand);
         }
       }
     }
@@ -184,13 +191,12 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
           state.currentY = state.dragging.y;
           state.changingPos = true;
           if (state.connectedWires) {
-            state.connectedWiresWaypoints = new Map();
-            for (let i = 0; i < state.connectedWires.length; i++) {
-              const wireId = state.connectedWires[i].wire.wire.id;
-              const waypoints = state.connectedWires[i].wire.waypoints.map(wp => ({ ...wp }));
-              state.connectedWiresWaypoints.set(wireId, waypoints);
-            }
+            state.connectedWireSnapshots = {};
+            state.connectedWireSnapshots.fromWaypoints = state.connectedWires.map(cw =>
+              cw.wire.waypoints.map(wp => ({ ...wp }))
+            );
           }
+
         }
         const { x, y } = snapPointToGrid(worldDrag.x, worldDrag.y);
         state.dragging.x = x - state.offsetX;
@@ -207,11 +213,11 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
             }
           }
         }
-      } else if (state.changingWayPoint) {
-        state.changingWayPoint.waypoint.x = worldDrag.x;
-        state.changingWayPoint.waypoint.y = worldDrag.y;
-        if (state.changingWayPoint.otherWaypoint) {
-          state.changingWayPoint.otherWaypoint.x = state.changingWayPoint.waypoint.x;
+      } else if (state.changingWaypoint) {
+        state.changingWaypoint.waypoint.x = worldDrag.x;
+        state.changingWaypoint.waypoint.y = worldDrag.y;
+        if (state.changingWaypoint.otherWaypoint) {
+          state.changingWaypoint.otherWaypoint.x = state.changingWaypoint.waypoint.x;
         }
       } else if (state.isPanning) {
         state.cameraX += (p.mouseX - p.pmouseX);
@@ -221,15 +227,39 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
   }
 
   p.mouseReleased = function () {
-    if (state.dragging && wouldOverlap(state.dragging, renderNodes, state.dragging.gate.id)) {
-      state.dragging.x = state.currentX;
-      state.dragging.y = state.currentY;
-      if (state.connectedWires && state.connectedWiresWaypoints) {
-        for (let i = 0; i < state.connectedWires.length; i++) {
-          const waypoints = state.connectedWiresWaypoints.get(state.connectedWires[i].wire.wire.id);
-          state.connectedWires[i].wire.waypoints = waypoints;
+    if (state.dragging) {
+      if (wouldOverlap(state.dragging, renderNodes, state.dragging.gate.id)) {
+        state.dragging.x = state.currentX;
+        state.dragging.y = state.currentY;
+        if (state.connectedWires && state.connectedWireSnapshots) {
+          for (let i = 0; i < state.connectedWires.length; i++) {
+            state.connectedWires[i].wire.waypoints = state.connectedWireSnapshots.fromWaypoints[i].map(wp => ({ ...wp }));
+          }
         }
+      } else if (state.changingPos) {
+        if (state.connectedWires) {
+          state.connectedWireSnapshots.toWaypoints = state.connectedWires.map(cw =>
+            cw.wire.waypoints.map(wp => ({ ...wp }))
+          );
+        }
+        const moveNodeCommand = new MoveNodeCommand(
+          state.dragging,
+          state.currentX,
+          state.currentY,
+          state.dragging.x,
+          state.dragging.y,
+          state.connectedWires,
+          state.connectedWireSnapshots,
+        );
+        performCommand(moveNodeCommand);
       }
+    } else if (state.changingWaypoint) {
+      state.waypointSnapshot.toWaypoint = structuredClone(state.changingWaypoint);
+      const changeWaypointCommand = new ChangeWaypointCommand(
+        state.waypointSnapshot,
+        state.changingWaypoint,
+      );
+      performCommand(changeWaypointCommand);
     }
     state.dragging = null;
     state.offsetX = 0;
@@ -238,8 +268,9 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
     state.currentX = 0;
     state.currentY = 0;
     state.changingPos = false;
-    state.connectedWiresWaypoints = null;
+    state.connectedWireSnapshots = null;
     state.isPanning = false;
+    state.waypointSnapshot = null;
   }
 
   p.mouseWheel = function(event) {
