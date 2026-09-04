@@ -13,6 +13,7 @@ const _state = {
   changingPos: false,
   drawingWire: null,
   changingWayPoint: null,
+  waypointSnapshot: null,
   connectedWires: null,
   connectedWireSnapshot: null,
   labelEditing: false,

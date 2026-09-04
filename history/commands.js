@@ -193,3 +193,34 @@ export class MoveNodeCommand {
     }
   }
 }
+
+
+/** @implements {Command} */
+export class ChangeWaypointCommand {
+  constructor(waypointSnapshot, changingWaypoint) {
+    this.waypointSnapshot = waypointSnapshot;
+    this.fromWaypoint = this.waypointSnapshot.fromWaypoint;
+    this.toWaypoint = this.waypointSnapshot.toWaypoint;
+    this.liveWaypoint = changingWaypoint.waypoint;
+    this.liveOtherWaypoint = changingWaypoint.otherWaypoint;
+  }
+
+  do() {
+    this.liveWaypoint.x = this.toWaypoint.waypoint.x;
+    this.liveWaypoint.y = this.toWaypoint.waypoint.y;
+    if (this.liveOtherWaypoint && this.toWaypoint.otherWaypoint) {
+      this.liveOtherWaypoint.x = this.toWaypoint.otherWaypoint.x;
+      this.liveOtherWaypoint.y = this.toWaypoint.otherWaypoint.y;
+    }
+    return true;
+  }
+
+  undo() {
+    this.liveWaypoint.x = this.fromWaypoint.waypoint.x;
+    this.liveWaypoint.y = this.fromWaypoint.waypoint.y;
+    if (this.liveOtherWaypoint && this.fromWaypoint.otherWaypoint) {
+      this.liveOtherWaypoint.x = this.fromWaypoint.otherWaypoint.x;
+      this.liveOtherWaypoint.y = this.fromWaypoint.otherWaypoint.y;
+    }
+  }
+}

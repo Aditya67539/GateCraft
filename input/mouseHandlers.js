@@ -4,7 +4,7 @@ import { CLOCK_TIMER, FREQUENCY, SIGNAL } from "../constants.js";
 import { initWire, getWirePorts, setCustomWaypoints } from "../render/wireGeometry.js";
 import { createBasicNode, createCompositeNode, rebuildNodeMap, snapPointToGrid, spawnBasicNode, wouldOverlap } from "../render/RenderPoint.js";
 import { showToast } from "../ui/toast.js";
-import { ConnectWireCommand, MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand } from "../history/commands.js";
+import { ConnectWireCommand, MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand } from "../history/commands.js";
 import { performCommand } from "../history/history.js";
 
 const { LOW, HIGH, X, Z, E } = SIGNAL;
@@ -109,6 +109,9 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
           state.ghostWireCleanup = cleanup;
         } else if (!state.drawingWire && !state.changingWaypoint && !state.dragging) {
           state.isPanning = true;
+        } else if (state.changingWaypoint) {
+          state.waypointSnapshot = {};
+          state.waypointSnapshot.fromWaypoint = structuredClone(state.changingWaypoint);
         }
       }
     } else if (state.mode === "run") {
@@ -250,6 +253,13 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
         );
         performCommand(moveNodeCommand);
       }
+    } else if (state.changingWaypoint) {
+      state.waypointSnapshot.toWaypoint = structuredClone(state.changingWaypoint);
+      const changeWaypointCommand = new ChangeWaypointCommand(
+        state.waypointSnapshot,
+        state.changingWaypoint,
+      );
+      performCommand(changeWaypointCommand);
     }
     state.dragging = null;
     state.offsetX = 0;
@@ -260,6 +270,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
     state.changingPos = false;
     state.connectedWireSnapshots = null;
     state.isPanning = false;
+    state.waypointSnapshot = null;
   }
 
   p.mouseWheel = function(event) {
