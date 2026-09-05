@@ -1,6 +1,10 @@
 import p5 from "p5";
 import { state, screenToWorld } from "./state.js";
+<<<<<<< HEAD
 import { drawGate, drawWaypoint, drawWire, drawPortTooltip, setFont, drawDynamicGrid, drawGhostPath } from "./render/draw.js";
+=======
+import { drawGate, drawWaypoint, drawGhostWire, drawWire, drawPortTooltip, setFont, drawDynamicGrid, drawBus, drawGhostBus } from "./render/draw.js";
+>>>>>>> aafa5d5 (feat: implement bus placement and rendering)
 import { registerMouseHandlers, isNearWaypoint, isNearPort } from "./input/mouseHandlers.js";
 import { initToolbar } from "./ui/toolbar.js";
 import { getActiveTheme, applyTheme } from "./render/theme.js";
@@ -21,6 +25,7 @@ const HEIGHT = canvasHost.clientHeight;
 
 let renderNodes = [];
 let wires = [];
+let busNodes = [];
 let circuit = new CircuitBuilder();
 
 // ── Port tooltip hover state ──────────────────────────────────
@@ -40,7 +45,7 @@ const sketch = (p) => {
     cnv.parent(canvasHost);
     const toolbarActions = initToolbar(p, circuit, renderNodes, wires);
 
-    registerMouseHandlers(p, circuit, renderNodes, wires);
+    registerMouseHandlers(p, circuit, renderNodes, wires, busNodes);
     registerKeyboardHandlers(p, circuit, renderNodes, wires, toolbarActions);
 
     const theme = getActiveTheme();    
@@ -70,6 +75,10 @@ const sketch = (p) => {
         nodeStatus = "selected";
       }
       drawGate(renderNodes[i], p, nodeStatus);
+    }
+
+    for (let i = 0; i < busNodes.length; i++) {
+      drawBus(busNodes[i], p);
     }
 
     // ── Detect hovered port for tooltip ──────────────────────
@@ -161,6 +170,20 @@ const sketch = (p) => {
         state.ghostNode.y = y;
       }
     }
+    if (state.ghostBus) {
+      drawGhostBus(state.ghostBus, p);
+      if (state.mode === "placing") {
+        const { x: worldMouseX, y: worldMouseY } = screenToWorld(p.mouseX, p.mouseY);
+        const { x, y } = snapPointToGrid(worldMouseX, worldMouseY);
+        if (!state.ghostBus.startPointPlaced && !state.ghostBus.endPointPlaced) {
+          state.ghostBus.startPoint.x = state.ghostBus.endPoint.x = x;
+          state.ghostBus.startPoint.y = state.ghostBus.endPoint.y = y;
+        } else if (state.ghostBus.startPointPlaced && !state.ghostBus.endPointPlaced) {
+          state.ghostBus.endPoint.x = x;
+          state.ghostBus.endPoint.y = y;
+        }
+      }
+    }
     if (state.drawingWire) {
       const outputIndex = state.drawingWire.fromOutputIndex;
       const totalOutputs = state.drawingWire.fromNode.gate.outputCount;
@@ -181,6 +204,7 @@ const sketch = (p) => {
       drawPortTooltip(tooltipState.label, tooltipState.port, tooltipState.opacity, tooltipState.portType, p);
     }
 
+    // TODO: Render buses in the minimap
     drawMinimap(p, renderNodes, state);
   }
 }

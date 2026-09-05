@@ -16,9 +16,17 @@ function cleanupGhostWire() {
   state.ghostWire = null;
 }
 
+function cleanupGhostBus() {
+  if (state.ghostBusCleanup) {
+    state.ghostBusCleanup();
+    state.ghostBusCleanup = null;
+  }
+  state.ghostBus = null;
+}
+
 export const nodeMap = new Map();
 
-export function registerMouseHandlers(p, circuit, renderNodes, wires) {
+export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) {
   p.mousePressed = function (event) {
     if (state.labelEditing) return;
     if (state.justPlacedFromToolbar) {
@@ -135,26 +143,59 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
         }, CLOCK_TIMER);
       }
     } else if (state.mode === "placing") {
+<<<<<<< HEAD
       if (wouldOverlap(state.ghostNode, renderNodes)) return;
 
       const placeGateCommand = new PlaceGateCommand(circuit, renderNodes, state.ghostNode, nodeMap);
       performCommand(placeGateCommand);
+=======
+      if (state.ghostNode) {
+        if (wouldOverlap(state.ghostNode, renderNodes)) return;
+        circuit.registerGate(state.ghostNode.gate);
+        renderNodes.push(state.ghostNode);
+        rebuildNodeMap(renderNodes, nodeMap);
 
-      if (event.shiftKey) {
-        const gateType = state.ghostNode.gate.type;
-        const { x, y } = snapPointToGrid(world.x, world.y);
-        if (gateType !== "composite") {
-          state.ghostNode = createBasicNode(gateType, x, y);
+        document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
+        document.getElementById("btn-edit").classList.add("active");
+>>>>>>> aafa5d5 (feat: implement bus placement and rendering)
+
+        if (event.shiftKey) {
+          const gateType = state.ghostNode.gate.type;
+          const { x, y } = snapPointToGrid(world.x, world.y);
+          if (gateType !== "composite") {
+            state.ghostNode = createBasicNode(gateType, x, y);
+          } else {
+            const circuitData = state.ghostNode.gate.circuitData;
+            const name = state.ghostNode.gate.label;
+            state.ghostNode = createCompositeNode(name, circuitData, x, y);
+          }
         } else {
-          const circuitData = state.ghostNode.gate.circuitData;
-          const name = state.ghostNode.gate.label;
-          state.ghostNode = createCompositeNode(name, circuitData, x, y);
+          state.mode = "edit";
+          state.ghostNode = null;
         }
+      } else if (state.ghostBus) {
+        // TODO: Check overlap with gates and buses before placing
+        if (!state.ghostBus.startPointPlaced && !state.ghostBus.endPointPlaced) {
+          state.ghostBus.startPointPlaced = true;
+          const startPoint = state.ghostBus.startPoint;
+          const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
+          state.ghostBus.waypoints = waypoints;
+          state.ghostBusCleanup = cleanup;
+        } else if (state.ghostBus.startPointPlaced && !state.ghostBus.endPointPlaced) {
+          state.ghostBus.endPointPlaced = true;
+          state.mode = "edit";
+          busNodes.push(state.ghostBus);
+          state.ghostBus = null;
+          cleanupGhostBus();
+        }
+<<<<<<< HEAD
       } else {
         state.mode = "edit";
         state.ghostNode = null;
         document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
         document.getElementById("btn-edit").classList.add("active");
+=======
+>>>>>>> aafa5d5 (feat: implement bus placement and rendering)
       }
     } else if (state.mode === "delete") {
       if (state.dragging) {

@@ -1,4 +1,4 @@
-import { FONT_SIZE, GRID_SIZE, PORT_LABEL_SIZE, PORT_RADIUS } from "../constants.js";
+import { FONT_SIZE, GRID_SIZE, PORT_LABEL_SIZE, PORT_RADIUS, SIGNAL } from "../constants.js";
 import { getActiveTheme } from "./theme.js";
 import { getWirePorts } from "./wireGeometry.js";
 import { state, screenToWorld } from "../state.js";
@@ -128,6 +128,102 @@ export function drawGate(renderNode, p, status = null) {
   p.fill(0);
   p.stroke(0);
   p.strokeWeight(1);
+}
+
+export function drawBus(busNode, p) {
+  // TODO: draw circles for waypoints
+  const theme = getActiveTheme();
+  p.strokeWeight(5);
+
+  const stateKey = SIGNAL_KEYS[busNode.bus.output] || "x";
+  const color = theme.wires[stateKey].hex;
+  p.stroke(color);
+
+  drawPoint(busNode.startPoint.x, busNode.startPoint.y, color, p);
+  drawPoint(busNode.endPoint.x, busNode.endPoint.y, color, p);
+
+  const waypointCount = busNode.waypoints?.length;
+  if (waypointCount) {
+    p.line(busNode.startPoint.x, busNode.startPoint.y, busNode.waypoints[0].x, busNode.waypoints[0].y);
+    for (let i = 0; i < waypointCount - 1; i++) {
+      p.line(busNode.waypoints[i].x, busNode.waypoints[i].y, busNode.waypoints[i + 1].x, busNode.waypoints[i + 1].y);
+    }
+    p.line(busNode.waypoints[waypointCount - 1].x, busNode.waypoints[waypointCount - 1].y, busNode.endPoint.x, busNode.endPoint.y);
+  } else {
+    p.line(busNode.startPoint.x, busNode.startPoint.y, busNode.endPoint.x, busNode.endPoint.y);
+  }
+
+  p.stroke(0);
+  p.strokeWeight(1);
+}
+
+export function drawGhostBus(busNode, p) {
+  const theme = getActiveTheme();
+  p.strokeWeight(5);
+
+  const stateKey = SIGNAL_KEYS[busNode.bus.output] || "x";
+  const color = theme.wires[stateKey].hex;
+  p.stroke(color);
+
+  const mouseWorld = screenToWorld(p.mouseX, p.mouseY);
+  const useSnap = p.keyIsDown(p.SHIFT);
+
+  const x1 = busNode.waypoints && busNode.waypoints.length !== 0
+    ? busNode.waypoints[busNode.waypoints.length - 1].x
+    : busNode.startPoint.x;
+  
+  const y1 = busNode.waypoints && busNode.waypoints.length !== 0
+    ? busNode.waypoints[busNode.waypoints.length - 1].y
+    : busNode.startPoint.y;
+
+  const endPointX = useSnap && busNode.startPointPlaced
+    ? getOctilinearSnap(x1, y1, busNode.endPoint.x, busNode.endPoint.y).x
+    : busNode.endPoint.x;
+  
+  const endPointY = useSnap && busNode.startPointPlaced
+    ? getOctilinearSnap(x1, y1, busNode.endPoint.x, busNode.endPoint.y).y
+    : busNode.endPoint.y;
+
+  drawPoint(busNode.startPoint.x, busNode.startPoint.y, color, p);
+  drawPoint(endPointX, endPointY, color, p);
+
+  if (busNode.waypoints && busNode.waypoints.length !== 0) {
+    const waypointCount = busNode.waypoints.length;
+    p.line(busNode.startPoint.x, busNode.startPoint.y, busNode.waypoints[0].x, busNode.waypoints[0].y);
+    for (let i = 0; i < waypointCount - 1; i++) {
+      p.line(busNode.waypoints[i].x, busNode.waypoints[i].y, busNode.waypoints[i + 1].x, busNode.waypoints[i + 1].y);
+    }
+    const x1 = busNode.waypoints[waypointCount - 1].x;
+    const y1 = busNode.waypoints[waypointCount - 1].y;
+
+    const endX = useSnap
+      ? getOctilinearSnap(x1, y1, mouseWorld.x, mouseWorld.y).x
+      : mouseWorld.x;
+
+    const endY = useSnap
+      ? getOctilinearSnap(x1, y1, mouseWorld.x, mouseWorld.y).y
+      : mouseWorld.y;
+
+    p.line(x1, y1, endX, endY);
+  } else {
+    const x1 = busNode.startPoint.x;
+    const y1 = busNode.startPoint.y;
+
+    const endX = useSnap && busNode.startPointPlaced
+      ? getOctilinearSnap(x1, y1, mouseWorld.x, mouseWorld.y).x
+      : mouseWorld.x;
+
+    const endY = useSnap && busNode.startPointPlaced
+      ? getOctilinearSnap(x1, y1, mouseWorld.x, mouseWorld.y).y
+      : mouseWorld.y;
+
+    p.line(x1, y1, endX, endY);
+  }
+}
+
+function drawPoint(x, y, color, p) {
+  p.fill(color);
+  p.circle(x, y, 16);
 }
 
 function drawOverlay(node, status, p) {
