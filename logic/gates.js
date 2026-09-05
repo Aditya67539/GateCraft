@@ -248,7 +248,7 @@ export class Bus {
     this.tempOutput = Z;
   }
 
-  connect(fromGate, toInputIndex = null, fromOutputIndex = null) {
+  connect(fromGate, fromOutputIndex = null) {
     const wire = new Wire(fromGate, this, this.inputCount++, fromOutputIndex);
     this.inputs.push(wire);
     return { ok: true, wire };
