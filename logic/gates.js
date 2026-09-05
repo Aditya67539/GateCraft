@@ -286,6 +286,8 @@ export function createBasicGate(type) {
     ? new SevenSegmentDisplay()
     : type === "Tri-state Buffer"
     ? new TriStateBuffer()
+    : type === "bus"
+    ? new Bus()
     : new Gate(type);
 }
 

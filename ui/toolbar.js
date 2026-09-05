@@ -18,6 +18,7 @@ import {
   resetSignalColors,
 } from "../render/theme.js";
 import { createModal } from "./modal.js";
+import { spawnBusNode } from "../render/BusNode.js";
 
 
 
@@ -455,7 +456,11 @@ export function initToolbar(p, circuit, renderNodes, wires) {
       if (!type) return;          // skip composite-btn clicks (no data-type)
       state.justPlacedFromToolbar = true;
       const { x: worldMouseX, y: worldMouseY } = screenToWorld(p.mouseX, p.mouseY);
-      spawnBasicNode(type, worldMouseX, worldMouseY);
+      if (type === "bus") {
+        spawnBusNode(worldMouseX, worldMouseY);
+      } else {
+        spawnBasicNode(type, worldMouseX, worldMouseY);
+      }
     });
   });
 

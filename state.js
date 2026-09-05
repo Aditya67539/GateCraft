@@ -1,6 +1,8 @@
 const _state = {
   _mode: "edit",
   justPlacedFromToolbar: false,
+  ghostBus: null,
+  ghostBusCleanup: null,
   ghostNode: null,
   ghostWire: null,
   ghostWireCleanup: null,
