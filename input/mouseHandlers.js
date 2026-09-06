@@ -184,6 +184,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
         } else if (state.ghostBus.startPointPlaced && !state.ghostBus.endPointPlaced) {
           state.ghostBus.endPointPlaced = true;
           state.mode = "edit";
+          circuit.registerBus(state.ghostBus.bus);
           busNodes.push(state.ghostBus);
           state.ghostBus = null;
           cleanupGhostBus();

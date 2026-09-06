@@ -5,6 +5,9 @@ import { initWasm } from "#wasmLoader";
 
 await initWasm();
 
+// TODO: Implement addBus method for use in persistence and tests
+// TODO: Add JSDocs for the new methods
+
 /**
  * Builder class for constructing and managing a digital logic circuit. 
  * Handles gates, wires, connections, evaluation, and structural updates. 
@@ -15,6 +18,8 @@ export class CircuitBuilder {
     this.gates = new Map();
     /** @type {Array<Wire>} List of wire objects connecting gates */
     this.wires = [];
+    /** @type {Array<Bus>} List of bus objects */
+    this.buses = [];
     this.dirty = false;
     this.accumulator = createAccumulator();
     const { indexMap } = flatten(this, this.accumulator);
@@ -56,6 +61,10 @@ export class CircuitBuilder {
     this.gates.set(gate.id, gate);
   }
 
+  registerBus(bus) {
+    this.buses.push(bus);
+  }
+
   /**
    * Removes a gate and all associated wires from the circuit. 
    * Also updates the input indices of affected gates and settles the circuit. 
@@ -95,6 +104,17 @@ export class CircuitBuilder {
    */
   connectGates(fromGate, toGate, toInputIndex, fromOutputIndex = null, settle = true) {
     const result = toGate.connect(fromGate, toInputIndex, fromOutputIndex);
+    if (!result.ok) {
+      return result;
+    }
+    this.wires.push(result.wire);
+    this.dirty = true;
+    if (settle) this.settle();
+    return result;
+  }
+
+  connectWireToBus(bus, fromGate, fromOutputIndex = null, settle = true) {
+    const result = bus.connect(fromGate, fromOutputIndex);
     if (!result.ok) {
       return result;
     }
