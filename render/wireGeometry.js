@@ -1,20 +1,13 @@
-import { GRID_SIZE } from "../constants.js";
 import { isNearWaypoint } from "../input/mouseHandlers.js";
 import { screenToWorld } from "../state.js";
 import { getOctilinearSnap } from "./draw.js";
 
-export function initWire(renderNodes, wire, customWaypoints, nodeMap) {
-  let waypoints;
+export function initWire(wire, customWaypoints) {
+  let waypoints = [];
   let isCustomRouted = false;
   if (customWaypoints && customWaypoints.length !== 0) {
     waypoints = customWaypoints;
     isCustomRouted = true;
-  } else {
-    const ports = getWirePorts(renderNodes, wire, nodeMap);
-    const spacing = (wire.toInputIndex + 1) * GRID_SIZE;
-    const startPort = { x: ports.start.x, y: ports.start.y };
-    const endPort = { x: ports.end.x, y: ports.end.y };
-    waypoints = computeWaypoints(startPort, endPort, spacing);
   }
   return { wire: wire, waypoints: waypoints, isCustomRouted: isCustomRouted };
 }

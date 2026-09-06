@@ -6,11 +6,9 @@ import { initToolbar } from "./ui/toolbar.js";
 import { getActiveTheme, applyTheme } from "./render/theme.js";
 import { CircuitBuilder } from "./logic/CircuitBuilder.js";
 import { nodeMap } from "./input/mouseHandlers.js";
-import { GRID_OFFSET, GRID_SIZE } from "./constants.js";
 import { snapPointToGrid, wouldOverlap } from "./render/RenderPoint.js";
 import { registerKeyboardHandlers } from "./input/keyboardHandlers.js";
 import { drawMinimap } from "./render/minimap.js";
-import { computeWaypoints } from "./render/wireGeometry.js";
 
 let gridBuffer;
 applyTheme(getActiveTheme());
@@ -164,27 +162,6 @@ const sketch = (p) => {
       }
     }
     if (state.drawingWire) {
-      let hoveredEnd = null;
-      
-      if (!state.ghostWire || state.ghostWire.length === 0) {
-        for (let i = 0; i < renderNodes.length; i++) {
-          const gate = renderNodes[i].gate;
-          const totalInputs = gate.inputCount;
-
-          if (totalInputs !== 0) {
-            for (let j = 0; j < totalInputs; j++) {
-              const endPort = renderNodes[i].getInputPortByIndex(j, totalInputs);
-              if (isNearPort(mouse.x, mouse.y, endPort, p)) {
-                const outputIndex = state.drawingWire.fromOutputIndex;
-                const spacing = (j + 1) * GRID_SIZE;
-                hoveredEnd = { endPort, spacing };
-                break;
-              }
-            }
-          }
-        }
-      }
-
       const outputIndex = state.drawingWire.fromOutputIndex;
       const totalOutputs = state.drawingWire.fromNode.gate.outputCount;
 
@@ -192,11 +169,7 @@ const sketch = (p) => {
         ? state.drawingWire.fromNode.getOutputPortByIndex(outputIndex, totalOutputs)
         : state.drawingWire.fromNode.getOutputPort();
       
-      if (hoveredEnd) {
-        const waypoints = computeWaypoints(startPort, hoveredEnd.endPort, hoveredEnd.spacing);
-
-        drawGhostPath(startPort, waypoints, hoveredEnd.endPort, p);
-      } else if (state.ghostWire?.length) {
+      if (state.ghostWire?.length) {
         drawGhostPath(startPort, state.ghostWire, mouse, p);
       } else {
         drawGhostPath(startPort, null, mouse, p);
