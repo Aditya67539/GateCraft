@@ -527,9 +527,9 @@ export function drawGhostPath(start, waypoints, end, p) {
   p.strokeWeight(1);
 }
 
-export function drawWire(renderNodes, wireInfo, nodeMap, p) {
+export function drawWire(wireInfo, nodeMap, p) {
   const theme = getActiveTheme();
-  const ports = getWirePorts(renderNodes, wireInfo.wire, nodeMap);
+  const ports = getWirePorts(wireInfo.wire, nodeMap);
   const stateKey = SIGNAL_KEYS[wireInfo.wire.signal] || "x";
   
   p.strokeWeight(3);

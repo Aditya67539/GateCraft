@@ -94,15 +94,13 @@ export class RemoveGateCommand {
 
 /** @implements {Command} */
 export class ConnectWireCommand {
-  constructor(circuit, fromGate, toGate, inputIndex, outputIndex, ghostWire, renderNodes, nodeMap, wires) {
+  constructor(circuit, fromGate, toGate, inputIndex, outputIndex, ghostWire, wires) {
     this.circuit = circuit;
     this.fromGate = fromGate;
     this.toGate = toGate;
     this.inputIndex = inputIndex;
     this.outputIndex = outputIndex;
     this.ghostWire = ghostWire;
-    this.renderNodes = renderNodes;
-    this.nodeMap = nodeMap;
     this.wires = wires;
     this.wireInfo = null;
   }
@@ -118,7 +116,7 @@ export class ConnectWireCommand {
     if (this.wireInfo !== null) {
       this.wireInfo.wire = result.wire;
     } else {
-      this.wireInfo = initWire(this.renderNodes, wire, this.ghostWire, this.nodeMap);
+      this.wireInfo = initWire(wire, this.ghostWire);
     }
     this.wires.push(this.wireInfo);
     return true;

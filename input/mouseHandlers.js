@@ -1,8 +1,7 @@
 import { state, screenToWorld, worldToScreen } from "../state.js";
-import { Input } from "../logic/gates.js";
 import { CLOCK_TIMER, FREQUENCY, SIGNAL } from "../constants.js";
-import { initWire, getWirePorts, setCustomWaypoints } from "../render/wireGeometry.js";
-import { createBasicNode, createCompositeNode, rebuildNodeMap, snapPointToGrid, spawnBasicNode, wouldOverlap } from "../render/RenderPoint.js";
+import { getWirePorts, setCustomWaypoints } from "../render/wireGeometry.js";
+import { createBasicNode, createCompositeNode, snapPointToGrid, wouldOverlap } from "../render/RenderPoint.js";
 import { showToast } from "../ui/toast.js";
 import { ConnectWireCommand, MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand } from "../history/commands.js";
 import { performCommand } from "../history/history.js";
@@ -50,8 +49,6 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
             inputIndex,
             outputIndex,
             state.ghostWire,
-            renderNodes,
-            nodeMap,
             wires,
           );
           performCommand(connectWireCommand);
@@ -173,7 +170,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
         if (state.selectedNode === state.dragging) state.selectedNode = null;
         state.dragging = null;
       } else {
-        const wireInfo = getWireAtPoint(world.x, world.y, renderNodes, wires, nodeMap);
+        const wireInfo = getWireAtPoint(world.x, world.y, wires, nodeMap);
         if (wireInfo) {
           const removeWireCommand = new RemoveWireCommand(circuit, wires, wireInfo);
           performCommand(removeWireCommand);
@@ -384,9 +381,9 @@ function isOnWireSegment(A, B, O, threshold) {
   return d <= Math.pow(threshold, 2);
 }
 
-function getWireAtPoint(mx, my, renderNodes, wires, nodeMap) {
+function getWireAtPoint(mx, my, wires, nodeMap) {
   for (const wireInfo of wires) {
-    const port = getWirePorts(renderNodes, wireInfo.wire, nodeMap);
+    const port = getWirePorts(wireInfo.wire, nodeMap);
     const points = [];
     points.push(port.start);
     for (const waypoint of wireInfo.waypoints) {
