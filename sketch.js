@@ -1,6 +1,6 @@
 import p5 from "p5";
 import { state, screenToWorld } from "./state.js";
-import { drawGate, drawWaypoint, drawWire, drawPortTooltip, setFont, drawDynamicGrid, drawGhostPath, drawBus, drawGhostBus } from "./render/draw.js";
+import { drawGate, drawWaypoint, drawWire, drawPortTooltip, setFont, drawDynamicGrid, drawGhostPath, drawBus, drawGhostBus, getOctilinearSnap } from "./render/draw.js";
 import { registerMouseHandlers, isNearWaypoint, isNearPort } from "./input/mouseHandlers.js";
 import { initToolbar } from "./ui/toolbar.js";
 import { getActiveTheme, applyTheme } from "./render/theme.js";
@@ -10,7 +10,6 @@ import { snapPointToGrid, wouldOverlap } from "./render/RenderPoint.js";
 import { registerKeyboardHandlers } from "./input/keyboardHandlers.js";
 import { drawMinimap } from "./render/minimap.js";
 
-let gridBuffer;
 applyTheme(getActiveTheme());
 
 let mouse = { x: 0, y: 0 };
