@@ -1,8 +1,7 @@
 import { state, screenToWorld, worldToScreen } from "../state.js";
-import { Input } from "../logic/gates.js";
 import { CLOCK_TIMER, FREQUENCY, SIGNAL } from "../constants.js";
-import { initWire, getWirePorts, setCustomWaypoints } from "../render/wireGeometry.js";
-import { createBasicNode, createCompositeNode, rebuildNodeMap, snapPointToGrid, spawnBasicNode, wouldOverlap } from "../render/RenderPoint.js";
+import { getWirePorts, setCustomWaypoints } from "../render/wireGeometry.js";
+import { createBasicNode, createCompositeNode, snapPointToGrid, wouldOverlap } from "../render/RenderPoint.js";
 import { showToast } from "../ui/toast.js";
 import { ConnectWireCommand, MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand } from "../history/commands.js";
 import { performCommand } from "../history/history.js";
@@ -50,8 +49,6 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
             inputIndex,
             outputIndex,
             state.ghostWire,
-            renderNodes,
-            nodeMap,
             wires,
           );
           performCommand(connectWireCommand);
