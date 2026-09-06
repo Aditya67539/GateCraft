@@ -40,6 +40,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
       // Check input ports
       if (state.drawingWire) {
         let wireConnection = findNearInputPort(world.x, world.y, p, renderNodes);
+        let busConnection = findNearBus(world.x, world.y, busNodes);
         if (wireConnection) {
           const outputIndex = state.drawingWire.fromOutputIndex;
           const inputIndex = wireConnection.index;
@@ -60,6 +61,19 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
             wires,
           );
           performCommand(connectWireCommand);
+        } else if (busConnection) {
+          // TODO: Add connectWireToBus method in CircuitBuilder
+          const outputIndex = state.drawingWire.fromOutputIndex;
+          const fromGate = state.drawingWire.fromNode.gate;
+          const bus = busConnection.bus;
+          const result = circuit.connectWireToBus(bus, fromGate, outputIndex);
+          if (!result.ok) {
+            showToast(result.error, { type: "error" });
+            return;
+          }
+          const wire = result.wire;
+          // TODO: Handle connection to buses in initWire
+          // wires.push(wireInfo);
         }
         state.drawingWire = null;
         cleanupGhostWire();
@@ -143,21 +157,10 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
         }, CLOCK_TIMER);
       }
     } else if (state.mode === "placing") {
-<<<<<<< HEAD
-      if (wouldOverlap(state.ghostNode, renderNodes)) return;
-
-      const placeGateCommand = new PlaceGateCommand(circuit, renderNodes, state.ghostNode, nodeMap);
-      performCommand(placeGateCommand);
-=======
       if (state.ghostNode) {
         if (wouldOverlap(state.ghostNode, renderNodes)) return;
-        circuit.registerGate(state.ghostNode.gate);
-        renderNodes.push(state.ghostNode);
-        rebuildNodeMap(renderNodes, nodeMap);
-
-        document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
-        document.getElementById("btn-edit").classList.add("active");
->>>>>>> aafa5d5 (feat: implement bus placement and rendering)
+        const placeGateCommand = new PlaceGateCommand(circuit, renderNodes, state.ghostNode, nodeMap);
+        performCommand(placeGateCommand);
 
         if (event.shiftKey) {
           const gateType = state.ghostNode.gate.type;
@@ -172,6 +175,8 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
         } else {
           state.mode = "edit";
           state.ghostNode = null;
+          document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
+          document.getElementById("btn-edit").classList.add("active");
         }
       } else if (state.ghostBus) {
         // TODO: Check overlap with gates and buses before placing
@@ -189,14 +194,6 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
           state.ghostBus = null;
           cleanupGhostBus();
         }
-<<<<<<< HEAD
-      } else {
-        state.mode = "edit";
-        state.ghostNode = null;
-        document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
-        document.getElementById("btn-edit").classList.add("active");
-=======
->>>>>>> aafa5d5 (feat: implement bus placement and rendering)
       }
     } else if (state.mode === "delete") {
       if (state.dragging) {
@@ -404,6 +401,25 @@ function findNearInputPort(mx, my, p, renderNodes) {
   return null;
 }
 
+function findNearBus(mx, my, buses) {
+  for (let i = 0; i < buses.length; i++) {
+    const startPoint = buses[i].startPoint;
+    const endPoint = buses[i].endPoint;
+    const points = [];
+    points.push(startPoint);
+    for (const waypoint of buses[i].waypoints) {
+      points.push(waypoint);
+    }
+    points.push(endPoint);
+
+    for (let i = 0; i < points.length - 1; i++) {
+      if (isOnLineSegment(points[i], points[i + 1], { x: mx, y: my }, 15)) {
+        return buses[i];
+      }
+    }
+  }
+}
+
 
 function distancePointToSegment(A, B, O) {
   const AB = { x: B.x - A.x, y: B.y - A.y };
@@ -418,7 +434,7 @@ function distancePointToSegment(A, B, O) {
   return d;
 }
 
-function isOnWireSegment(A, B, O, threshold) {
+function isOnLineSegment(A, B, O, threshold) {
   const d = distancePointToSegment(A, B, O);
   return d <= Math.pow(threshold, 2);
 }
@@ -434,7 +450,7 @@ function getWireAtPoint(mx, my, wires, nodeMap) {
     points.push(port.end);
 
     for (let i = 0; i < points.length - 1; i++) {
-      if (isOnWireSegment(points[i], points[i + 1], { x: mx, y: my }, 15)) {
+      if (isOnLineSegment(points[i], points[i + 1], { x: mx, y: my }, 15)) {
         return wireInfo;
       }
     }
