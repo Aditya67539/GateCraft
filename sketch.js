@@ -1,10 +1,6 @@
 import p5 from "p5";
 import { state, screenToWorld } from "./state.js";
-<<<<<<< HEAD
-import { drawGate, drawWaypoint, drawWire, drawPortTooltip, setFont, drawDynamicGrid, drawGhostPath } from "./render/draw.js";
-=======
-import { drawGate, drawWaypoint, drawGhostWire, drawWire, drawPortTooltip, setFont, drawDynamicGrid, drawBus, drawGhostBus } from "./render/draw.js";
->>>>>>> aafa5d5 (feat: implement bus placement and rendering)
+import { drawGate, drawWaypoint, drawWire, drawPortTooltip, setFont, drawDynamicGrid, drawGhostPath, drawBus, drawGhostBus } from "./render/draw.js";
 import { registerMouseHandlers, isNearWaypoint, isNearPort } from "./input/mouseHandlers.js";
 import { initToolbar } from "./ui/toolbar.js";
 import { getActiveTheme, applyTheme } from "./render/theme.js";
@@ -173,14 +169,23 @@ const sketch = (p) => {
     if (state.ghostBus) {
       drawGhostBus(state.ghostBus, p);
       if (state.mode === "placing") {
-        const { x: worldMouseX, y: worldMouseY } = screenToWorld(p.mouseX, p.mouseY);
-        const { x, y } = snapPointToGrid(worldMouseX, worldMouseY);
+        const { x, y } = screenToWorld(p.mouseX, p.mouseY);
         if (!state.ghostBus.startPointPlaced && !state.ghostBus.endPointPlaced) {
           state.ghostBus.startPoint.x = state.ghostBus.endPoint.x = x;
           state.ghostBus.startPoint.y = state.ghostBus.endPoint.y = y;
         } else if (state.ghostBus.startPointPlaced && !state.ghostBus.endPointPlaced) {
-          state.ghostBus.endPoint.x = x;
-          state.ghostBus.endPoint.y = y;
+          const useSnap = p.keyIsDown(p.SHIFT);
+          
+          const x1 = state.ghostBus.waypoints && state.ghostBus.waypoints.length !== 0
+            ? state.ghostBus.waypoints[state.ghostBus.waypoints.length - 1].x
+            : state.ghostBus.startPoint.x;
+          
+          const y1 = state.ghostBus.waypoints && state.ghostBus.waypoints.length !== 0
+            ? state.ghostBus.waypoints[state.ghostBus.waypoints.length - 1].y
+            : state.ghostBus.startPoint.y;
+
+          state.ghostBus.endPoint.x = useSnap ? getOctilinearSnap(x1, y1, x, y).x : x;
+          state.ghostBus.endPoint.y = useSnap ? getOctilinearSnap(x1, y1, x, y).y : y;
         }
       }
     }
