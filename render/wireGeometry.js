@@ -12,7 +12,7 @@ export function initWire(wire, customWaypoints) {
   return { wire: wire, waypoints: waypoints, isCustomRouted: isCustomRouted };
 }
 
-export function getWirePorts(renderNodes, wire, nodeMap) {
+export function getWirePorts(wire, nodeMap) {
   const fromNode = nodeMap.get(wire.from.id);
   const toNode = nodeMap.get(wire.to.id);
   let start, end;

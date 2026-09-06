@@ -142,7 +142,7 @@ const sketch = (p) => {
     }
 
     for (let i = 0; i < wires.length; i++) {
-      drawWire(renderNodes, wires[i], nodeMap, p);
+      drawWire(wires[i], nodeMap, p);
       if (state.mode === "edit") {
         for (const waypoint of wires[i].waypoints) {
           if (isNearWaypoint(mouse.x, mouse.y, waypoint, p)) {

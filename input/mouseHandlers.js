@@ -170,7 +170,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires) {
         if (state.selectedNode === state.dragging) state.selectedNode = null;
         state.dragging = null;
       } else {
-        const wireInfo = getWireAtPoint(world.x, world.y, renderNodes, wires, nodeMap);
+        const wireInfo = getWireAtPoint(world.x, world.y, wires, nodeMap);
         if (wireInfo) {
           const removeWireCommand = new RemoveWireCommand(circuit, wires, wireInfo);
           performCommand(removeWireCommand);
@@ -381,9 +381,9 @@ function isOnWireSegment(A, B, O, threshold) {
   return d <= Math.pow(threshold, 2);
 }
 
-function getWireAtPoint(mx, my, renderNodes, wires, nodeMap) {
+function getWireAtPoint(mx, my, wires, nodeMap) {
   for (const wireInfo of wires) {
-    const port = getWirePorts(renderNodes, wireInfo.wire, nodeMap);
+    const port = getWirePorts(wireInfo.wire, nodeMap);
     const points = [];
     points.push(port.start);
     for (const waypoint of wireInfo.waypoints) {
