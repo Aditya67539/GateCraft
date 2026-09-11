@@ -1,7 +1,7 @@
 import p5 from "p5";
 import { state, screenToWorld } from "./state.js";
 import { drawGate, drawWaypoint, drawWire, drawPortTooltip, setFont, drawDynamicGrid, drawGhostPath } from "./render/draw.js";
-import { registerMouseHandlers, isNearWaypoint, isNearPort } from "./input/mouseHandlers.js";
+import { registerMouseHandlers, isNearWaypoint, isNearPort, findNearInputPort } from "./input/mouseHandlers.js";
 import { initToolbar } from "./ui/toolbar.js";
 import { getActiveTheme, applyTheme } from "./render/theme.js";
 import { CircuitBuilder } from "./logic/CircuitBuilder.js";
@@ -162,17 +162,27 @@ const sketch = (p) => {
       }
     }
     if (state.drawingWire) {
+      const wireConnection = findNearInputPort(mouse.x, mouse.y, p, renderNodes);
+
       const outputIndex = state.drawingWire.fromOutputIndex;
       const totalOutputs = state.drawingWire.fromNode.gate.outputCount;
 
       const startPort = outputIndex !== null
         ? state.drawingWire.fromNode.getOutputPortByIndex(outputIndex, totalOutputs)
         : state.drawingWire.fromNode.getOutputPort();
-      
+
+      let endPos = mouse;
+      if (wireConnection) {
+        const inputIndex = wireConnection.index;
+        const totalInputs = wireConnection.toNode.gate.inputCount;
+
+        endPos = wireConnection.toNode.getInputPortByIndex(inputIndex, totalInputs);
+      }
+
       if (state.ghostWire?.length) {
-        drawGhostPath(startPort, state.ghostWire, mouse, p);
+        drawGhostPath(startPort, state.ghostWire, endPos, p);
       } else {
-        drawGhostPath(startPort, null, mouse, p);
+        drawGhostPath(startPort, null, endPos, p);
       }
     }
 
