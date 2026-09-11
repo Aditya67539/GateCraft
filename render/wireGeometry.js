@@ -94,3 +94,29 @@ export function setCustomWaypoints(p, startPort) {
   document.addEventListener("keydown", onKeyDown);
   return { waypoints, cleanup };
 }
+
+
+export function projectPointOntoSegment(A, B, O) {
+  const abx = B.x - A.x;
+  const aby = B.y - A.y;
+  const aox = O.x - A.x;
+  const aoy = O.y - A.y;
+
+  const abLenSq = abx * abx + aby * aby;
+
+  if (abLenSq === 0) {
+    const distSq = aox * aox + aoy * aoy;
+    return { t: 0, point: { x: A.x, y: A.y }, distSq };
+  }
+
+  let t = (aox * abx + aoy * aby) / abLenSq;
+  t = Math.max(0, Math.min(1, t));
+
+  const point = { x: A.x + t * abx, y: A.y + t * aby };
+
+  const dx = O.x - point.x;
+  const dy = O.y - point.y;
+  const distSq = dx * dx + dy * dy;
+
+  return { t, point, distSq };
+}

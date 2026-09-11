@@ -1,6 +1,6 @@
 import { state, screenToWorld, worldToScreen } from "../state.js";
 import { CLOCK_TIMER, FREQUENCY, SIGNAL } from "../constants.js";
-import { getWirePorts, setCustomWaypoints } from "../render/wireGeometry.js";
+import { getWirePorts, setCustomWaypoints, projectPointOntoSegment } from "../render/wireGeometry.js";
 import { createBasicNode, createCompositeNode, snapPointToGrid, wouldOverlap } from "../render/RenderPoint.js";
 import { showToast } from "../ui/toast.js";
 import { ConnectWireCommand, MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand } from "../history/commands.js";
@@ -401,18 +401,22 @@ function findNearInputPort(mx, my, p, renderNodes) {
   return null;
 }
 
-function findNearBus(mx, my, buses) {
-  for (let i = 0; i < buses.length; i++) {
-    const startPoint = buses[i].startPoint;
-    const endPoint = buses[i].endPoint;
+function findNearBus(mx, my, busNodes) {
+  for (let i = 0; i < busNodes.length; i++) {
+    const startPoint = busNodes[i].startPoint;
+    const endPoint = busNodes[i].endPoint;
     const points = [];
     points.push(startPoint);
-    for (const waypoint of buses[i].waypoints) {
-      points.push(waypoint);
+    if (busNodes[i].waypoints) {
+      for (const waypoint of busNodes[i].waypoints) {
+        points.push(waypoint);
+      }
     }
     points.push(endPoint);
 
-    for (let i = 0; i < points.length - 1; i++) {
+    for (let j = 0; j < points.length - 1; j++) {
+      if (isOnLineSegment(points[j], points[j + 1], { x: mx, y: my }, 15)) {
+        return busNodes[i];
       if (isOnLineSegment(points[i], points[i + 1], { x: mx, y: my }, 15)) {
         return buses[i];
       }
@@ -420,23 +424,9 @@ function findNearBus(mx, my, buses) {
   }
 }
 
-
-function distancePointToSegment(A, B, O) {
-  const AB = { x: B.x - A.x, y: B.y - A.y };
-  const AO = { x: O.x - A.x, y: O.y - A.y };
-
-  let projection = (AO.x * AB.x + AO.y * AB.y) / (Math.pow(AB.x, 2) + Math.pow(AB.y, 2));
-  projection = Math.max(0, Math.min(1, projection));
-
-  const closestPoint = { x: A.x + projection * AB.x, y: A.y + projection * AB.y };
-
-  const d = Math.pow(O.x - closestPoint.x, 2) + Math.pow(O.y - closestPoint.y, 2);
-  return d;
-}
-
 function isOnLineSegment(A, B, O, threshold) {
-  const d = distancePointToSegment(A, B, O);
-  return d <= Math.pow(threshold, 2);
+  const { distSq } = projectPointOntoSegment(A, B, O);
+  return distSq <= Math.pow(threshold, 2);
 }
 
 function getWireAtPoint(mx, my, wires, nodeMap) {
