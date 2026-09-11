@@ -351,7 +351,7 @@ function findNearOutputPort(mx, my, p, renderNodes) {
   return null;
 }
 
-function findNearInputPort(mx, my, p, renderNodes) {
+export function findNearInputPort(mx, my, p, renderNodes) {
   for (let i = 0; i < renderNodes.length; i++) {
     if (renderNodes[i].gate.type === "input") continue;
     const totalInputs = renderNodes[i].gate.inputCount;
