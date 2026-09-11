@@ -570,6 +570,7 @@ function drawInputPort(renderNode, theme, p) {
   }
 }
 
+// TODO: Probably move the helper functions to different file
 export function getOctilinearSnap(x1, y1, x2, y2) {
   const dx = x2 - x1;
   const dy = y2 - y1;
@@ -592,6 +593,17 @@ export function getOctilinearSnap(x1, y1, x2, y2) {
   }
 
   return { x, y };
+}
+
+// TODO: Move helper functions to separate file
+function getTapPoint(points, tapRef) {
+  const A = points[tapRef.segmentIndex];
+  const B = points[tapRef.segmentIndex + 1];
+
+  return {
+    x: A.x + tapRef.t * (B.x - A.x),
+    y: A.y + tapRef.t * (B.y - A.y),
+  };
 }
 
 function drawPolylineSegments(start, waypoints, end, p) {
@@ -623,7 +635,34 @@ export function drawGhostPath(start, waypoints, end, p) {
   p.strokeWeight(1);
 }
 
-export function drawWire(wireInfo, nodeMap, p) {
+export function drawWire(wireInfo, nodeMap, busMap, p) {
+  if (wireInfo.tapRef) {
+    // The wire starts from a gate and ends at a bus
+    // TODO: Handle wires that start from a bus and end at a gate
+    const fromNode = nodeMap.get(wireInfo.wire.from.id);
+    const busNode = busMap.get(wireInfo.wire.to.id);
+    
+    const points = [busNode.startPoint];
+    if (busNode.waypoints) {
+      for (const waypoint of busNode.waypoints) {
+        points.push(waypoint);
+      }
+    }
+    points.push(busNode.endPoint);
+
+    const startPoint = fromNode.getOutputPort(wireInfo.wire);
+    const endPoint = getTapPoint(points, wireInfo.tapRef);
+
+    const theme = getActiveTheme();
+    const stateKey = SIGNAL_KEYS[wireInfo.wire.signal] || "x";
+    
+    p.strokeWeight(3);
+    p.stroke(theme.wires[stateKey].hex);
+    drawPolylineSegments(startPoint, wireInfo.waypoints, endPoint, p);
+    p.stroke(0);
+    p.strokeWeight(1);
+    return;
+  }
   const theme = getActiveTheme();
   const ports = getWirePorts(wireInfo.wire, nodeMap);
   const stateKey = SIGNAL_KEYS[wireInfo.wire.signal] || "x";

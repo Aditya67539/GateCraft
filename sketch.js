@@ -1,11 +1,10 @@
 import p5 from "p5";
 import { state, screenToWorld } from "./state.js";
 import { drawGate, drawWaypoint, drawWire, drawPortTooltip, setFont, drawDynamicGrid, drawGhostPath, drawBus, drawGhostBus, getOctilinearSnap } from "./render/draw.js";
-import { registerMouseHandlers, isNearWaypoint, isNearPort } from "./input/mouseHandlers.js";
+import { registerMouseHandlers, isNearWaypoint, isNearPort, busMap, nodeMap } from "./input/mouseHandlers.js";
 import { initToolbar } from "./ui/toolbar.js";
 import { getActiveTheme, applyTheme } from "./render/theme.js";
 import { CircuitBuilder } from "./logic/CircuitBuilder.js";
-import { nodeMap } from "./input/mouseHandlers.js";
 import { snapPointToGrid, wouldOverlap } from "./render/RenderPoint.js";
 import { registerKeyboardHandlers } from "./input/keyboardHandlers.js";
 import { drawMinimap } from "./render/minimap.js";
@@ -146,7 +145,7 @@ const sketch = (p) => {
     }
 
     for (let i = 0; i < wires.length; i++) {
-      drawWire(wires[i], nodeMap, p);
+      drawWire(wires[i], nodeMap, busMap, p);
       if (state.mode === "edit") {
         for (const waypoint of wires[i].waypoints) {
           if (isNearWaypoint(mouse.x, mouse.y, waypoint, p)) {
