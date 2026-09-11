@@ -120,3 +120,32 @@ export function projectPointOntoSegment(A, B, O) {
 
   return { t, point, distSq };
 }
+
+
+export function getPointRef(busNode, clickX, clickY) {
+  const startPoint = busNode.startPoint;
+  const endPoint = busNode.endPoint;
+
+  const points = [startPoint];
+  if (busNode.waypoints) {
+    for (const waypoint of busNode.waypoints) {
+      points.push(waypoint);
+    }
+  }
+  points.push(endPoint);
+
+  let best = { segmentIndex: null, t: null };
+  let bestDist = Infinity;
+
+  for (let i = 0; i < points.length - 1; i++) {
+    const A = points[i];
+    const B = points[i + 1];
+
+    const result = projectPointOntoSegment(A, B, { x: clickX, y: clickY });
+    if (result.distSq < bestDist) {
+      best = { segmentIndex: i, t: result.t };
+      bestDist = result.distSq;
+    }
+  }
+  return best;
+}

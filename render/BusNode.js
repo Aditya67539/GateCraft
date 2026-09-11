@@ -23,3 +23,11 @@ function createBusNode(mouseX, mouseY) {
   const bus = createBasicGate("bus");
   return new BusNode(bus, { x: mouseX, y: mouseY }, { x: mouseX, y: mouseY });
 }
+
+export function rebuildBusMap(busNodes, busMap) {
+  busMap.clear();
+
+  for (const busNode of busNodes) {
+    busMap.set(busNode.bus.id, busNode);
+  }
+}

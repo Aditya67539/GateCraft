@@ -1,10 +1,11 @@
 import { state, screenToWorld, worldToScreen } from "../state.js";
 import { CLOCK_TIMER, FREQUENCY, SIGNAL } from "../constants.js";
-import { getWirePorts, setCustomWaypoints, projectPointOntoSegment } from "../render/wireGeometry.js";
+import { getWirePorts, setCustomWaypoints, initWire, getPointRef, projectPointOntoSegment } from "../render/wireGeometry.js";
 import { createBasicNode, createCompositeNode, snapPointToGrid, wouldOverlap } from "../render/RenderPoint.js";
 import { showToast } from "../ui/toast.js";
 import { ConnectWireCommand, MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand } from "../history/commands.js";
 import { performCommand } from "../history/history.js";
+import { rebuildBusMap } from "../render/BusNode.js";
 
 const { LOW, HIGH, X, Z, E } = SIGNAL;
 
@@ -25,6 +26,7 @@ function cleanupGhostBus() {
 }
 
 export const nodeMap = new Map();
+export const busMap = new Map();
 
 export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) {
   p.mousePressed = function (event) {
@@ -62,7 +64,6 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
           );
           performCommand(connectWireCommand);
         } else if (busConnection) {
-          // TODO: Add connectWireToBus method in CircuitBuilder
           const outputIndex = state.drawingWire.fromOutputIndex;
           const fromGate = state.drawingWire.fromNode.gate;
           const bus = busConnection.bus;
@@ -72,8 +73,12 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
             return;
           }
           const wire = result.wire;
-          // TODO: Handle connection to buses in initWire
-          // wires.push(wireInfo);
+          const wireInfo = initWire(wire, state.ghostWire);
+
+          wireInfo.tapRef = getPointRef(busConnection, world.x, world.y);
+          rebuildBusMap(busNodes, busMap);
+          // TODO: Implement ConnectWireToBusCommand and remove the initWire function call
+          wires.push(wireInfo);
         }
         state.drawingWire = null;
         cleanupGhostWire();
@@ -417,8 +422,6 @@ function findNearBus(mx, my, busNodes) {
     for (let j = 0; j < points.length - 1; j++) {
       if (isOnLineSegment(points[j], points[j + 1], { x: mx, y: my }, 15)) {
         return busNodes[i];
-      if (isOnLineSegment(points[i], points[i + 1], { x: mx, y: my }, 15)) {
-        return buses[i];
       }
     }
   }
