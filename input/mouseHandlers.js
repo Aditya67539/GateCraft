@@ -1,6 +1,6 @@
 import { state, screenToWorld, worldToScreen } from "../state.js";
 import { CLOCK_TIMER, FREQUENCY, SIGNAL } from "../constants.js";
-import { getWirePorts, setCustomWaypoints, initWire, getPointRef, projectPointOntoSegment } from "../render/wireGeometry.js";
+import { getWirePorts, setCustomWaypoints, initWire, getPointRef, projectPointOntoSegment, BusConnection } from "../render/wireGeometry.js";
 import { createBasicNode, createCompositeNode, snapPointToGrid, wouldOverlap } from "../render/RenderPoint.js";
 import { showToast } from "../ui/toast.js";
 import { ConnectWireCommand, MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand } from "../history/commands.js";
@@ -75,9 +75,19 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
           const wire = result.wire;
           const wireInfo = initWire(wire, state.ghostWire);
           wireInfo.tapRef = getPointRef(busConnection, world.x, world.y);
-          rebuildBusMap(busNodes, busMap);
+
+          // NOTE: Since bus connection command is not performed by command module
+          // ctrl + z triggers the undo method of PlaceGateCommand which assumes
+          // NO wire is connected to the gate
+          const conn = new BusConnection(
+            wireInfo,
+            bus.id,
+            fromGate.id,
+            outputIndex,
+            "in",
+          );
           // TODO: Implement ConnectWireToBusCommand and remove the initWire function call
-          wires.push(wireInfo);
+          wires.push(conn);
         }
         state.drawingWire = null;
         cleanupGhostWire();

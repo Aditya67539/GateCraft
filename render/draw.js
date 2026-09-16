@@ -1,7 +1,6 @@
-import { FONT_SIZE, GRID_SIZE, PORT_LABEL_SIZE, PORT_RADIUS, SIGNAL } from "../constants.js";
+import { FONT_SIZE, GRID_SIZE, PORT_RADIUS } from "../constants.js";
 import { getActiveTheme } from "./theme.js";
-import { getWirePorts } from "./wireGeometry.js";
-import { state, screenToWorld } from "../state.js";
+import { screenToWorld } from "../state.js";
 
 const SIGNAL_KEYS = ["low", "high", "x", "z", "e"];
 
@@ -624,33 +623,15 @@ export function drawGhostPath(start, waypoints, end, p) {
   p.strokeWeight(1);
 }
 
-export function drawWire(wireInfo, nodeMap, busMap, p) {
-  if (wireInfo.tapRef) {
-    // The wire starts from a gate and ends at a bus
-    // TODO: Handle wires that start from a bus and end at a gate
-    const fromNode = nodeMap.get(wireInfo.wire.from.id);
-    const busNode = busMap.get(wireInfo.wire.to.id);
-
-    const startPoint = fromNode.getOutputPort(wireInfo.wire);
-    const endPoint = busNode.getTapPoint(wireInfo.tapRef);
-
-    const theme = getActiveTheme();
-    const stateKey = SIGNAL_KEYS[wireInfo.wire.signal] || "x";
-    
-    p.strokeWeight(3);
-    p.stroke(theme.wires[stateKey].hex);
-    drawPolylineSegments(startPoint, wireInfo.waypoints, endPoint, p);
-    p.stroke(0);
-    p.strokeWeight(1);
-    return;
-  }
+export function drawWire(connection, nodeMap, busMap, p) {
   const theme = getActiveTheme();
-  const ports = getWirePorts(wireInfo.wire, nodeMap);
-  const stateKey = SIGNAL_KEYS[wireInfo.wire.signal] || "x";
-  
+  const stateKey = SIGNAL_KEYS[connection.wire.signal] || "x";
+
+  const { start, waypoints, end } = connection.getPoints(nodeMap, busMap);
+
   p.strokeWeight(3);
   p.stroke(theme.wires[stateKey].hex);
-  drawPolylineSegments(ports.start, wireInfo.waypoints, ports.end, p);
+  drawPolylineSegments(start, waypoints, end, p);
   p.stroke(0);
   p.strokeWeight(1);
 }

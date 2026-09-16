@@ -1,5 +1,5 @@
 import { rebuildNodeMap } from "../render/RenderPoint.js";
-import { initWire } from "../render/wireGeometry.js";
+import { initWire, WireConnection } from "../render/wireGeometry.js";
 import { showToast } from "../ui/toast.js";
 
 /**
@@ -102,7 +102,7 @@ export class ConnectWireCommand {
     this.outputIndex = outputIndex;
     this.ghostWire = ghostWire;
     this.wires = wires;
-    this.wireInfo = null;
+    this.connection = null;
   }
 
   do() {
@@ -113,18 +113,18 @@ export class ConnectWireCommand {
     }
     let wire = result.wire;
 
-    if (this.wireInfo !== null) {
-      this.wireInfo.wire = result.wire;
+    if (this.connection !== null) {
+      this.connection.wire = result.wire;
     } else {
-      this.wireInfo = initWire(wire, this.ghostWire);
+      this.connection = new WireConnection(initWire(wire, this.ghostWire));
     }
-    this.wires.push(this.wireInfo);
+    this.wires.push(this.connection);
     return true;
   }
 
   undo() {
-    this.circuit.removeWire(this.wireInfo.wire);
-    this.wires.splice(this.wires.indexOf(this.wireInfo), 1);
+    this.circuit.removeWire(this.connection.wire);
+    this.wires.splice(this.wires.indexOf(this.connection), 1);
   }
 }
 
