@@ -2,6 +2,61 @@ import { isNearWaypoint } from "../input/mouseHandlers.js";
 import { screenToWorld } from "../state.js";
 import { getOctilinearSnap } from "./draw.js";
 
+class Connection {
+  constructor({ wire, waypoints, isCustomRouted }) {
+    this.wire = wire;
+    this.waypoints = waypoints;
+    this.isCustomRouted = isCustomRouted;
+  }
+
+  /** @returns {{ start: Point, waypoints: Array<Point>, end: Point }} */
+  getPoints(nodeMap, busMap) {
+    throw new Error("abstract");
+  }
+}
+
+export class WireConnection extends Connection {
+  constructor(data) {
+    super(data);
+  }
+
+  getPoints(nodeMap, busMap) {
+    const ports = getWirePorts(this.wire, nodeMap);
+    return {
+      start: ports.start,
+      waypoints: this.waypoints,
+      end: ports.end,
+    }
+  }
+}
+
+export class BusConnection extends Connection {
+  constructor(data, busId, gateId, portIndex, direction) {
+    super(data);
+    this.tapRef = data.tapRef;
+    this.busId = busId;
+    this.gateId = gateId;
+    this.portIndex = portIndex;
+    this.direction = direction;
+  }
+
+  getPoints(nodeMap, busMap) {
+    const bus = busMap.get(this.busId);
+    const node = nodeMap.get(this.gateId);
+    const tapPoint = bus.getTapPoint(this.tapRef);
+
+    if (this.direction === "in") {
+      // Gate output is the start, and tap on the bus is end
+      const startPoint = node.getOutputPortByIndex(this.portIndex, node.gate.outputCount);
+      return { start: startPoint, waypoints: this.waypoints, end: tapPoint };
+    } else if (this.direction === "out") {
+      // Tap on the bus is start, and gate input is the end
+      const endPoint = node.getInputPortByIndex(this.portIndex, node.gate.inputCount);
+      return { start: tapPoint, waypoints: this.waypoints, end: endPoint };
+    }
+  }
+}
+
 export function initWire(wire, customWaypoints) {
   let waypoints = [];
   let isCustomRouted = false;
