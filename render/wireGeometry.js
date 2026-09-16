@@ -1,6 +1,5 @@
 import { isNearWaypoint } from "../input/mouseHandlers.js";
 import { screenToWorld } from "../state.js";
-import { getOctilinearSnap } from "./draw.js";
 
 class Connection {
   constructor({ wire, waypoints, isCustomRouted }) {
@@ -88,6 +87,30 @@ export function getWirePorts(wire, nodeMap) {
     end = toNode.getInputPort(wire);
   }
   return { start: start, end: end };
+}
+
+export function getOctilinearSnap(x1, y1, x2, y2) {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+
+  const ax = Math.abs(dx);
+  const ay = Math.abs(dy);
+
+  const TAN30 = Math.tan(30 * Math.PI / 180);
+  const TAN60 = Math.tan(60 * Math.PI / 180);
+
+  let x = x2;
+  let y = y2;
+
+  if (ay <= ax * TAN30) y = y1;
+  else if (ay >= ax * TAN60) x = x1;
+  else {
+    const d = Math.min(ax, ay);
+    x = x1 + Math.sign(dx) * d;
+    y = y1 + Math.sign(dy) * d;
+  }
+
+  return { x, y };
 }
 
 export function computeWaypoints(startPort, endPort, spacing) {

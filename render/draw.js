@@ -1,6 +1,7 @@
 import { FONT_SIZE, GRID_SIZE, PORT_RADIUS } from "../constants.js";
 import { getActiveTheme } from "./theme.js";
 import { screenToWorld } from "../state.js";
+import { getOctilinearSnap } from "./wireGeometry.js";
 
 const SIGNAL_KEYS = ["low", "high", "x", "z", "e"];
 
@@ -567,31 +568,6 @@ function drawInputPort(renderNode, theme, p) {
     p.strokeWeight(1.5);
     p.circle(port.x, port.y, PORT_RADIUS);
   }
-}
-
-// TODO: Probably move the helper functions to different file
-export function getOctilinearSnap(x1, y1, x2, y2) {
-  const dx = x2 - x1;
-  const dy = y2 - y1;
-
-  const ax = Math.abs(dx);
-  const ay = Math.abs(dy);
-
-  const TAN30 = Math.tan(30 * Math.PI / 180);
-  const TAN60 = Math.tan(60 * Math.PI / 180);
-
-  let x = x2;
-  let y = y2;
-
-  if (ay <= ax * TAN30) y = y1;
-  else if (ay >= ax * TAN60) x = x1;
-  else {
-    const d = Math.min(ax, ay);
-    x = x1 + Math.sign(dx) * d;
-    y = y1 + Math.sign(dy) * d;
-  }
-
-  return { x, y };
 }
 
 function drawPolylineSegments(start, waypoints, end, p) {

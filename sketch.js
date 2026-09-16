@@ -1,6 +1,6 @@
 import p5 from "p5";
 import { state, screenToWorld } from "./state.js";
-import { drawGate, drawWaypoint, drawWire, drawPortTooltip, setFont, drawDynamicGrid, drawGhostPath, drawBus, drawGhostBus, getOctilinearSnap } from "./render/draw.js";
+import { drawGate, drawWaypoint, drawWire, drawPortTooltip, setFont, drawDynamicGrid, drawGhostPath, drawBus, drawGhostBus } from "./render/draw.js";
 import { registerMouseHandlers, isNearWaypoint, isNearPort, busMap, nodeMap } from "./input/mouseHandlers.js";
 import { initToolbar } from "./ui/toolbar.js";
 import { getActiveTheme, applyTheme } from "./render/theme.js";
@@ -8,6 +8,7 @@ import { CircuitBuilder } from "./logic/CircuitBuilder.js";
 import { snapPointToGrid, wouldOverlap } from "./render/RenderPoint.js";
 import { registerKeyboardHandlers } from "./input/keyboardHandlers.js";
 import { drawMinimap } from "./render/minimap.js";
+import { getOctilinearSnap } from "./render/wireGeometry.js";
 
 applyTheme(getActiveTheme());
 
