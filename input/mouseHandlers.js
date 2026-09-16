@@ -74,7 +74,6 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
           }
           const wire = result.wire;
           const wireInfo = initWire(wire, state.ghostWire);
-
           wireInfo.tapRef = getPointRef(busConnection, world.x, world.y);
           rebuildBusMap(busNodes, busMap);
           // TODO: Implement ConnectWireToBusCommand and remove the initWire function call
@@ -185,6 +184,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
         }
       } else if (state.ghostBus) {
         // TODO: Check overlap with gates and buses before placing
+        // TODO: Implement PlaceBusCommand
         if (!state.ghostBus.startPointPlaced && !state.ghostBus.endPointPlaced) {
           state.ghostBus.startPointPlaced = true;
           const startPoint = state.ghostBus.startPoint;
@@ -196,6 +196,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
           state.mode = "edit";
           circuit.registerBus(state.ghostBus.bus);
           busNodes.push(state.ghostBus);
+          rebuildBusMap(busNodes, busMap);
           state.ghostBus = null;
           cleanupGhostBus();
         }
