@@ -1,6 +1,6 @@
 import { state, screenToWorld, worldToScreen } from "../state.js";
 import { CLOCK_TIMER, FREQUENCY, SIGNAL } from "../constants.js";
-import { getWirePorts, setCustomWaypoints, initWire, getPointRef, projectPointOntoSegment, BusConnection } from "../render/wireGeometry.js";
+import { setCustomWaypoints, initWire, getPointRef, projectPointOntoSegment, BusConnection } from "../render/wireGeometry.js";
 import { createBasicNode, createCompositeNode, snapPointToGrid, wouldOverlap } from "../render/RenderPoint.js";
 import { showToast } from "../ui/toast.js";
 import { ConnectWireCommand, MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand } from "../history/commands.js";
@@ -225,7 +225,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
         if (state.selectedNode === state.dragging) state.selectedNode = null;
         state.dragging = null;
       } else {
-        const wireInfo = getWireAtPoint(world.x, world.y, wires, nodeMap);
+        const wireInfo = getWireAtPoint(world.x, world.y, wires, nodeMap, busMap);
         if (wireInfo) {
           const removeWireCommand = new RemoveWireCommand(circuit, wires, wireInfo);
           performCommand(removeWireCommand);
@@ -443,19 +443,13 @@ function isOnLineSegment(A, B, O, threshold) {
   return distSq <= Math.pow(threshold, 2);
 }
 
-function getWireAtPoint(mx, my, wires, nodeMap) {
-  for (const wireInfo of wires) {
-    const port = getWirePorts(wireInfo.wire, nodeMap);
-    const points = [];
-    points.push(port.start);
-    for (const waypoint of wireInfo.waypoints) {
-      points.push(waypoint);
-    }
-    points.push(port.end);
-
+function getWireAtPoint(mx, my, wires, nodeMap, busMap) {
+  for (const conn of wires) {
+    const { start, waypoints, end } = conn.getPoints(nodeMap, busMap);
+    const points = [ start, ...waypoints, end ];
     for (let i = 0; i < points.length - 1; i++) {
       if (isOnLineSegment(points[i], points[i + 1], { x: mx, y: my }, 15)) {
-        return wireInfo;
+        return conn;
       }
     }
   }
