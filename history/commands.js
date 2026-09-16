@@ -93,7 +93,7 @@ export class RemoveGateCommand {
 
 
 /** @implements {Command} */
-export class ConnectWireCommand {
+export class ConnectGateCommand {
   constructor(circuit, fromGate, toGate, inputIndex, outputIndex, ghostWire, wires) {
     this.circuit = circuit;
     this.fromGate = fromGate;

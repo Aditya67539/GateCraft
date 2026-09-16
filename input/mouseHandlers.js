@@ -3,7 +3,7 @@ import { CLOCK_TIMER, FREQUENCY, SIGNAL } from "../constants.js";
 import { setCustomWaypoints, initWire, getPointRef, projectPointOntoSegment, BusConnection } from "../render/wireGeometry.js";
 import { createBasicNode, createCompositeNode, snapPointToGrid, wouldOverlap } from "../render/RenderPoint.js";
 import { showToast } from "../ui/toast.js";
-import { ConnectWireCommand, MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand } from "../history/commands.js";
+import { ConnectGateCommand, MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand } from "../history/commands.js";
 import { performCommand } from "../history/history.js";
 import { rebuildBusMap } from "../render/BusNode.js";
 
@@ -53,7 +53,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
           const fromGate = state.drawingWire.fromNode.gate;
           const toGate = wireConnection.toNode.gate;
 
-          const connectWireCommand = new ConnectWireCommand(
+          const connectGateCommand = new ConnectGateCommand(
             circuit,
             fromGate,
             toGate,
@@ -62,7 +62,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
             state.ghostWire,
             wires,
           );
-          performCommand(connectWireCommand);
+          performCommand(connectGateCommand);
         } else if (busConnection) {
           const outputIndex = state.drawingWire.fromOutputIndex;
           const fromGate = state.drawingWire.fromNode.gate;
