@@ -6,7 +6,7 @@ export class BusNode {
     this.bus = bus;
     this.startPoint = startPoint;
     this.endPoint = endPoint;
-    this.waypoints = null;
+    this.waypoints = [];
     this.startPointPlaced = false;
     this.endPointPlaced = false;
   }
@@ -19,6 +19,14 @@ export class BusNode {
       x: A.x + tapRef.t * (B.x - A.x),
       y: A.y + tapRef.t * (B.y - A.y),
     };
+  }
+
+  getPoints() {
+    return {
+      start: this.startPoint,
+      waypoints: this.waypoints,
+      end: this.endPoint,
+    }
   }
 }
 

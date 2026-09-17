@@ -201,16 +201,8 @@ export function projectPointOntoSegment(A, B, O) {
 
 
 export function getPointRef(busNode, clickX, clickY) {
-  const startPoint = busNode.startPoint;
-  const endPoint = busNode.endPoint;
-
-  const points = [startPoint];
-  if (busNode.waypoints) {
-    for (const waypoint of busNode.waypoints) {
-      points.push(waypoint);
-    }
-  }
-  points.push(endPoint);
+  const { start, waypoints, end } = busNode.getPoints();
+  const points = [start, ...waypoints, end];
 
   let best = { segmentIndex: null, t: null };
   let bestDist = Infinity;

@@ -419,16 +419,8 @@ function findNearInputPort(mx, my, p, renderNodes) {
 
 function findNearBus(mx, my, busNodes) {
   for (let i = 0; i < busNodes.length; i++) {
-    const startPoint = busNodes[i].startPoint;
-    const endPoint = busNodes[i].endPoint;
-    const points = [];
-    points.push(startPoint);
-    if (busNodes[i].waypoints) {
-      for (const waypoint of busNodes[i].waypoints) {
-        points.push(waypoint);
-      }
-    }
-    points.push(endPoint);
+    const { start, waypoints, end } = busNodes[i].getPoints();
+    const points = [start, ...waypoints, end];
 
     for (let j = 0; j < points.length - 1; j++) {
       if (isOnLineSegment(points[j], points[j + 1], { x: mx, y: my }, 15)) {
