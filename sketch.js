@@ -88,7 +88,7 @@ const sketch = (p) => {
       if (totalInputs !== 0) {
         for (let j = 0; j < totalInputs; j++) {
           const port = renderNodes[i].getInputPortByIndex(j, totalInputs);
-          if (isNearPort(mouse.x, mouse.y, port, p)) {
+          if (isNearPort(mouse.x, mouse.y, port)) {
             hoveredPort = port;
             if (
               gate.type === "composite" &&
@@ -112,7 +112,7 @@ const sketch = (p) => {
       if (totalOutputs !== 0) {
         for (let j = 0; j < totalOutputs; j++) {
           const port = renderNodes[i].getOutputPortByIndex(j, totalOutputs);
-          if (isNearPort(mouse.x, mouse.y, port, p)) {
+          if (isNearPort(mouse.x, mouse.y, port)) {
             hoveredPort = port;
             if (
               gate.type === "composite" &&
@@ -149,7 +149,7 @@ const sketch = (p) => {
       drawWire(wires[i], nodeMap, busMap, p);
       if (state.mode === "edit") {
         for (const waypoint of wires[i].waypoints) {
-          if (isNearWaypoint(mouse.x, mouse.y, waypoint, p)) {
+          if (isNearWaypoint(mouse.x, mouse.y, waypoint)) {
             drawWaypoint(wires[i], waypoint, p);
           }
         }

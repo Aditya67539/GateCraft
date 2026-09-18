@@ -156,7 +156,7 @@ export function setCustomWaypoints(p, startPort) {
 
       if (waypoints.length !== 0) {
         const waypoint_count = waypoints.length;
-        if (!isNearWaypoint(wx, wy, waypoints[waypoint_count - 1], p)) {
+        if (!isNearWaypoint(wx, wy, waypoints[waypoint_count - 1])) {
           waypoints.push({ x: wx, y: wy });
         }
       } else {
@@ -218,4 +218,9 @@ export function getPointRef(busNode, clickX, clickY) {
     }
   }
   return best;
+}
+
+
+export function dist(x1, y1, x2, y2) {
+  return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
 }

@@ -1,6 +1,6 @@
 import { state, screenToWorld, worldToScreen } from "../state.js";
 import { CLOCK_TIMER, FREQUENCY, SIGNAL } from "../constants.js";
-import { setCustomWaypoints, initWire, getPointRef, projectPointOntoSegment, BusConnection } from "../render/wireGeometry.js";
+import { setCustomWaypoints, initWire, getPointRef, projectPointOntoSegment, BusConnection, dist } from "../render/wireGeometry.js";
 import { createBasicNode, createCompositeNode, snapPointToGrid, wouldOverlap } from "../render/RenderPoint.js";
 import { showToast } from "../ui/toast.js";
 import { ConnectGateCommand, MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand } from "../history/commands.js";
@@ -41,7 +41,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
     if (state.mode === "edit") {
       // Check input ports
       if (state.drawingWire) {
-        let wireConnection = findNearInput(world.x, world.y, p, renderNodes);
+        let wireConnection = findNearInput(world.x, world.y, renderNodes);
         let busConnection = findNearBus(world.x, world.y, busNodes);
         if (wireConnection) {
           const outputIndex = state.drawingWire.fromOutputIndex;
@@ -92,8 +92,8 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
         state.drawingWire = null;
         cleanupGhostWire();
       } else {
-        state.drawingWire = findNearOutput(world.x, world.y, p, renderNodes);
-        state.changingWaypoint = findNearWaypoint(world.x, world.y, p, wires);
+        state.drawingWire = findNearOutput(world.x, world.y, renderNodes);
+        state.changingWaypoint = findNearWaypoint(world.x, world.y, wires);
 
         // ── Update persistent selection ──────────────────────────
         if (state.dragging) {
@@ -372,44 +372,44 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
 }
 
 
-export function isNearPort(mouseX, mouseY, port, p) {
-  const d = p.dist(mouseX, mouseY, port.x, port.y);
+export function isNearPort(mouseX, mouseY, port) {
+  const d = dist(mouseX, mouseY, port.x, port.y);
   return d < 15;
 }
 
-export function isNearWaypoint(mx, my, waypoint, p) {
-  const d = p.dist(mx, my, waypoint.x, waypoint.y);
+export function isNearWaypoint(mx, my, waypoint) {
+  const d = dist(mx, my, waypoint.x, waypoint.y);
   return d < 10;
 }
 
-function findNearOutput(mx, my, p, renderNodes) {
+function findNearOutput(mx, my, renderNodes) {
   for (let i = 0; i < renderNodes.length; i++) {
     const gate = renderNodes[i].gate;
     if (gate.type === "output") continue;
     if (gate.type === "composite") {
       for (let j = 0; j < gate.outputCount; j++) {
         const port = renderNodes[i].getOutputPortByIndex(j, gate.outputCount);
-        if (isNearPort(mx, my, port, p)) {
+        if (isNearPort(mx, my, port)) {
           return { fromNode: renderNodes[i], fromOutputIndex: j };
         }
       }
     }
     const port = renderNodes[i].getOutputPort();
-    if (isNearPort(mx, my, port, p)) {
+    if (isNearPort(mx, my, port)) {
       return { fromNode: renderNodes[i], fromOutputIndex: null };
     }
   }
   return null;
 }
 
-function findNearInput(mx, my, p, renderNodes) {
+function findNearInput(mx, my, renderNodes) {
   for (let i = 0; i < renderNodes.length; i++) {
     if (renderNodes[i].gate.type === "input") continue;
     const totalInputs = renderNodes[i].gate.inputCount;
 
     for (let j = 0; j < totalInputs; j++) {
       const port = renderNodes[i].getInputPortByIndex(j, totalInputs);
-      if (isNearPort(mx, my, port, p)) {
+      if (isNearPort(mx, my, port)) {
         return { toNode: renderNodes[i], index: j };
       }
     }
@@ -449,11 +449,11 @@ function getWireAtPoint(mx, my, wires, nodeMap, busMap) {
 }
 
 
-function findNearWaypoint(mx, my, p, wires) {
+function findNearWaypoint(mx, my, wires) {
   for (let i = 0; i < wires.length; i++) {
     const waypointCount = wires[i].waypoints.length;
     for (let j = 0; j < waypointCount; j++) {
-      if (isNearWaypoint(mx, my, wires[i].waypoints[j], p)) {
+      if (isNearWaypoint(mx, my, wires[i].waypoints[j])) {
         if (wires[i].isCustomRouted) return { waypoint: wires[i].waypoints[j] };
         let otherWaypoint = null;
         if (waypointCount === 2) {
