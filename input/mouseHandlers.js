@@ -41,7 +41,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
     if (state.mode === "edit") {
       // Check input ports
       if (state.drawingWire) {
-        let wireConnection = findNearInputPort(world.x, world.y, p, renderNodes);
+        let wireConnection = findNearInput(world.x, world.y, p, renderNodes);
         let busConnection = findNearBus(world.x, world.y, busNodes);
         if (wireConnection) {
           const outputIndex = state.drawingWire.fromOutputIndex;
@@ -92,7 +92,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
         state.drawingWire = null;
         cleanupGhostWire();
       } else {
-        state.drawingWire = findNearOutputPort(world.x, world.y, p, renderNodes);
+        state.drawingWire = findNearOutput(world.x, world.y, p, renderNodes);
         state.changingWaypoint = findNearWaypoint(world.x, world.y, p, wires);
 
         // ── Update persistent selection ──────────────────────────
@@ -134,10 +134,10 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
           }
         } else if (state.drawingWire && !state.changingWaypoint && !state.dragging) {
           const fromNode = state.drawingWire.fromNode;
-          const startPort = fromNode.gate.type === "composite"
+          const startPoint = fromNode.gate.type === "composite"
             ? fromNode.getOutputPortByIndex(state.drawingWire.fromOutputIndex, fromNode.gate.outputCount)
             : fromNode.getOutputPort();
-          const { waypoints, cleanup } = setCustomWaypoints(p, startPort);
+          const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
           state.ghostWire = waypoints;
           state.ghostWireCleanup = cleanup;
         } else if (!state.drawingWire && !state.changingWaypoint && !state.dragging) {
@@ -382,7 +382,7 @@ export function isNearWaypoint(mx, my, waypoint, p) {
   return d < 10;
 }
 
-function findNearOutputPort(mx, my, p, renderNodes) {
+function findNearOutput(mx, my, p, renderNodes) {
   for (let i = 0; i < renderNodes.length; i++) {
     const gate = renderNodes[i].gate;
     if (gate.type === "output") continue;
@@ -402,7 +402,7 @@ function findNearOutputPort(mx, my, p, renderNodes) {
   return null;
 }
 
-function findNearInputPort(mx, my, p, renderNodes) {
+function findNearInput(mx, my, p, renderNodes) {
   for (let i = 0; i < renderNodes.length; i++) {
     if (renderNodes[i].gate.type === "input") continue;
     const totalInputs = renderNodes[i].gate.inputCount;
