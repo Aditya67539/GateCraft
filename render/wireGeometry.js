@@ -113,24 +113,6 @@ export function getOctilinearSnap(x1, y1, x2, y2) {
   return { x, y };
 }
 
-export function computeWaypoints(startPort, endPort, spacing) {
-  let waypoints = [];
-  if (startPort.x <= endPort.x) {
-    // 2 Waypoints
-    waypoints.push({ x: endPort.x - spacing, y: startPort.y });
-    waypoints.push({ x: endPort.x - spacing, y: endPort.y });
-  } else {
-    // 4 Waypoints
-    const corridorY = (startPort.y + endPort.y) / 2;
-
-    waypoints.push({ x: startPort.x + spacing, y: startPort.y });
-    waypoints.push({ x: startPort.x + spacing, y: corridorY });
-    waypoints.push({ x: endPort.x - spacing,   y: corridorY });
-    waypoints.push({ x: endPort.x - spacing,   y: endPort.y });
-  }
-  return waypoints;
-}
-
 // Uses document.addEventListener instead of p5's keyPressed because p5 only
 // supports a single keyPressed callback per instance (already used by
 // keyboardHandlers.js for tool shortcuts). addEventListener is stackable
