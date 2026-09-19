@@ -142,16 +142,7 @@ export function drawBus(busNode, p) {
   drawPoint(busNode.startPoint.x, busNode.startPoint.y, color, p);
   drawPoint(busNode.endPoint.x, busNode.endPoint.y, color, p);
 
-  const waypointCount = busNode.waypoints?.length;
-  if (waypointCount) {
-    p.line(busNode.startPoint.x, busNode.startPoint.y, busNode.waypoints[0].x, busNode.waypoints[0].y);
-    for (let i = 0; i < waypointCount - 1; i++) {
-      p.line(busNode.waypoints[i].x, busNode.waypoints[i].y, busNode.waypoints[i + 1].x, busNode.waypoints[i + 1].y);
-    }
-    p.line(busNode.waypoints[waypointCount - 1].x, busNode.waypoints[waypointCount - 1].y, busNode.endPoint.x, busNode.endPoint.y);
-  } else {
-    p.line(busNode.startPoint.x, busNode.startPoint.y, busNode.endPoint.x, busNode.endPoint.y);
-  }
+  drawPolylineSegments(busNode.startPoint, busNode.waypoints, busNode.endPoint, p);
 
   p.stroke(0);
   p.strokeWeight(1);
