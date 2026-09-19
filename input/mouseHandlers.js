@@ -266,11 +266,8 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
           }
         }
       } else if (state.changingWaypoint) {
-        state.changingWaypoint.waypoint.x = worldDrag.x;
-        state.changingWaypoint.waypoint.y = worldDrag.y;
-        if (state.changingWaypoint.otherWaypoint) {
-          state.changingWaypoint.otherWaypoint.x = state.changingWaypoint.waypoint.x;
-        }
+        state.changingWaypoint.x = worldDrag.x;
+        state.changingWaypoint.y = worldDrag.y;
       } else if (state.isPanning) {
         state.cameraX += (p.mouseX - p.pmouseX);
         state.cameraY += (p.mouseY - p.pmouseY);
@@ -448,25 +445,12 @@ function getWireAtPoint(mx, my, wires, nodeMap, busMap) {
   return null;
 }
 
-
 function findNearWaypoint(mx, my, wires) {
   for (let i = 0; i < wires.length; i++) {
     const waypointCount = wires[i].waypoints.length;
     for (let j = 0; j < waypointCount; j++) {
       if (isNearWaypoint(mx, my, wires[i].waypoints[j])) {
-        if (wires[i].isCustomRouted) return { waypoint: wires[i].waypoints[j] };
-        let otherWaypoint = null;
-        if (waypointCount === 2) {
-          otherWaypoint = wires[i].waypoints[j === 0 ? 1 : 0];
-        } else if (waypointCount === 4) {
-          let otherIndex = 0;
-          if (j === 0) otherIndex = 1;
-          else if (j === 1) otherIndex = 0;
-          else if (j === 2) otherIndex = 3;
-          else if (j === 3) otherIndex = 2;
-          otherWaypoint = wires[i].waypoints[otherIndex];
-        }
-        return { waypoint: wires[i].waypoints[j], otherWaypoint: otherWaypoint };
+        return wires[i].waypoints[j];
       }
     }
   }
