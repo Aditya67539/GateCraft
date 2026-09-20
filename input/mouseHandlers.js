@@ -41,58 +41,70 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
     if (state.mode === "edit") {
       // Check input ports
       if (state.drawingWire) {
-        let wireConnection = findNearInput(world.x, world.y, renderNodes);
-        let busConnection = findNearBus(world.x, world.y, busNodes);
-        if (wireConnection) {
-          const outputIndex = state.drawingWire.fromOutputIndex;
-          const inputIndex = wireConnection.index;
-          if (inputIndex < 0 || inputIndex >= wireConnection.toNode.internalInputs) {
-            showToast("Invalid input index!", { type: "error" });
-            return;
-          }
-          const fromGate = state.drawingWire.fromNode.gate;
-          const toGate = wireConnection.toNode.gate;
+        const connInfo = findWireDestination(world.x, world.y, renderNodes, busNodes);
+        if (state.drawingWire.originType === "gate") {
+          if (connInfo?.destinationType === "gate") {
+            const connection = connInfo.connection;
+            
+            const outputIndex = state.drawingWire.connection.fromOutputIndex;
+            const inputIndex = connection.index;
+            if (inputIndex < 0 || inputIndex >= connection.toNode.internalInputs) {
+              showToast("Invalid input index!", { type: "error" });
+              return;
+            }
+            const fromGate = state.drawingWire.connection.fromNode.gate;
+            const toGate = connection.toNode.gate;
 
-          const connectGateCommand = new ConnectGateCommand(
-            circuit,
-            fromGate,
-            toGate,
-            inputIndex,
-            outputIndex,
-            state.ghostWire,
-            wires,
-          );
-          performCommand(connectGateCommand);
-        } else if (busConnection) {
-          const outputIndex = state.drawingWire.fromOutputIndex;
-          const fromGate = state.drawingWire.fromNode.gate;
-          const bus = busConnection.bus;
-          const result = circuit.connectWireToBus(bus, fromGate, outputIndex);
-          if (!result.ok) {
-            showToast(result.error, { type: "error" });
-            return;
-          }
-          const wire = result.wire;
-          const wireInfo = initWire(wire, state.ghostWire);
-          wireInfo.tapRef = getPointRef(busConnection, world.x, world.y);
+            const connectGateCommand = new ConnectGateCommand(
+              circuit,
+              fromGate,
+              toGate,
+              inputIndex,
+              outputIndex,
+              state.ghostWire,
+              wires,
+            );
+            performCommand(connectGateCommand);
+          } else if (connInfo?.destinationType === "bus") {
+            const connection = connInfo.connection;
 
-          // NOTE: Since bus connection command is not performed by command module
-          // ctrl + z triggers the undo method of PlaceGateCommand which assumes
-          // NO wire is connected to the gate
-          const conn = new BusConnection(
-            wireInfo,
-            bus.id,
-            fromGate.id,
-            outputIndex,
-            "in",
-          );
-          // TODO: Implement ConnectWireToBusCommand and remove the initWire function call
-          wires.push(conn);
+            const outputIndex = state.drawingWire.connection.fromOutputIndex;
+            const fromGate = state.drawingWire.connection.fromNode.gate;
+            const bus = connection.busNode.bus;
+            const result = circuit.connectWireToBus(bus, fromGate, outputIndex);
+            if (!result.ok) {
+              showToast(result.error, { type: "error" });
+              return;
+            }
+            const wire = result.wire;
+            const wireInfo = initWire(wire, state.ghostWire);
+            wireInfo.tapRef = connection.tapRef;
+
+            // NOTE: Since bus connection command is not performed by command module
+            // ctrl + z triggers the undo method of PlaceGateCommand which assumes
+            // NO wire is connected to the gate
+            const conn = new BusConnection(
+              wireInfo,
+              bus.id,
+              fromGate.id,
+              outputIndex,
+              "in",
+            );
+            // TODO: Implement ConnectWireToBusCommand and remove the initWire function call
+            wires.push(conn);
+          }
+        } else if (state.drawingWire.originType === "bus") {
+          if (connInfo?.destinationType === "gate") {
+            // TODO: Handle bus to gate connection
+            console.log("Creating a connection from a bus to a gate");
+            console.log(state.drawingWire);
+            console.log(connInfo);
+          }
         }
         state.drawingWire = null;
         cleanupGhostWire();
       } else {
-        state.drawingWire = findNearOutput(world.x, world.y, renderNodes);
+        state.drawingWire = findWireOrigin(world.x, world.y, renderNodes, busNodes);
         state.changingWaypoint = findNearWaypoint(world.x, world.y, wires);
 
         // ── Update persistent selection ──────────────────────────
@@ -133,13 +145,22 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
             }
           }
         } else if (state.drawingWire && !state.changingWaypoint && !state.dragging) {
-          const fromNode = state.drawingWire.fromNode;
-          const startPoint = fromNode.gate.type === "composite"
-            ? fromNode.getOutputPortByIndex(state.drawingWire.fromOutputIndex, fromNode.gate.outputCount)
-            : fromNode.getOutputPort();
-          const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
-          state.ghostWire = waypoints;
-          state.ghostWireCleanup = cleanup;
+          const connection = state.drawingWire.connection;
+          if (state.drawingWire.originType === "gate") {
+            const fromNode = connection.fromNode;
+            const startPoint = fromNode.gate.type === "composite"
+              ? fromNode.getOutputPortByIndex(connection.fromOutputIndex, fromNode.gate.outputCount)
+              : fromNode.getOutputPort();
+            const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
+            state.ghostWire = waypoints;
+            state.ghostWireCleanup = cleanup;
+          } else if (state.drawingWire.originType === "bus") {
+            const fromBus = connection.busNode;
+            const startPoint = fromBus.getTapPoint(getPointRef(fromBus, world.x, world.y));
+            const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
+            state.ghostWire = waypoints;
+            state.ghostWireCleanup = cleanup;
+          }
         } else if (!state.drawingWire && !state.changingWaypoint && !state.dragging) {
           state.isPanning = true;
         } else if (state.changingWaypoint) {
@@ -421,10 +442,47 @@ function findNearBus(mx, my, busNodes) {
 
     for (let j = 0; j < points.length - 1; j++) {
       if (isOnLineSegment(points[j], points[j + 1], { x: mx, y: my }, 15)) {
-        return busNodes[i];
+        return { busNode: busNodes[i], tapRef: getPointRef(busNodes[i], mx, my) };
       }
     }
   }
+  return null;
+}
+
+function findWireOrigin(mx, my, renderNodes, busNodes) {
+  const nodeConn = findNearOutput(mx, my, renderNodes);
+  const busConn = findNearBus(mx, my, busNodes);
+  
+  if (nodeConn) {
+    return {
+      originType: "gate",
+      connection: nodeConn,
+    }
+  } else if (busConn) {
+    return {
+      originType: "bus",
+      connection: busConn,
+    }
+  }
+  return null;
+}
+
+function findWireDestination(mx, my, renderNodes, busNodes) {
+  const nodeConn = findNearInput(mx, my, renderNodes);
+  const busConn = findNearBus(mx, my, busNodes);
+
+  if (nodeConn) {
+    return {
+      destinationType: "gate",
+      connection: nodeConn,
+    }
+  } else if (busConn) {
+    return {
+      destinationType: "bus",
+      connection: busConn,
+    }
+  }
+  return null;
 }
 
 function isOnLineSegment(A, B, O, threshold) {

@@ -189,17 +189,29 @@ const sketch = (p) => {
       }
     }
     if (state.drawingWire) {
-      const outputIndex = state.drawingWire.fromOutputIndex;
-      const totalOutputs = state.drawingWire.fromNode.gate.outputCount;
+      const connection = state.drawingWire.connection;
+      if (state.drawingWire.originType === "gate") {
 
-      const startPort = outputIndex !== null
-        ? state.drawingWire.fromNode.getOutputPortByIndex(outputIndex, totalOutputs)
-        : state.drawingWire.fromNode.getOutputPort();
-      
-      if (state.ghostWire?.length) {
-        drawGhostPath(startPort, state.ghostWire, mouse, p);
-      } else {
-        drawGhostPath(startPort, null, mouse, p);
+        const outputIndex = connection.fromOutputIndex;
+        const totalOutputs = connection.fromNode.gate.outputCount;
+
+        const startPort = outputIndex !== null
+          ? connection.fromNode.getOutputPortByIndex(outputIndex, totalOutputs)
+          : connection.fromNode.getOutputPort();
+        
+        if (state.ghostWire?.length) {
+          drawGhostPath(startPort, state.ghostWire, mouse, p);
+        } else {
+          drawGhostPath(startPort, null, mouse, p);
+        }
+      } else if (state.drawingWire.originType === "bus") {
+        const startPoint = connection.busNode.getTapPoint(connection.tapRef);
+        
+        if (state.ghostWire?.length) {
+          drawGhostPath(startPoint, state.ghostWire, mouse, p);
+        } else {
+          drawGhostPath(startPoint, null, mouse, p);
+        }
       }
     }
 
