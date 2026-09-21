@@ -44,13 +44,13 @@ export class Clock extends Input {
 }
 
 class ConnectableGate {
-  connect(fromGate, toInputIndex, fromOutputIndex = null) {
+  connect(from, toInputIndex, fromOutputIndex = null) {
     if (toInputIndex === null) {
       return { ok: false, error: "Invalid input index!" };
     } else if (this.inputs[toInputIndex] !== undefined) {
       return { ok: false, error: "Wire is already connected!" };
     }
-    const wire = new Wire(fromGate, this, toInputIndex, fromOutputIndex);
+    const wire = new Wire(from, this, toInputIndex, fromOutputIndex);
     this.inputs[toInputIndex] = wire;
     return { ok: true, wire };
   }
