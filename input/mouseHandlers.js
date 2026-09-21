@@ -95,10 +95,26 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
           }
         } else if (state.drawingWire.originType === "bus") {
           if (connInfo?.destinationType === "gate") {
-            // TODO: Handle bus to gate connection
-            console.log("Creating a connection from a bus to a gate");
-            console.log(state.drawingWire);
-            console.log(connInfo);
+            const toGate = connInfo.connection.toNode.gate;
+            const fromBus = state.drawingWire.connection.busNode.bus;
+            const inputIndex = connInfo.connection.index;
+            const result = circuit.connectToGate(fromBus, toGate, inputIndex);
+            if (!result.ok) {
+              showToast(result.error, { type: "error" });
+              return;
+            }
+            const wire = result.wire;
+            const wireInfo = initWire(wire, state.ghostWire);
+            wireInfo.tapRef = state.drawingWire.connection.tapRef;
+
+            const conn = new BusConnection(
+              wireInfo,
+              fromBus.id,
+              toGate.id,
+              inputIndex,
+              "out",
+            );
+            wires.push(conn);
           }
         }
         state.drawingWire = null;
