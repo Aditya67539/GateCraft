@@ -1,5 +1,5 @@
 import { settleCircuit, createAccumulator, flatten, buildTypedArrays, clearAccumulator, evaluateWasm } from "./evaluate.js";
-import { CompositeGate, createBasicGate, createCompositeGate, Gate, Output } from "./gates.js";
+import { Bus, CompositeGate, createBasicGate, createCompositeGate, Gate, Output } from "./gates.js";
 import { Wire } from "./wire.js";
 import { initWasm } from "#wasmLoader";
 
@@ -97,7 +97,7 @@ export class CircuitBuilder {
    * @param {Gate} toGate - Destination gate
    * @param {number} toInputIndex - Input index of destination gate
    * @param {?number} fromOutputIndex - Output index of source gate (if multi-output)
-   * @param {?Boolean} settle - Settles the circuit if true
+   * @param {?boolean} settle - Settles the circuit if true
    * @returns {{ok: boolean, wire?: Wire, error?: string}} 
    * Result object containing the connection status and the instantiated wire
    * when the connection succeeds. 
@@ -113,7 +113,17 @@ export class CircuitBuilder {
     return result;
   }
 
-  connectWireToBus(bus, fromGate, fromOutputIndex = null, settle = true) {
+  /**
+   * 
+   * @param {Bus} bus - Destination bus
+   * @param {Gate} fromGate - Source gate
+   * @param {?number} fromOutputIndex - Output index of source gate (if multi-output)
+   * @param {?boolean} settle - Settles the circuit if true
+   * @returns {{ok: boolean, wire?: Wire, error?: string}}
+   * Result object containing the connection status and the instantiated wire
+   * when the connection succeeds. 
+   */
+  connectToBus(bus, fromGate, fromOutputIndex = null, settle = true) {
     const result = bus.connect(fromGate, fromOutputIndex);
     if (!result.ok) {
       return result;

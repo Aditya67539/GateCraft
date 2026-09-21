@@ -71,7 +71,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
             const outputIndex = state.drawingWire.connection.fromOutputIndex;
             const fromGate = state.drawingWire.connection.fromNode.gate;
             const bus = connection.busNode.bus;
-            const result = circuit.connectWireToBus(bus, fromGate, outputIndex);
+            const result = circuit.connectToBus(bus, fromGate, outputIndex);
             if (!result.ok) {
               showToast(result.error, { type: "error" });
               return;
