@@ -20,6 +20,12 @@ export class CircuitBuilder {
     this.wires = [];
     /** @type {Array<Bus>} List of bus objects */
     this.buses = [];
+    /**
+     * Whether the typed data is out of date.
+     * Set to true whenever a wire is connected or removed, since this changes the fanout
+     * relationships used by the evaluation engine. 
+     * @type {boolean}
+     */
     this.dirty = false;
     this.accumulator = createAccumulator();
     const { indexMap } = flatten(this, this.accumulator);
@@ -148,6 +154,7 @@ export class CircuitBuilder {
   disconnectWires(toGate, wire) {
     const index = toGate.inputs.indexOf(wire);
     if (index === -1) return;
+    this.dirty = true;
     if (toGate.type === "bus") {
       toGate.inputs.splice(index, 1);
       toGate.inputCount--;
