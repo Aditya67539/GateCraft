@@ -102,7 +102,7 @@ export class CircuitBuilder {
    * Result object containing the connection status and the instantiated wire
    * when the connection succeeds. 
    */
-  connectGates(fromGate, toGate, toInputIndex, fromOutputIndex = null, settle = true) {
+  connectToGate(fromGate, toGate, toInputIndex, fromOutputIndex = null, settle = true) {
     const result = toGate.connect(fromGate, toInputIndex, fromOutputIndex);
     if (!result.ok) {
       return result;

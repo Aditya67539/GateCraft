@@ -22,20 +22,20 @@ describe("Full Adder", () => {
     const sum = builder.addBasicGate("output");
     const carry = builder.addBasicGate("output");
 
-    builder.connectGates(A, xor1, 0);
-    builder.connectGates(B, xor1, 1);
-    builder.connectGates(xor1, xor2, 0);
-    builder.connectGates(C, xor2, 1);
-    builder.connectGates(xor2, sum, 0);
-    builder.connectGates(A, and1, 0);
-    builder.connectGates(B, and1, 1);
-    builder.connectGates(A, or1, 0);
-    builder.connectGates(B, or1, 1);
-    builder.connectGates(and1, or2, 0);
-    builder.connectGates(or1, and2, 0);
-    builder.connectGates(C, and2, 1);
-    builder.connectGates(and2, or2, 1);
-    builder.connectGates(or2, carry, 0);
+    builder.connectToGate(A, xor1, 0);
+    builder.connectToGate(B, xor1, 1);
+    builder.connectToGate(xor1, xor2, 0);
+    builder.connectToGate(C, xor2, 1);
+    builder.connectToGate(xor2, sum, 0);
+    builder.connectToGate(A, and1, 0);
+    builder.connectToGate(B, and1, 1);
+    builder.connectToGate(A, or1, 0);
+    builder.connectToGate(B, or1, 1);
+    builder.connectToGate(and1, or2, 0);
+    builder.connectToGate(or1, and2, 0);
+    builder.connectToGate(C, and2, 1);
+    builder.connectToGate(and2, or2, 1);
+    builder.connectToGate(or2, carry, 0);
 
     const testCases = [
       [LOW, LOW, LOW, LOW, LOW],

@@ -13,9 +13,9 @@ describe("AND Gate", () => {
     const gate = builder.addBasicGate("and");
     const out = builder.addBasicGate("output");
 
-    builder.connectGates(A, gate, 0);
-    builder.connectGates(B, gate, 1);
-    builder.connectGates(gate, out, 0);
+    builder.connectToGate(A, gate, 0);
+    builder.connectToGate(B, gate, 1);
+    builder.connectToGate(gate, out, 0);
 
     const testCases = [
       [LOW, LOW, LOW],
@@ -44,9 +44,9 @@ describe("OR Gate", () => {
     const gate = builder.addBasicGate("or");
     const out = builder.addBasicGate("output");
 
-    builder.connectGates(A, gate, 0);
-    builder.connectGates(B, gate, 1);
-    builder.connectGates(gate, out, 0);
+    builder.connectToGate(A, gate, 0);
+    builder.connectToGate(B, gate, 1);
+    builder.connectToGate(gate, out, 0);
 
     const testCases = [
       [LOW, LOW, LOW],
@@ -74,8 +74,8 @@ describe("NOT Gate", () => {
     const gate = builder.addBasicGate("not");
     const out = builder.addBasicGate("output");
 
-    builder.connectGates(A, gate, 0);
-    builder.connectGates(gate, out, 0);
+    builder.connectToGate(A, gate, 0);
+    builder.connectToGate(gate, out, 0);
 
     const testCases = [
       [LOW, HIGH],
@@ -101,9 +101,9 @@ describe("NAND Gate", () => {
     const gate = builder.addBasicGate("nand");
     const out = builder.addBasicGate("output");
 
-    builder.connectGates(A, gate, 0);
-    builder.connectGates(B, gate, 1);
-    builder.connectGates(gate, out, 0);
+    builder.connectToGate(A, gate, 0);
+    builder.connectToGate(B, gate, 1);
+    builder.connectToGate(gate, out, 0);
 
     const testCases = [
       [LOW, LOW, HIGH],
@@ -132,9 +132,9 @@ describe("NOR Gate", () => {
     const gate = builder.addBasicGate("nor");
     const out = builder.addBasicGate("output");
 
-    builder.connectGates(A, gate, 0);
-    builder.connectGates(B, gate, 1);
-    builder.connectGates(gate, out, 0);
+    builder.connectToGate(A, gate, 0);
+    builder.connectToGate(B, gate, 1);
+    builder.connectToGate(gate, out, 0);
 
     const testCases = [
       [LOW, LOW, HIGH],
@@ -163,9 +163,9 @@ describe("XOR Gate", () => {
     const gate = builder.addBasicGate("xor");
     const out = builder.addBasicGate("output");
 
-    builder.connectGates(A, gate, 0);
-    builder.connectGates(B, gate, 1);
-    builder.connectGates(gate, out, 0);
+    builder.connectToGate(A, gate, 0);
+    builder.connectToGate(B, gate, 1);
+    builder.connectToGate(gate, out, 0);
 
     const testCases = [
       [LOW, LOW, LOW],
@@ -194,9 +194,9 @@ describe("XNOR Gate", () => {
     const gate = builder.addBasicGate("xnor");
     const out = builder.addBasicGate("output");
 
-    builder.connectGates(A, gate, 0);
-    builder.connectGates(B, gate, 1);
-    builder.connectGates(gate, out, 0);
+    builder.connectToGate(A, gate, 0);
+    builder.connectToGate(B, gate, 1);
+    builder.connectToGate(gate, out, 0);
 
     const testCases = [
       [LOW, LOW, HIGH],

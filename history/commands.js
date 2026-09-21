@@ -77,7 +77,7 @@ export class RemoveGateCommand {
       const inputIndex = w.wire.toInputIndex;
       const outputIndex = w.wire.fromOutputIndex;
 
-      const result = this.circuit.connectGates(fromGate, toGate, inputIndex, outputIndex);
+      const result = this.circuit.connectToGate(fromGate, toGate, inputIndex, outputIndex);
       if (!result.ok) {
         showToast(result.error, { type: "error" });
         continue;
@@ -106,7 +106,7 @@ export class ConnectGateCommand {
   }
 
   do() {
-    const result = this.circuit.connectGates(this.fromGate, this.toGate, this.inputIndex, this.outputIndex);
+    const result = this.circuit.connectToGate(this.fromGate, this.toGate, this.inputIndex, this.outputIndex);
     if (!result.ok) {
       showToast(result.error, { type: "error" });
       return false;
@@ -149,7 +149,7 @@ export class RemoveWireCommand {
     const inputIndex = this.wireInfo.wire.toInputIndex;
     const outputIndex = this.wireInfo.wire.fromOutputIndex;
 
-    const result = this.circuit.connectGates(fromGate, toGate, inputIndex, outputIndex);
+    const result = this.circuit.connectToGate(fromGate, toGate, inputIndex, outputIndex);
     if (!result.ok) return;
 
     this.wireInfo.wire = result.wire;
