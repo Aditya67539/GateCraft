@@ -91,9 +91,9 @@ export class CircuitBuilder {
 
 
   /**
-   * Connects two gates with a wire. 
+   * Connect a source node to a destination gate with a wire.  
    * 
-   * @param {Gate} fromGate - Source gate
+   * @param {Gate|Bus} from - Source gate or bus
    * @param {Gate} toGate - Destination gate
    * @param {number} toInputIndex - Input index of destination gate
    * @param {?number} fromOutputIndex - Output index of source gate (if multi-output)
@@ -102,8 +102,8 @@ export class CircuitBuilder {
    * Result object containing the connection status and the instantiated wire
    * when the connection succeeds. 
    */
-  connectToGate(fromGate, toGate, toInputIndex, fromOutputIndex = null, settle = true) {
-    const result = toGate.connect(fromGate, toInputIndex, fromOutputIndex);
+  connectToGate(from, toGate, toInputIndex, fromOutputIndex = null, settle = true) {
+    const result = toGate.connect(from, toInputIndex, fromOutputIndex);
     if (!result.ok) {
       return result;
     }
