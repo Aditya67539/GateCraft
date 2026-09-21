@@ -3,9 +3,8 @@ import { CLOCK_TIMER, FREQUENCY, SIGNAL } from "../constants.js";
 import { setCustomWaypoints, initWire, getPointRef, projectPointOntoSegment, BusConnection, dist } from "../render/wireGeometry.js";
 import { createBasicNode, createCompositeNode, snapPointToGrid, wouldOverlap } from "../render/RenderPoint.js";
 import { showToast } from "../ui/toast.js";
-import { ConnectGateCommand, MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand } from "../history/commands.js";
+import { ConnectGateCommand, MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand, PlaceBusCommand } from "../history/commands.js";
 import { performCommand } from "../history/history.js";
-import { rebuildBusMap } from "../render/BusNode.js";
 
 const { LOW, HIGH, X, Z, E } = SIGNAL;
 
@@ -231,7 +230,6 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
         }
       } else if (state.ghostBus) {
         // TODO: Check overlap with gates and buses before placing
-        // TODO: Implement PlaceBusCommand
         if (!state.ghostBus.startPointPlaced && !state.ghostBus.endPointPlaced) {
           state.ghostBus.startPointPlaced = true;
           const startPoint = state.ghostBus.startPoint;
@@ -239,12 +237,13 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
           state.ghostBus.waypoints = waypoints;
           state.ghostBusCleanup = cleanup;
         } else if (state.ghostBus.startPointPlaced && !state.ghostBus.endPointPlaced) {
-          state.ghostBus.endPointPlaced = true;
+          const placeBusCommand = new PlaceBusCommand(circuit, busNodes, state.ghostBus, busMap);
+          performCommand(placeBusCommand);
+
           state.mode = "edit";
-          circuit.registerBus(state.ghostBus.bus);
-          busNodes.push(state.ghostBus);
-          rebuildBusMap(busNodes, busMap);
           state.ghostBus = null;
+          document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
+          document.getElementById("btn-edit").classList.add("active");
           cleanupGhostBus();
         }
       }

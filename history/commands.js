@@ -1,3 +1,4 @@
+import { rebuildBusMap } from "../render/BusNode.js";
 import { rebuildNodeMap } from "../render/RenderPoint.js";
 import { initWire, WireConnection } from "../render/wireGeometry.js";
 import { showToast } from "../ui/toast.js";
@@ -189,6 +190,35 @@ export class MoveNodeCommand {
         this.connectedWires[i].wire.waypoints = this.waypointSnapshot.fromWaypoints[i].map(wp => ({ ...wp }));
       }
     }
+  }
+}
+
+
+/** @implements {Command} */
+export class PlaceBusCommand {
+  constructor(circuit, busNodes, ghostBus, busMap) {
+    this.circuit = circuit;
+    this.busNodes = busNodes;
+    this.ghostBus = ghostBus;
+    this.busMap = busMap;
+  }
+
+  do() {
+    this.ghostBus.endPointPlaced = true;
+    this.circuit.registerBus(this.ghostBus.bus);
+    this.busNodes.push(this.ghostBus);
+    rebuildBusMap(this.busNodes, this.busMap);
+    return true;
+  }
+
+  undo() {
+    const busIndex = this.busNodes.indexOf(this.ghostBus);
+    const busId = this.ghostBus.bus.id;
+
+    this.circuit.removeBus(busId);
+    this.busNodes.splice(busIndex, 1);
+
+    rebuildBusMap(this.busNodes, this.busMap);
   }
 }
 

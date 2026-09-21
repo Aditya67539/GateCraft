@@ -89,6 +89,11 @@ export class CircuitBuilder {
     this.settle();
   }
 
+  removeBus(busId) {
+    // TODO: Find and remove all the wires connected to this bus
+    // this.settle();
+  }
+
 
   /**
    * Connect a source node to a destination gate with a wire.  
