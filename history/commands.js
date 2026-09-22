@@ -94,6 +94,68 @@ export class RemoveGateCommand {
 
 
 /** @implements {Command} */
+export class RemoveBusCommand {
+  constructor(busNodes, wires, circuit, busNode, busMap) {
+    this.busNodes = busNodes;
+    this.wires = wires;
+    this.circuit = circuit;
+    this.busNode = busNode;
+    this.busMap = busMap;
+  }
+
+  do() {
+    const busIndex = this.busNodes.indexOf(this.busNode);
+    const busId = this.busNode.bus.id;
+
+    const wiresToRemove = this.wires.filter(n => n.wire.from.id === busId || n.wire.to.id === busId);
+    
+    this.circuit.removeBus(busId);
+    this.busNodes.splice(busIndex, 1);
+
+    wiresToRemove.forEach(w => this.wires.splice(this.wires.indexOf(w), 1));
+
+    rebuildBusMap(this.busNodes, this.busMap);
+    this.wiresRemoved = wiresToRemove;
+    return true;
+  }
+
+  undo() {
+    this.circuit.registerBus(this.busNode.bus);
+    this.busNodes.push(this.busNode);
+
+    for (const w of this.wiresRemoved) {
+      let result;
+      if (w.direction === "in") {
+        const fromGate = w.wire.from;
+        const outputIndex = w.portIndex;
+        
+        result = this.circuit.connectToBus(this.busNode.bus, fromGate, outputIndex);
+        if (!result.ok) {
+          showToast(result.error, { type: "error" });
+          continue;
+        }
+      } else if (w.direction === "out") {
+        const toGate = w.wire.to;
+        const fromBus = this.busNode;
+        const inputIndex = w.portIndex;
+
+        result = this.circuit.connectToGate(fromBus, toGate, inputIndex);
+        if (!result.ok) {
+          showToast(result.error, { type: "error" });
+          continue;
+        }
+      }
+
+      w.wire = result.wire;
+      this.wires.push(w);
+    }
+
+    rebuildBusMap(this.busNodes, this.busMap);
+  }
+}
+
+
+/** @implements {Command} */
 export class ConnectGateCommand {
   constructor(circuit, fromGate, toGate, inputIndex, outputIndex, ghostWire, wires) {
     this.circuit = circuit;

@@ -18,8 +18,8 @@ export class CircuitBuilder {
     this.gates = new Map();
     /** @type {Array<Wire>} List of wire objects connecting gates */
     this.wires = [];
-    /** @type {Array<Bus>} List of bus objects */
-    this.buses = [];
+    /** @type {Map<number, Bus>} Map of busId -> bus instance */
+    this.buses = new Map();
     /**
      * Whether the typed data is out of date.
      * Set to true whenever a wire is connected or removed, since this changes the fanout
@@ -68,7 +68,7 @@ export class CircuitBuilder {
   }
 
   registerBus(bus) {
-    this.buses.push(bus);
+    this.buses.set(bus.id, bus);
   }
 
   /**
@@ -95,9 +95,26 @@ export class CircuitBuilder {
     this.settle();
   }
 
+  /**
+   * Removes a bus and all associated wires from the circuit,
+   * Also updates the input indices of affected gates and settles the circuit. 
+   * 
+   * @param {number} busId - ID of the bus to remove
+   */
   removeBus(busId) {
-    // TODO: Find and remove all the wires connected to this bus
-    // this.settle();
+    for (const wire of this.wires) {
+      if (wire.from.id === busId || wire.to.id === busId) {
+        const toGate = wire.to;
+        this.disconnectWire(toGate, wire);
+      }
+    }
+
+    this.wires = this.wires.filter(
+      w => w.from.id !== busId && w.to.id !== busId
+    );
+
+    this.buses.delete(busId);
+    this.settle();
   }
 
 

@@ -3,7 +3,7 @@ import { CLOCK_TIMER, FREQUENCY, SIGNAL } from "../constants.js";
 import { setCustomWaypoints, initWire, getPointRef, projectPointOntoSegment, BusConnection, dist } from "../render/wireGeometry.js";
 import { createBasicNode, createCompositeNode, snapPointToGrid, wouldOverlap } from "../render/RenderPoint.js";
 import { showToast } from "../ui/toast.js";
-import { ConnectGateCommand, MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand, PlaceBusCommand } from "../history/commands.js";
+import { ConnectGateCommand, MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand, PlaceBusCommand, RemoveBusCommand } from "../history/commands.js";
 import { performCommand } from "../history/history.js";
 
 const { LOW, HIGH, X, Z, E } = SIGNAL;
@@ -262,9 +262,14 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
         state.dragging = null;
       } else {
         const wireInfo = getWireAtPoint(world.x, world.y, wires, nodeMap, busMap);
+        const busInfo = getBusAtPoint(world.x, world.y, busNodes, nodeMap, busMap);
+        
         if (wireInfo) {
           const removeWireCommand = new RemoveWireCommand(circuit, wires, wireInfo);
           performCommand(removeWireCommand);
+        } else if (busInfo) {
+          const removeBusCommand = new RemoveBusCommand(busNodes, wires, circuit, busInfo, busMap);
+          performCommand(removeBusCommand);
         }
       }
     }
@@ -512,6 +517,19 @@ function getWireAtPoint(mx, my, wires, nodeMap, busMap) {
     for (let i = 0; i < points.length - 1; i++) {
       if (isOnLineSegment(points[i], points[i + 1], { x: mx, y: my }, 15)) {
         return conn;
+      }
+    }
+  }
+  return null;
+}
+
+function getBusAtPoint(mx, my, busNodes, nodeMap, busMap) {
+  for (const busNode of busNodes) {
+    const { start, waypoints, end } = busNode.getPoints();
+    const points = [ start, ...waypoints, end ];
+    for (let i = 0; i < points.length - 1; i++) {
+      if (isOnLineSegment(points[i], points[i + 1], { x: mx, y: my }, 15)) {
+        return busNode;
       }
     }
   }
