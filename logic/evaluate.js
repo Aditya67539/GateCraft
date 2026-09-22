@@ -124,6 +124,7 @@ function arraysEqual(a, b) {
 export function evaluateOnce(circuit) {
   const wires = circuit.wires;
   const gates = circuit.getGates();
+  const buses = circuit.getBuses();
   let changed = false;
   // Update signals from input and clock sources
   for (const wire of wires) {
@@ -153,6 +154,25 @@ export function evaluateOnce(circuit) {
 
       if (wire.signal !== signal) {
         wire.signal = signal;
+        changed = true;
+      }
+    }
+  }
+
+  for (const bus of buses) {
+    if (bus.hasNoInputsConnected()) continue;
+    const result = bus.evaluate();
+    if (!result.ok) {
+      console.error(result.error);
+      continue;
+    }
+    const newOutput = result.output;
+    bus.output = newOutput;
+    for (const wire of wires) {
+      if (wire.from.id !== bus.id) continue;
+
+      if (wire.signal !== bus.output) {
+        wire.signal = bus.output;
         changed = true;
       }
     }

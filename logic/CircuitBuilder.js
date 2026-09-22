@@ -249,6 +249,15 @@ export class CircuitBuilder {
   getGates() {
     return this.gates.values();
   }
+  
+  /**
+   * Returns all buses in the circuit. 
+   * 
+   * @returns {Array<Bus>} List of bus instances
+   */
+  getBuses() {
+    return this.buses.values();
+  }
 
   /**
    * Returns all the wires in the circuit.  
