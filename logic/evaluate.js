@@ -308,6 +308,17 @@ export function flatten(circuit, acc, inputOrder = [], outputOrder = [], gateCou
     }
   }
 
+  for (const bus of circuit.getBuses()) {
+    indexMap[bus.id] = gateCount;
+    acc.gateMap.set(bus, gateCount);
+
+    acc.gateTypes.push(encodeType(bus.type));
+    acc.outputOffset.push(acc.allOutputs.length);
+    acc.allOutputs.push(bus.output);
+
+    gateCount++;
+  }
+
   // --- Pass 2: build boundary map for THIS circuit's Input/Output nodes ---
   // Switch to Set for O(1) lookup
   const inputNodes = [...circuit.getGates()]
