@@ -82,7 +82,7 @@ export class CircuitBuilder {
     for (const wire of this.wires) {
       if (wire.from.id === gateId || wire.to.id === gateId) {
         const toGate = wire.to;
-        this.disconnectWires(toGate, wire);
+        this.disconnectWire(toGate, wire);
       }
     }
 
@@ -148,26 +148,26 @@ export class CircuitBuilder {
   /**
    * Disconnects a wire from a gate's input. 
    * 
-   * @param {Gate} toGate - Target gate whose input is being removed
+   * @param {Gate|Bus} destination - Target gate or bus whose input is being removed
    * @param {Wire} wire - Target wire that is being disconnected
    */
-  disconnectWires(toGate, wire) {
-    const index = toGate.inputs.indexOf(wire);
+  disconnectWire(destination, wire) {
+    const index = destination.inputs.indexOf(wire);
     if (index === -1) return;
     this.dirty = true;
-    if (toGate.type === "bus") {
-      toGate.inputs.splice(index, 1);
-      toGate.inputCount--;
+    if (destination.type === "bus") {
+      destination.inputs.splice(index, 1);
+      destination.inputCount--;
 
       for (const w of this.wires) {
-        if (w.to.id === toGate.id && w.toInputIndex > index) {
+        if (w.to.id === destination.id && w.toInputIndex > index) {
           w.toInputIndex--;
         }
       }
 
       return;
     }
-    toGate.inputs[index] = undefined;
+    destination.inputs[index] = undefined;
   }
 
   /**
@@ -176,9 +176,9 @@ export class CircuitBuilder {
    * @param {Wire} wire - Wire object to remove
    */
   removeWire(wire) {
-    const toGate = wire.to;
+    const destination = wire.to;
 
-    this.disconnectWires(toGate, wire);
+    this.disconnectWire(destination, wire);
 
     this.wires = this.wires.filter(w => w !== wire);
     this.settle();

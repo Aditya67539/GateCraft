@@ -4,9 +4,9 @@ import { SIGNAL } from "../../constants.js";
 
 const { LOW, HIGH, X, Z, E } = SIGNAL;
 
-// ─── disconnectWires ────────────────────────────────────────────────────────
+// ─── disconnectWire ────────────────────────────────────────────────────────
 
-describe("disconnectWires", () => {
+describe("disconnectWire", () => {
   it("clears the input slot (sets undefined) on a basic gate", () => {
     const builder = new CircuitBuilder();
 
@@ -14,13 +14,13 @@ describe("disconnectWires", () => {
     const B = builder.addBasicGate("input");
     const gate = builder.addBasicGate("and"); // fixed 2 inputs
 
-    builder.connectToGate(A, gate, 0);
+    const resultA = builder.connectToGate(A, gate, 0);
     builder.connectToGate(B, gate, 1);
 
     expect(gate.inputs[0]).toBeDefined();
     expect(gate.inputs[1]).toBeDefined();
 
-    builder.disconnectWires(gate, 0);
+    builder.disconnectWire(gate, resultA.wire);
 
     // Slot is cleared but array length is preserved (fixed ports)
     expect(gate.inputs.length).toBe(2);
@@ -35,10 +35,10 @@ describe("disconnectWires", () => {
     const A = builder.addBasicGate("input");
     const out = builder.addBasicGate("output"); // fixed 1 input
 
-    builder.connectToGate(A, out, 0);
+    const resultA = builder.connectToGate(A, out, 0);
     expect(out.inputs[0]).toBeDefined();
 
-    builder.disconnectWires(out, 0);
+    builder.disconnectWire(out, resultA.wire);
 
     expect(out.inputs.length).toBe(1);
     expect(out.inputs[0]).toBeUndefined();
@@ -67,13 +67,13 @@ describe("disconnectWires", () => {
     const X = builder.addBasicGate("input");
     const Y = builder.addBasicGate("input");
 
-    builder.connectToGate(X, compositeGate, 0);
+    const resultX = builder.connectToGate(X, compositeGate, 0);
     builder.connectToGate(Y, compositeGate, 1);
 
     expect(compositeGate.inputs[0]).toBeDefined();
     expect(compositeGate.inputs[1]).toBeDefined();
 
-    builder.disconnectWires(compositeGate, 0);
+    builder.disconnectWire(compositeGate, resultX.wire);
 
     expect(compositeGate.inputs.length).toBe(2);
     expect(compositeGate.inputs[0]).toBeUndefined();
@@ -88,16 +88,18 @@ describe("disconnectWires", () => {
     const gate1 = builder.addBasicGate("and");
     const gate2 = builder.addBasicGate("or");
 
-    builder.connectToGate(A, gate1, 0);
-    builder.connectToGate(B, gate1, 1);
+    const resultA1 = builder.connectToGate(A, gate1, 0);
+    const resultB1 = builder.connectToGate(B, gate1, 1);
     const resultA2 = builder.connectToGate(A, gate2, 0);
     const resultB2 = builder.connectToGate(B, gate2, 1);
 
+    const wireA1 = resultA1.wire;
+    const wireB1 = resultB1.wire;
     const wireA2 = resultA2.wire;
     const wireB2 = resultB2.wire;
 
     // Disconnect gate1's index 0
-    builder.disconnectWires(gate1, 0);
+    builder.disconnectWire(gate1, wireA1);
 
     // gate2's wires should be unaffected
     expect(wireA2.toInputIndex).toBe(0);
@@ -113,11 +115,11 @@ describe("disconnectWires", () => {
     const B = builder.addBasicGate("input");
     const gate = builder.addBasicGate("and");
 
-    builder.connectToGate(A, gate, 0);
+    const resultA = builder.connectToGate(A, gate, 0);
     builder.connectToGate(B, gate, 1);
 
     // Disconnect slot 0
-    builder.disconnectWires(gate, 0);
+    builder.disconnectWire(gate, resultA.wire);
     expect(gate.inputs[0]).toBeUndefined();
 
     // Reconnect a new input to slot 0
