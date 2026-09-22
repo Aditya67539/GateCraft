@@ -59,7 +59,7 @@ export function evaluateAll(circuit, seedAll = false) {
     const [gateId] = currentDelta;
     currentDelta.delete(gateId);
 
-    const gate = gateMap.get(gateId);
+    const gate = gateMap.get(gateId) || circuit.buses.get(gateId);
     if (!gate || gate.type === "input" || gate.type === "clock") continue;
 
     // Composite gates use an array of outputs whereas basic gates only have one possible output
