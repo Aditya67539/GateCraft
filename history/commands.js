@@ -136,7 +136,7 @@ export class RemoveBusCommand {
         }
       } else if (w.direction === "out") {
         const toGate = w.wire.to;
-        const fromBus = this.busNode;
+        const fromBus = this.busNode.bus;
         const inputIndex = w.portIndex;
 
         result = this.circuit.connectToGate(fromBus, toGate, inputIndex);
