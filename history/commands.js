@@ -1,6 +1,6 @@
 import { rebuildBusMap } from "../render/BusNode.js";
 import { rebuildNodeMap } from "../render/RenderPoint.js";
-import { initWire, WireConnection } from "../render/wireGeometry.js";
+import { BusConnection, initWire, WireConnection } from "../render/wireGeometry.js";
 import { showToast } from "../ui/toast.js";
 
 /**
@@ -181,6 +181,58 @@ export class ConnectGateCommand {
     } else {
       this.connection = new WireConnection(initWire(wire, this.ghostWire));
     }
+    this.wires.push(this.connection);
+    return true;
+  }
+
+  undo() {
+    this.circuit.removeWire(this.connection.wire);
+    this.wires.splice(this.wires.indexOf(this.connection), 1);
+  }
+}
+
+
+/** @implements {Command} */
+export class BusConnectionCommand {
+  constructor(circuit, gate, bus, ghostWire, wires, direction, index, tapRef) {
+    this.circuit = circuit;
+    this.gate = gate;
+    this.bus = bus;
+    this.ghostWire = ghostWire;
+    this.wires = wires;
+    this.direction = direction;
+    this.index = index;
+    this.tapRef = tapRef;
+    this.connection = null;
+  }
+
+  do() {
+    let result;
+    if (this.direction === "in") {
+      result = this.circuit.connectToBus(this.bus, this.gate, this.index);
+    } else {
+      result = this.circuit.connectToGate(this.bus, this.gate, this.index);
+    }
+    if (!result.ok) {
+      showToast(result.error, { type: "error" });
+      return false;
+    }
+    let wire = result.wire;
+
+    if (this.connection !== null) {
+      this.connection.wire = result.wire;
+    } else {
+      const wireInfo = initWire(wire, this.ghostWire);
+      wireInfo.tapRef = this.tapRef;
+      this.connection = new BusConnection(
+        wireInfo,
+        this.bus.id,
+        this.gate.id,
+        this.index,
+        this.direction,
+      );
+    }
+
     this.wires.push(this.connection);
     return true;
   }

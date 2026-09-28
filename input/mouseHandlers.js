@@ -1,9 +1,9 @@
 import { state, screenToWorld, worldToScreen } from "../state.js";
 import { CLOCK_TIMER, FREQUENCY, SIGNAL } from "../constants.js";
-import { setCustomWaypoints, initWire, getPointRef, projectPointOntoSegment, BusConnection, dist } from "../render/wireGeometry.js";
+import { setCustomWaypoints, getPointRef, projectPointOntoSegment, dist } from "../render/wireGeometry.js";
 import { createBasicNode, createCompositeNode, snapPointToGrid, wouldOverlap } from "../render/RenderPoint.js";
 import { showToast } from "../ui/toast.js";
-import { ConnectGateCommand, MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand, PlaceBusCommand, RemoveBusCommand } from "../history/commands.js";
+import { ConnectGateCommand, MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand, PlaceBusCommand, RemoveBusCommand, BusConnectionCommand } from "../history/commands.js";
 import { performCommand } from "../history/history.js";
 
 const { LOW, HIGH, X, Z, E } = SIGNAL;
@@ -70,50 +70,36 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
             const outputIndex = state.drawingWire.connection.fromOutputIndex;
             const fromGate = state.drawingWire.connection.fromNode.gate;
             const bus = connection.busNode.bus;
-            const result = circuit.connectToBus(bus, fromGate, outputIndex);
-            if (!result.ok) {
-              showToast(result.error, { type: "error" });
-              return;
-            }
-            const wire = result.wire;
-            const wireInfo = initWire(wire, state.ghostWire);
-            wireInfo.tapRef = connection.tapRef;
 
-            // NOTE: Since bus connection command is not performed by command module
-            // ctrl + z triggers the undo method of PlaceGateCommand which assumes
-            // NO wire is connected to the gate
-            const conn = new BusConnection(
-              wireInfo,
-              bus.id,
-              fromGate.id,
-              outputIndex,
+            const busConnectionCommand = new BusConnectionCommand(
+              circuit,
+              fromGate,
+              bus,
+              state.ghostWire,
+              wires,
               "in",
+              outputIndex,
+              connInfo.connection.tapRef,
             );
-            // TODO: Implement ConnectWireToBusCommand and remove the initWire function call
-            wires.push(conn);
+            performCommand(busConnectionCommand);
           }
         } else if (state.drawingWire.originType === "bus") {
           if (connInfo?.destinationType === "gate") {
             const toGate = connInfo.connection.toNode.gate;
             const fromBus = state.drawingWire.connection.busNode.bus;
             const inputIndex = connInfo.connection.index;
-            const result = circuit.connectToGate(fromBus, toGate, inputIndex);
-            if (!result.ok) {
-              showToast(result.error, { type: "error" });
-              return;
-            }
-            const wire = result.wire;
-            const wireInfo = initWire(wire, state.ghostWire);
-            wireInfo.tapRef = state.drawingWire.connection.tapRef;
 
-            const conn = new BusConnection(
-              wireInfo,
-              fromBus.id,
-              toGate.id,
-              inputIndex,
+            const busConnectionCommand = new BusConnectionCommand(
+              circuit,
+              toGate,
+              fromBus,
+              state.ghostWire,
+              wires,
               "out",
+              inputIndex,
+              state.drawingWire.connection.tapRef,
             );
-            wires.push(conn);
+            performCommand(busConnectionCommand);
           }
         }
         state.drawingWire = null;
