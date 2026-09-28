@@ -59,6 +59,17 @@ export class CircuitBuilder {
   }
 
   /**
+   * Creates and adds a bus instance. 
+   * 
+   * @returns {Gate} The instantiated bus object
+   */
+  addBus() {
+    const bus = createBasicGate("bus");
+    this.buses.set(bus.id, bus);
+    return bus;
+  }
+
+  /**
    * Registers an existing gate instance into the circuit.
    *
    * @param {Gate} gate - Gate instance
