@@ -38,7 +38,7 @@ const sketch = (p) => {
   p.setup = function () {
     const cnv = p.createCanvas(WIDTH, HEIGHT);
     cnv.parent(canvasHost);
-    const toolbarActions = initToolbar(p, circuit, renderNodes, wires);
+    const toolbarActions = initToolbar(p, circuit, renderNodes, wires, busNodes);
 
     registerMouseHandlers(p, circuit, renderNodes, wires, busNodes);
     registerKeyboardHandlers(p, circuit, renderNodes, wires, toolbarActions);

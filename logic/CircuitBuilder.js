@@ -270,10 +270,11 @@ export class CircuitBuilder {
 
   /**
    * Clears the entire circuit.
-   * Removes all gates and wires, resetting the builder to an empty state.
+   * Removes all gates, buses and wires, resetting the builder to an empty state.
    */
   clear() {
     this.gates.clear();
+    this.buses.clear();
     this.wires = [];
   }
 }
