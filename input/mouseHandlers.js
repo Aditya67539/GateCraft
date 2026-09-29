@@ -1,7 +1,7 @@
 import { state, screenToWorld, worldToScreen } from "../state.js";
 import { CLOCK_TIMER, FREQUENCY, SIGNAL } from "../constants.js";
 import { setCustomWaypoints, getPointRef, projectPointOntoSegment, dist } from "../render/wireGeometry.js";
-import { createBasicNode, createCompositeNode, snapPointToGrid, wouldOverlap } from "../render/RenderPoint.js";
+import { createBasicNode, createCompositeNode, snapPointToGrid, wouldOverlap, wouldBusOverlap } from "../render/RenderPoint.js";
 import { showToast } from "../ui/toast.js";
 import { ConnectGateCommand, MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand, PlaceBusCommand, RemoveBusCommand, BusConnectionCommand } from "../history/commands.js";
 import { performCommand } from "../history/history.js";
@@ -194,7 +194,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
       }
     } else if (state.mode === "placing") {
       if (state.ghostNode) {
-        if (wouldOverlap(state.ghostNode, renderNodes)) return;
+        if (wouldOverlap(state.ghostNode, renderNodes, busNodes, null)) return;
         const placeGateCommand = new PlaceGateCommand(circuit, renderNodes, state.ghostNode, nodeMap);
         performCommand(placeGateCommand);
 
@@ -215,14 +215,15 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
           document.getElementById("btn-edit").classList.add("active");
         }
       } else if (state.ghostBus) {
-        // TODO: Check overlap with gates and buses before placing
         if (!state.ghostBus.startPointPlaced && !state.ghostBus.endPointPlaced) {
+          if (wouldBusOverlap(state.ghostBus, renderNodes, busNodes)) return;
           state.ghostBus.startPointPlaced = true;
           const startPoint = state.ghostBus.startPoint;
           const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
           state.ghostBus.waypoints = waypoints;
           state.ghostBusCleanup = cleanup;
         } else if (state.ghostBus.startPointPlaced && !state.ghostBus.endPointPlaced) {
+          if (wouldBusOverlap(state.ghostBus, renderNodes, busNodes)) return;
           const placeBusCommand = new PlaceBusCommand(circuit, busNodes, state.ghostBus, busMap);
           performCommand(placeBusCommand);
 
@@ -304,7 +305,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
 
   p.mouseReleased = function () {
     if (state.dragging) {
-      if (wouldOverlap(state.dragging, renderNodes, state.dragging.gate.id)) {
+      if (wouldOverlap(state.dragging, renderNodes, busNodes, state.dragging.gate.id)) {
         state.dragging.x = state.currentX;
         state.dragging.y = state.currentY;
         if (state.connectedWires && state.connectedWireSnapshots) {

@@ -28,6 +28,26 @@ export class BusNode {
       end: this.endPoint,
     }
   }
+
+  getStartPointBounds(padding = 4) {
+    const r = 8;
+    return {
+      left:   this.startPoint.x - r - padding,
+      right:  this.startPoint.x + r + padding,
+      top:    this.startPoint.y - r - padding,
+      bottom: this.startPoint.y + r + padding,
+    };
+  }
+
+  getEndPointBounds(padding = 4) {
+    const r = 8;
+    return {
+      left:   this.endPoint.x - r - padding,
+      right:  this.endPoint.x + r + padding,
+      top:    this.endPoint.y - r - padding,
+      bottom: this.endPoint.y + r + padding,
+    };
+  }
 }
 
 

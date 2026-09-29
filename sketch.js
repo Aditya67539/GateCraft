@@ -62,7 +62,7 @@ const sketch = (p) => {
       let nodeStatus = null;
       if (state.dragging && renderNodes[i] === state.dragging) {
         // Actively dragging — show overlap feedback
-        nodeStatus = wouldOverlap(state.dragging, renderNodes, state.dragging.gate.id)
+        nodeStatus = wouldOverlap(state.dragging, renderNodes, busNodes, state.dragging.gate.id)
           ? "invalid"
           : "selected";
       } else if (state.selectedNode && renderNodes[i] === state.selectedNode) {
@@ -156,7 +156,7 @@ const sketch = (p) => {
       }
     }
     if (state.ghostNode) {
-      let status = wouldOverlap(state.ghostNode, renderNodes) ? "invalid" : "valid";
+      let status = wouldOverlap(state.ghostNode, renderNodes, busNodes, null) ? "invalid" : "valid";
       drawGate(state.ghostNode, p, status);
       if (state.mode === "placing") {
         const { x: worldMouseX, y: worldMouseY } = screenToWorld(p.mouseX, p.mouseY);
