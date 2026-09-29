@@ -5,9 +5,6 @@ import { initWasm } from "#wasmLoader";
 
 await initWasm();
 
-// TODO: Implement addBus method for use in persistence and tests
-// TODO: Add JSDocs for the new methods
-
 /**
  * Builder class for constructing and managing a digital logic circuit. 
  * Handles gates, wires, connections, evaluation, and structural updates. 
@@ -78,6 +75,11 @@ export class CircuitBuilder {
     this.gates.set(gate.id, gate);
   }
 
+  /**
+   * Registers an existing bus instance into the circuit. 
+   * 
+   * @param {Gate} bus - Bus instance
+   */
   registerBus(bus) {
     this.buses.set(bus.id, bus);
   }
