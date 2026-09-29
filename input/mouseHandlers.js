@@ -127,22 +127,26 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
           if (connectedInputWires || connectedOutputWires) {
             state.connectedWires = [];
             for (let i = 0; i < connectedInputWires.length; i++) {
-              const lastWaypoint = connectedInputWires[i].waypoints.length - 1;
-              state.connectedWires.push({
-                wire: connectedInputWires[i],
-                offsetX: x - connectedInputWires[i].waypoints[lastWaypoint].x,
-                offsetY: y - connectedInputWires[i].waypoints[lastWaypoint].y,
-                type: "input",
-              });
+              if (connectedInputWires[i].waypoints && connectedInputWires[i].waypoints.length !== 0) {
+                const lastWaypoint = connectedInputWires[i].waypoints.length - 1;
+                state.connectedWires.push({
+                  wire: connectedInputWires[i],
+                  offsetX: x - connectedInputWires[i].waypoints[lastWaypoint].x,
+                  offsetY: y - connectedInputWires[i].waypoints[lastWaypoint].y,
+                  type: "input",
+                });
+              }
             }
 
             for (let i = 0; i < connectedOutputWires.length; i++) {
-              state.connectedWires.push({
-                wire: connectedOutputWires[i],
-                offsetX: x - connectedOutputWires[i].waypoints[0].x,
-                offsetY: y - connectedOutputWires[i].waypoints[0].y,
-                type: "output",
-              });
+              if (connectedOutputWires[i].waypoints && connectedOutputWires[i].waypoints.length !== 0) {
+                state.connectedWires.push({
+                  wire: connectedOutputWires[i],
+                  offsetX: x - connectedOutputWires[i].waypoints[0].x,
+                  offsetY: y - connectedOutputWires[i].waypoints[0].y,
+                  type: "output",
+                });
+              }
             }
           }
         } else if (state.drawingWire && !state.changingWaypoint && !state.dragging) {
