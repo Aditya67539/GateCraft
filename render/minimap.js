@@ -60,7 +60,7 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-export function drawMinimap(p, renderNodes, state) {
+export function drawMinimap(p, renderNodes, busNodes, state) {
   const theme = getActiveTheme();
   const zoom = state.zoom || 1;
 
@@ -81,6 +81,17 @@ export function drawMinimap(p, renderNodes, state) {
     if (node.y < minY) minY = node.y;
     if (node.x + node.width > maxX) maxX = node.x + node.width;
     if (node.y + node.height > maxY) maxY = node.y + node.height;
+  }
+
+  // Expand bounds for bus endpoints and waypoints
+  for (let bus of busNodes) {
+    const points = [bus.startPoint, ...bus.waypoints, bus.endPoint];
+    for (let pt of points) {
+      if (pt.x < minX) minX = pt.x;
+      if (pt.y < minY) minY = pt.y;
+      if (pt.x > maxX) maxX = pt.x;
+      if (pt.y > maxY) maxY = pt.y;
+    }
   }
 
   // Add 10% padding so things don't touch the edge of the minimap
@@ -131,6 +142,37 @@ export function drawMinimap(p, renderNodes, state) {
     let mw = node.width * mapData.miniScale;
     let mh = node.height * mapData.miniScale;
     roundRect(ctx, mx, my, mw, mh, 2);
+    ctx.fill();
+  }
+
+  // Draw Buses (Polylines with endpoint circles)
+  const busColor = theme.wires?.x?.hex || "#888";
+  ctx.strokeStyle = busColor;
+  ctx.fillStyle = busColor;
+  ctx.lineWidth = Math.max(1, 2 * mapData.miniScale);
+
+  for (let bus of busNodes) {
+    const points = [bus.startPoint, ...bus.waypoints, bus.endPoint];
+    const mapped = points.map(pt => ({
+      x: (pt.x - mapData.worldMinX) * mapData.miniScale,
+      y: (pt.y - mapData.worldMinY) * mapData.miniScale,
+    }));
+
+    // Draw polyline segments
+    ctx.beginPath();
+    ctx.moveTo(mapped[0].x, mapped[0].y);
+    for (let i = 1; i < mapped.length; i++) {
+      ctx.lineTo(mapped[i].x, mapped[i].y);
+    }
+    ctx.stroke();
+
+    // Draw endpoint circles (start and end)
+    const r = Math.max(2, 4 * mapData.miniScale);
+    ctx.beginPath();
+    ctx.arc(mapped[0].x, mapped[0].y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(mapped[mapped.length - 1].x, mapped[mapped.length - 1].y, r, 0, Math.PI * 2);
     ctx.fill();
   }
 

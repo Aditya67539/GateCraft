@@ -222,7 +222,7 @@ const sketch = (p) => {
     }
 
     // TODO: Render buses in the minimap
-    drawMinimap(p, renderNodes, state);
+    drawMinimap(p, renderNodes, busNodes, state);
   }
 }
 
