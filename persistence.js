@@ -1,5 +1,6 @@
 import { CircuitBuilder } from "./logic/CircuitBuilder.js";
 import { RenderPoint } from "./render/RenderPoint.js";
+import { BusConnection, WireConnection } from "./render/wireGeometry.js";
 
 const STORAGE_KEY = "compositeGates";
 
@@ -29,17 +30,20 @@ function setStore(store) {
  * 
  * @param {Array<RenderPoint>} renderNodes - Array of RenderPoint objects. 
  * @param {Array<Object>} wireInfos - Array of wire object containing Wire instances. 
+ * @param {Array<BusNode>} busNodes - Array of BusNode objects. 
  * @returns {{
  *   gates: Array<Object>,
  *   wires: Array<Object>,
+ *   buses: Array<Object>,
  *   inputOrder: Array<number>,
  *   outputOrder: Array<number>
  * }}
  * Structured circuit data for reconstruction. 
  */
-function getCircuitData(renderNodes, wireInfos) {
+function getCircuitData(renderNodes, wireInfos, busNodes) {
   const gates = [];
   const wires = [];
+  const buses = [];
   for (const node of renderNodes) {
     const data = {
       id: node.gate.id,
@@ -53,13 +57,23 @@ function getCircuitData(renderNodes, wireInfos) {
     }
     gates.push(data);
   }
+
+  for (const busNode of busNodes) {
+    buses.push({ id: busNode.bus.id });
+  }
   
   for (const w of wireInfos) {
     const data = {
-      fromGateId: w.wire.from.id,
-      toGateId: w.wire.to.id,
+      from: w.wire.from.id,
+      to: w.wire.to.id,
       toInputIndex: w.wire.toInputIndex,
       fromOutputIndex: w.wire.fromOutputIndex,
+    }
+    if (w instanceof WireConnection) {
+      data.isBusConnection = false;
+    } else if (w instanceof BusConnection) {
+      data.isBusConnection = true;
+      data.direction = w.direction;
     }
     wires.push(data);
   }
@@ -78,7 +92,7 @@ function getCircuitData(renderNodes, wireInfos) {
   const inputOrder = inputNodes.map(node => node.gate.id);
   const outputOrder = outputNodes.map(node => node.gate.id);
 
-  return { gates, wires, inputOrder, outputOrder };
+  return { gates, wires, buses, inputOrder, outputOrder };
 }
 
 /**
@@ -92,26 +106,43 @@ function getCircuitData(renderNodes, wireInfos) {
  * }}
  * Structered render data for UI reconstruction. 
  */
-function getRenderData(renderNodes, wireInfos) {
+function getRenderData(renderNodes, wireInfos, busNodes) {
   const positions = [];
   const wires = [];
+  const buses = [];
 
   for (const node of renderNodes) {
     const data = { "id": node.gate.id, "x": node.x, "y": node.y };
     positions.push(data);
   }
 
+  for (const busNode of busNodes) {
+    const data = {
+      id: busNode.bus.id,
+      startPoint: busNode.startPoint,
+      endPoint: busNode.endPoint,
+      waypoints: busNode.waypoints,
+    }
+    buses.push(data);
+  }
+
   for (const w of wireInfos) {
     const data = {
-      fromGateId: w.wire.from.id,
-      toGateId: w.wire.to.id,
+      from: w.wire.from.id,
+      to: w.wire.to.id,
       waypoints: w.waypoints,
+      isCustomRouted: w.isCustomRouted,
     };
-    if (w.isCustomRouted) data.isCustomRouted = true;
+    if (w instanceof WireConnection) {
+      data.isBusConnection = false;
+    } else if (w instanceof BusConnection) {
+      data.isBusConnection = true;
+      data.direction = w.direction;
+    }
     wires.push(data);
   }
 
-  return { positions, wires };
+  return { positions, wires, buses };
 }
 
 /**
@@ -120,10 +151,11 @@ function getRenderData(renderNodes, wireInfos) {
  * @param {string} name - Name of the composite gate. 
  * @param {Array<RenderPoint>} renderNodes - Array of RenderPoint objects. 
  * @param {Array<Object>} wires - Array of wire objects containing Wire instances. 
+ * @param {Array<BusNode>} buses - Array of BusNode objects. 
  */
-export function saveCompositeGate(name, renderNodes, wires) {
-  const circuitData = getCircuitData(renderNodes, wires);
-  const renderData = getRenderData(renderNodes, wires);
+export function saveCompositeGate(name, renderNodes, wires, buses) {
+  const circuitData = getCircuitData(renderNodes, wires, buses);
+  const renderData = getRenderData(renderNodes, wires, buses);
 
   const store = getStore();
   store[name] = { circuitData, renderData };
@@ -149,6 +181,7 @@ export function loadCompositeGate(name) {
  * @param {{
  *   gates: Array<Gate>,
  *   wires: Array<Wire>,
+ *   buses: Array<Bus>,
  *   inputOrder: Array<number>,
  *   outputOrder: Array<number>
  * }} circuitData - Serialized circuit data. 
@@ -181,11 +214,32 @@ export function buildCircuitFromData(circuitData, renderData = null) {
     if (gateSpec.label) gate.label = gateSpec.label;
   }
 
+  // NOTE: This condition is required for circuits that were saved before the simulator 
+  // supported buses, since they do not have the buses property in their circuitData
+  if (circuitData.buses) {
+    for (const busSpec of circuitData.buses) {
+      const bus = builder.addBus();
+      idMap[busSpec.id] = bus.id;
+    }
+  }
+
   for (const wireSpec of circuitData.wires) {
-    const fromGate = builder.gates.get(idMap[wireSpec.fromGateId]);
-    const toGate = builder.gates.get(idMap[wireSpec.toGateId]);
-    if (fromGate && toGate) {
-      builder.connectToGate(fromGate, toGate, wireSpec.toInputIndex, wireSpec.fromOutputIndex, false);
+    const fromId = idMap[wireSpec.from];
+    const toId = idMap[wireSpec.to];
+    const from = builder.gates.get(fromId) || builder.buses.get(fromId);
+    const to = builder.gates.get(toId) || builder.buses.get(toId);
+    if (from && to) {
+      if (!wireSpec.isBusConnection) {
+        builder.connectToGate(from, to, wireSpec.toInputIndex, wireSpec.fromOutputIndex, false);
+      } else {
+        if (wireSpec.direction === "in") {
+          // "in" means gate output → bus: from=gate, to=bus
+          builder.connectToBus(to, from, wireSpec.fromOutputIndex, false);
+        } else if (wireSpec.direction === "out") {
+          // "out" means bus → gate input: from=bus, to=gate
+          builder.connectToGate(from, to, wireSpec.toInputIndex, wireSpec.fromOutputIndex, false);
+        }
+      }
     }
   }
 

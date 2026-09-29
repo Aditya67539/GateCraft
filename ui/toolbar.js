@@ -432,7 +432,7 @@ export function initToolbar(p, circuit, renderNodes, wires, busNodes) {
     onConfirm: () => {
       const name = modalInput.value.trim();
       if (!name) { modalInput.focus(); return false; };
-      saveCompositeGate(name, _renderNodes, _wires);
+      saveCompositeGate(name, _renderNodes, _wires, _busNodes);
       clearCanvas(circuit);
       refreshCompositeSection();
     },
