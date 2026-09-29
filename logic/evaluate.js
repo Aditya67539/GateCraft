@@ -59,7 +59,7 @@ export function evaluateAll(circuit, seedAll = false) {
     const [gateId] = currentDelta;
     currentDelta.delete(gateId);
 
-    const gate = gateMap.get(gateId);
+    const gate = gateMap.get(gateId) || circuit.buses.get(gateId);
     if (!gate || gate.type === "input" || gate.type === "clock") continue;
 
     // Composite gates use an array of outputs whereas basic gates only have one possible output
@@ -124,6 +124,7 @@ function arraysEqual(a, b) {
 export function evaluateOnce(circuit) {
   const wires = circuit.wires;
   const gates = circuit.getGates();
+  const buses = circuit.getBuses();
   let changed = false;
   // Update signals from input and clock sources
   for (const wire of wires) {
@@ -153,6 +154,25 @@ export function evaluateOnce(circuit) {
 
       if (wire.signal !== signal) {
         wire.signal = signal;
+        changed = true;
+      }
+    }
+  }
+
+  for (const bus of buses) {
+    if (bus.hasNoInputsConnected()) continue;
+    const result = bus.evaluate();
+    if (!result.ok) {
+      console.error(result.error);
+      continue;
+    }
+    const newOutput = result.output;
+    bus.output = newOutput;
+    for (const wire of wires) {
+      if (wire.from.id !== bus.id) continue;
+
+      if (wire.signal !== bus.output) {
+        wire.signal = bus.output;
         changed = true;
       }
     }
@@ -194,6 +214,7 @@ const Types = Object.freeze({
   composite: 10,
   "seven-seg": 11,
   "Tri-state Buffer": 12,
+  bus: 13,
 });
 
 function encodeType(type) {
@@ -285,6 +306,17 @@ export function flatten(circuit, acc, inputOrder = [], outputOrder = [], gateCou
 
       gateCount = result.nextGateCount;
     }
+  }
+
+  for (const bus of circuit.getBuses()) {
+    indexMap[bus.id] = gateCount;
+    acc.gateMap.set(bus, gateCount);
+
+    acc.gateTypes.push(encodeType(bus.type));
+    acc.outputOffset.push(acc.allOutputs.length);
+    acc.allOutputs.push(bus.output);
+
+    gateCount++;
   }
 
   // --- Pass 2: build boundary map for THIS circuit's Input/Output nodes ---

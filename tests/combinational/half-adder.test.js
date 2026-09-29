@@ -15,12 +15,12 @@ describe("Half Adder", () => {
     const sum = builder.addBasicGate("output");
     const carry = builder.addBasicGate("output");
 
-    builder.connectGates(A, xor, 0);
-    builder.connectGates(B, xor, 1);
-    builder.connectGates(xor, sum, 0);
-    builder.connectGates(A, and, 0);
-    builder.connectGates(B, and, 1);
-    builder.connectGates(and, carry, 0);
+    builder.connectToGate(A, xor, 0);
+    builder.connectToGate(B, xor, 1);
+    builder.connectToGate(xor, sum, 0);
+    builder.connectToGate(A, and, 0);
+    builder.connectToGate(B, and, 1);
+    builder.connectToGate(and, carry, 0);
 
     const testCases = [
       [LOW, LOW, LOW, LOW],

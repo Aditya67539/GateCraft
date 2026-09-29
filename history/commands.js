@@ -1,5 +1,6 @@
+import { rebuildBusMap } from "../render/BusNode.js";
 import { rebuildNodeMap } from "../render/RenderPoint.js";
-import { initWire } from "../render/wireGeometry.js";
+import { BusConnection, initWire, WireConnection } from "../render/wireGeometry.js";
 import { showToast } from "../ui/toast.js";
 
 /**
@@ -77,7 +78,7 @@ export class RemoveGateCommand {
       const inputIndex = w.wire.toInputIndex;
       const outputIndex = w.wire.fromOutputIndex;
 
-      const result = this.circuit.connectGates(fromGate, toGate, inputIndex, outputIndex);
+      const result = this.circuit.connectToGate(fromGate, toGate, inputIndex, outputIndex);
       if (!result.ok) {
         showToast(result.error, { type: "error" });
         continue;
@@ -93,7 +94,69 @@ export class RemoveGateCommand {
 
 
 /** @implements {Command} */
-export class ConnectWireCommand {
+export class RemoveBusCommand {
+  constructor(busNodes, wires, circuit, busNode, busMap) {
+    this.busNodes = busNodes;
+    this.wires = wires;
+    this.circuit = circuit;
+    this.busNode = busNode;
+    this.busMap = busMap;
+  }
+
+  do() {
+    const busIndex = this.busNodes.indexOf(this.busNode);
+    const busId = this.busNode.bus.id;
+
+    const wiresToRemove = this.wires.filter(n => n.wire.from.id === busId || n.wire.to.id === busId);
+    
+    this.circuit.removeBus(busId);
+    this.busNodes.splice(busIndex, 1);
+
+    wiresToRemove.forEach(w => this.wires.splice(this.wires.indexOf(w), 1));
+
+    rebuildBusMap(this.busNodes, this.busMap);
+    this.wiresRemoved = wiresToRemove;
+    return true;
+  }
+
+  undo() {
+    this.circuit.registerBus(this.busNode.bus);
+    this.busNodes.push(this.busNode);
+
+    for (const w of this.wiresRemoved) {
+      let result;
+      if (w.direction === "in") {
+        const fromGate = w.wire.from;
+        const outputIndex = w.portIndex;
+        
+        result = this.circuit.connectToBus(this.busNode.bus, fromGate, outputIndex);
+        if (!result.ok) {
+          showToast(result.error, { type: "error" });
+          continue;
+        }
+      } else if (w.direction === "out") {
+        const toGate = w.wire.to;
+        const fromBus = this.busNode.bus;
+        const inputIndex = w.portIndex;
+
+        result = this.circuit.connectToGate(fromBus, toGate, inputIndex);
+        if (!result.ok) {
+          showToast(result.error, { type: "error" });
+          continue;
+        }
+      }
+
+      w.wire = result.wire;
+      this.wires.push(w);
+    }
+
+    rebuildBusMap(this.busNodes, this.busMap);
+  }
+}
+
+
+/** @implements {Command} */
+export class ConnectGateCommand {
   constructor(circuit, fromGate, toGate, inputIndex, outputIndex, ghostWire, wires) {
     this.circuit = circuit;
     this.fromGate = fromGate;
@@ -102,29 +165,81 @@ export class ConnectWireCommand {
     this.outputIndex = outputIndex;
     this.ghostWire = ghostWire;
     this.wires = wires;
-    this.wireInfo = null;
+    this.connection = null;
   }
 
   do() {
-    const result = this.circuit.connectGates(this.fromGate, this.toGate, this.inputIndex, this.outputIndex);
+    const result = this.circuit.connectToGate(this.fromGate, this.toGate, this.inputIndex, this.outputIndex);
     if (!result.ok) {
       showToast(result.error, { type: "error" });
       return false;
     }
     let wire = result.wire;
 
-    if (this.wireInfo !== null) {
-      this.wireInfo.wire = result.wire;
+    if (this.connection !== null) {
+      this.connection.wire = result.wire;
     } else {
-      this.wireInfo = initWire(wire, this.ghostWire);
+      this.connection = new WireConnection(initWire(wire, this.ghostWire));
     }
-    this.wires.push(this.wireInfo);
+    this.wires.push(this.connection);
     return true;
   }
 
   undo() {
-    this.circuit.removeWire(this.wireInfo.wire);
-    this.wires.splice(this.wires.indexOf(this.wireInfo), 1);
+    this.circuit.removeWire(this.connection.wire);
+    this.wires.splice(this.wires.indexOf(this.connection), 1);
+  }
+}
+
+
+/** @implements {Command} */
+export class BusConnectionCommand {
+  constructor(circuit, gate, bus, ghostWire, wires, direction, index, tapRef) {
+    this.circuit = circuit;
+    this.gate = gate;
+    this.bus = bus;
+    this.ghostWire = ghostWire;
+    this.wires = wires;
+    this.direction = direction;
+    this.index = index;
+    this.tapRef = tapRef;
+    this.connection = null;
+  }
+
+  do() {
+    let result;
+    if (this.direction === "in") {
+      result = this.circuit.connectToBus(this.bus, this.gate, this.index);
+    } else {
+      result = this.circuit.connectToGate(this.bus, this.gate, this.index);
+    }
+    if (!result.ok) {
+      showToast(result.error, { type: "error" });
+      return false;
+    }
+    let wire = result.wire;
+
+    if (this.connection !== null) {
+      this.connection.wire = result.wire;
+    } else {
+      const wireInfo = initWire(wire, this.ghostWire);
+      wireInfo.tapRef = this.tapRef;
+      this.connection = new BusConnection(
+        wireInfo,
+        this.bus.id,
+        this.gate.id,
+        this.index,
+        this.direction,
+      );
+    }
+
+    this.wires.push(this.connection);
+    return true;
+  }
+
+  undo() {
+    this.circuit.removeWire(this.connection.wire);
+    this.wires.splice(this.wires.indexOf(this.connection), 1);
   }
 }
 
@@ -149,7 +264,7 @@ export class RemoveWireCommand {
     const inputIndex = this.wireInfo.wire.toInputIndex;
     const outputIndex = this.wireInfo.wire.fromOutputIndex;
 
-    const result = this.circuit.connectGates(fromGate, toGate, inputIndex, outputIndex);
+    const result = this.circuit.connectToGate(fromGate, toGate, inputIndex, outputIndex);
     if (!result.ok) return;
 
     this.wireInfo.wire = result.wire;
@@ -194,31 +309,51 @@ export class MoveNodeCommand {
 
 
 /** @implements {Command} */
+export class PlaceBusCommand {
+  constructor(circuit, busNodes, ghostBus, busMap) {
+    this.circuit = circuit;
+    this.busNodes = busNodes;
+    this.ghostBus = ghostBus;
+    this.busMap = busMap;
+  }
+
+  do() {
+    this.ghostBus.endPointPlaced = true;
+    this.circuit.registerBus(this.ghostBus.bus);
+    this.busNodes.push(this.ghostBus);
+    rebuildBusMap(this.busNodes, this.busMap);
+    return true;
+  }
+
+  undo() {
+    const busIndex = this.busNodes.indexOf(this.ghostBus);
+    const busId = this.ghostBus.bus.id;
+
+    this.circuit.removeBus(busId);
+    this.busNodes.splice(busIndex, 1);
+
+    rebuildBusMap(this.busNodes, this.busMap);
+  }
+}
+
+
+/** @implements {Command} */
 export class ChangeWaypointCommand {
   constructor(waypointSnapshot, changingWaypoint) {
     this.waypointSnapshot = waypointSnapshot;
     this.fromWaypoint = this.waypointSnapshot.fromWaypoint;
     this.toWaypoint = this.waypointSnapshot.toWaypoint;
-    this.liveWaypoint = changingWaypoint.waypoint;
-    this.liveOtherWaypoint = changingWaypoint.otherWaypoint;
+    this.liveWaypoint = changingWaypoint;
   }
 
   do() {
-    this.liveWaypoint.x = this.toWaypoint.waypoint.x;
-    this.liveWaypoint.y = this.toWaypoint.waypoint.y;
-    if (this.liveOtherWaypoint && this.toWaypoint.otherWaypoint) {
-      this.liveOtherWaypoint.x = this.toWaypoint.otherWaypoint.x;
-      this.liveOtherWaypoint.y = this.toWaypoint.otherWaypoint.y;
-    }
+    this.liveWaypoint.x = this.toWaypoint.x;
+    this.liveWaypoint.y = this.toWaypoint.y;
     return true;
   }
 
   undo() {
-    this.liveWaypoint.x = this.fromWaypoint.waypoint.x;
-    this.liveWaypoint.y = this.fromWaypoint.waypoint.y;
-    if (this.liveOtherWaypoint && this.fromWaypoint.otherWaypoint) {
-      this.liveOtherWaypoint.x = this.fromWaypoint.otherWaypoint.x;
-      this.liveOtherWaypoint.y = this.fromWaypoint.otherWaypoint.y;
-    }
+    this.liveWaypoint.x = this.fromWaypoint.x;
+    this.liveWaypoint.y = this.fromWaypoint.y;
   }
 }

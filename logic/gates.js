@@ -44,13 +44,13 @@ export class Clock extends Input {
 }
 
 class ConnectableGate {
-  connect(fromGate, toInputIndex, fromOutputIndex = null) {
+  connect(from, toInputIndex, fromOutputIndex = null) {
     if (toInputIndex === null) {
       return { ok: false, error: "Invalid input index!" };
     } else if (this.inputs[toInputIndex] !== undefined) {
       return { ok: false, error: "Wire is already connected!" };
     }
-    const wire = new Wire(fromGate, this, toInputIndex, fromOutputIndex);
+    const wire = new Wire(from, this, toInputIndex, fromOutputIndex);
     this.inputs[toInputIndex] = wire;
     return { ok: true, wire };
   }
@@ -238,6 +238,36 @@ export class SevenSegmentDisplay extends ConnectableGate {
   }
 }
 
+export class Bus {
+  constructor() {
+    this.id = Logic.nextId++;
+    this.type = "bus";
+    this.inputCount = 0;
+    this.inputs = [];
+    this.output = Z;
+    this.tempOutput = Z;
+  }
+
+  connect(fromGate, fromOutputIndex = null) {
+    const wire = new Wire(fromGate, this, this.inputCount++, fromOutputIndex);
+    this.inputs.push(wire);
+    return { ok: true, wire };
+  }
+
+  hasNoInputsConnected() {
+    return this.inputs.length === 0;
+  }
+
+  evaluate() {
+    const resolvedInputs = resolveInputs(this.inputs);
+    this.tempOutput = Z;
+    for (const input of resolvedInputs) {
+      this.tempOutput = busPair(this.tempOutput, input);
+    }
+    return { ok: true, output: this.tempOutput };
+  }
+}
+
 
 /**
  * Creates a basic gate instance based on the given type.
@@ -256,6 +286,8 @@ export function createBasicGate(type) {
     ? new SevenSegmentDisplay()
     : type === "Tri-state Buffer"
     ? new TriStateBuffer()
+    : type === "bus"
+    ? new Bus()
     : new Gate(type);
 }
 
@@ -311,8 +343,7 @@ function collectDisplays(gates, positionMap) {
 
 function resolveInputs(inputs) {
   return inputs.map(input => {
-    if (input instanceof Wire && input.signal !== Z) return input.signal;
-    return X;
+    return input instanceof Wire ? input.signal : X;
   });
 }
 
@@ -344,15 +375,25 @@ const ORTABLE = [
 
 const TRISTATEBUFFER = [
   //                     LOW  HIGH   X    Z    E
-  /* enable = LOW  */ [  Z,   Z,     Z,   Z,   E ],
+  /* enable = LOW  */ [  Z,   Z,     Z,   Z,   Z ],
   /* enable = HIGH */ [  LOW, HIGH,  X,   X,   E ],
-  /* enable = X    */ [  X,   X,     X,   X,   E ],
-  /* enable = Z    */ [  X,   X,     X,   X,   E ],
+  /* enable = X    */ [  X,   X,     X,   X,   X ],
+  /* enable = Z    */ [  X,   X,     X,   X,   X ],
   /* enable = E    */ [  E,   E,     E,   E,   E ],
 ];
+
+const BUSTABLE = [
+  //                     LOW   HIGH   X   Z     E
+  /* LOW  */ [           LOW,  E,     X,  LOW,  E ],
+  /* HIGH */ [           E,    HIGH,  X,  HIGH, E ],
+  /* X    */ [           X,    X,     X,  X,    E ],
+  /* Z    */ [           LOW,  HIGH,  X,  Z,    E ],
+  /* E    */ [           E,    E,     E,  E,    E ],
+]
 
 const not = (a) => NOTTABLE[a];
 const andPair = (a, b) => ANDTABLE[a][b];
 const orPair = (a, b) => ORTABLE[a][b];
 const xorPair = (a, b) => orPair(andPair(a, not(b)), andPair(not(a), b));
 const triStateBufferPair = (enable, data) => TRISTATEBUFFER[enable][data];
+const busPair = (a, b) => BUSTABLE[a][b];

@@ -1,7 +1,7 @@
-import { FONT_SIZE, GRID_SIZE, PORT_LABEL_SIZE, PORT_RADIUS } from "../constants.js";
+import { FONT_SIZE, GRID_SIZE, PORT_RADIUS } from "../constants.js";
 import { getActiveTheme } from "./theme.js";
-import { getWirePorts } from "./wireGeometry.js";
-import { state, screenToWorld } from "../state.js";
+import { screenToWorld } from "../state.js";
+import { getOctilinearSnap } from "./wireGeometry.js";
 
 const SIGNAL_KEYS = ["low", "high", "x", "z", "e"];
 
@@ -26,7 +26,7 @@ export function drawGate(renderNode, p, status = null) {
     drawDisplay(renderNode, p);
     drawInputPort(renderNode, theme, p);
     drawOutputPort(renderNode, theme, p);
-    if (status) drawOverlay(renderNode, status, p);
+    if (status) drawOverlay(renderNode.getBounds(), status, p);
 
     p.fill(0);
     p.stroke(0);
@@ -123,15 +123,105 @@ export function drawGate(renderNode, p, status = null) {
   drawOutputPort(renderNode, theme, p);
   drawInputPort(renderNode, theme, p);
 
-  if (status) drawOverlay(renderNode, status, p);
+  if (status) drawOverlay(renderNode.getBounds(), status, p);
 
   p.fill(0);
   p.stroke(0);
   p.strokeWeight(1);
 }
 
-function drawOverlay(node, status, p) {
-  const bounds = node.getBounds();
+export function drawBus(busNode, p) {
+  const theme = getActiveTheme();
+  p.strokeWeight(5);
+
+  const stateKey = SIGNAL_KEYS[busNode.bus.output] || "x";
+  const color = theme.wires[stateKey].hex;
+  p.stroke(color);
+
+  drawPoint(busNode.startPoint.x, busNode.startPoint.y, color, p);
+  drawPoint(busNode.endPoint.x, busNode.endPoint.y, color, p);
+
+  drawPolylineSegments(busNode.startPoint, busNode.waypoints, busNode.endPoint, p);
+
+  p.stroke(0);
+  p.strokeWeight(1);
+}
+
+export function drawGhostBus(busNode, p, status = null) {
+  const theme = getActiveTheme();
+  p.strokeWeight(5);
+
+  const stateKey = SIGNAL_KEYS[busNode.bus.output] || "x";
+  const color = theme.wires[stateKey].hex;
+  p.stroke(color);
+
+  const mouseWorld = screenToWorld(p.mouseX, p.mouseY);
+  const useSnap = p.keyIsDown(p.SHIFT);
+
+  const x1 = busNode.waypoints && busNode.waypoints.length !== 0
+    ? busNode.waypoints[busNode.waypoints.length - 1].x
+    : busNode.startPoint.x;
+  
+  const y1 = busNode.waypoints && busNode.waypoints.length !== 0
+    ? busNode.waypoints[busNode.waypoints.length - 1].y
+    : busNode.startPoint.y;
+
+  const endPointX = useSnap && busNode.startPointPlaced
+    ? getOctilinearSnap(x1, y1, busNode.endPoint.x, busNode.endPoint.y).x
+    : busNode.endPoint.x;
+  
+  const endPointY = useSnap && busNode.startPointPlaced
+    ? getOctilinearSnap(x1, y1, busNode.endPoint.x, busNode.endPoint.y).y
+    : busNode.endPoint.y;
+
+  drawPoint(busNode.startPoint.x, busNode.startPoint.y, color, p);
+  drawPoint(endPointX, endPointY, color, p);
+
+  if (busNode.waypoints && busNode.waypoints.length !== 0) {
+    const waypointCount = busNode.waypoints.length;
+    p.line(busNode.startPoint.x, busNode.startPoint.y, busNode.waypoints[0].x, busNode.waypoints[0].y);
+    for (let i = 0; i < waypointCount - 1; i++) {
+      p.line(busNode.waypoints[i].x, busNode.waypoints[i].y, busNode.waypoints[i + 1].x, busNode.waypoints[i + 1].y);
+    }
+    const x1 = busNode.waypoints[waypointCount - 1].x;
+    const y1 = busNode.waypoints[waypointCount - 1].y;
+
+    const endX = useSnap
+      ? getOctilinearSnap(x1, y1, mouseWorld.x, mouseWorld.y).x
+      : mouseWorld.x;
+
+    const endY = useSnap
+      ? getOctilinearSnap(x1, y1, mouseWorld.x, mouseWorld.y).y
+      : mouseWorld.y;
+
+    p.line(x1, y1, endX, endY);
+  } else {
+    const x1 = busNode.startPoint.x;
+    const y1 = busNode.startPoint.y;
+
+    const endX = useSnap && busNode.startPointPlaced
+      ? getOctilinearSnap(x1, y1, mouseWorld.x, mouseWorld.y).x
+      : mouseWorld.x;
+
+    const endY = useSnap && busNode.startPointPlaced
+      ? getOctilinearSnap(x1, y1, mouseWorld.x, mouseWorld.y).y
+      : mouseWorld.y;
+
+    p.line(x1, y1, endX, endY);
+  }
+
+  if (status) {
+    let bounds = busNode.startPointPlaced ? busNode.getEndPointBounds(8) : busNode.getStartPointBounds(8);
+    drawOverlay(bounds, status, p);
+  };
+}
+
+function drawPoint(x, y, color, p) {
+  p.fill(color);
+  p.circle(x, y, 16);
+}
+
+function drawOverlay(bounds, status, p) {
   const bw = bounds.right - bounds.left;
   const bh = bounds.bottom - bounds.top;
 
@@ -474,30 +564,6 @@ function drawInputPort(renderNode, theme, p) {
   }
 }
 
-export function getOctilinearSnap(x1, y1, x2, y2) {
-  const dx = x2 - x1;
-  const dy = y2 - y1;
-
-  const ax = Math.abs(dx);
-  const ay = Math.abs(dy);
-
-  const TAN30 = Math.tan(30 * Math.PI / 180);
-  const TAN60 = Math.tan(60 * Math.PI / 180);
-
-  let x = x2;
-  let y = y2;
-
-  if (ay <= ax * TAN30) y = y1;
-  else if (ay >= ax * TAN60) x = x1;
-  else {
-    const d = Math.min(ax, ay);
-    x = x1 + Math.sign(dx) * d;
-    y = y1 + Math.sign(dy) * d;
-  }
-
-  return { x, y };
-}
-
 function drawPolylineSegments(start, waypoints, end, p) {
   if (waypoints?.length) {
     const waypointCount = waypoints.length;
@@ -527,14 +593,15 @@ export function drawGhostPath(start, waypoints, end, p) {
   p.strokeWeight(1);
 }
 
-export function drawWire(wireInfo, nodeMap, p) {
+export function drawWire(connection, nodeMap, busMap, p) {
   const theme = getActiveTheme();
-  const ports = getWirePorts(wireInfo.wire, nodeMap);
-  const stateKey = SIGNAL_KEYS[wireInfo.wire.signal] || "x";
-  
+  const stateKey = SIGNAL_KEYS[connection.wire.signal] || "x";
+
+  const { start, waypoints, end } = connection.getPoints(nodeMap, busMap);
+
   p.strokeWeight(3);
   p.stroke(theme.wires[stateKey].hex);
-  drawPolylineSegments(ports.start, wireInfo.waypoints, ports.end, p);
+  drawPolylineSegments(start, waypoints, end, p);
   p.stroke(0);
   p.strokeWeight(1);
 }

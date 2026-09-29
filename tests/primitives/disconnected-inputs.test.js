@@ -13,8 +13,8 @@ describe("Disconnected input handling through WASM", () => {
     const out = builder.addBasicGate("output");
 
     // Only connect input 0, leave input 1 disconnected
-    builder.connectGates(A, gate, 0);
-    builder.connectGates(gate, out, 0);
+    builder.connectToGate(A, gate, 0);
+    builder.connectToGate(gate, out, 0);
 
     // OR(LOW, X) = X
     A.setValue(LOW);
@@ -39,8 +39,8 @@ describe("Disconnected input handling through WASM", () => {
     const gate = builder.addBasicGate("and");
     const out = builder.addBasicGate("output");
 
-    builder.connectGates(A, gate, 0);
-    builder.connectGates(gate, out, 0);
+    builder.connectToGate(A, gate, 0);
+    builder.connectToGate(gate, out, 0);
 
     // AND(LOW, X) = LOW (LOW dominates in AND)
     A.setValue(LOW);
@@ -65,8 +65,8 @@ describe("Disconnected input handling through WASM", () => {
     const gate = builder.addBasicGate("xor");
     const out = builder.addBasicGate("output");
 
-    builder.connectGates(A, gate, 0);
-    builder.connectGates(gate, out, 0);
+    builder.connectToGate(A, gate, 0);
+    builder.connectToGate(gate, out, 0);
 
     // XOR(LOW, X) = X
     A.setValue(LOW);
@@ -86,8 +86,8 @@ describe("Disconnected input handling through WASM", () => {
     const gate = builder.addBasicGate("nand");
     const out = builder.addBasicGate("output");
 
-    builder.connectGates(A, gate, 0);
-    builder.connectGates(gate, out, 0);
+    builder.connectToGate(A, gate, 0);
+    builder.connectToGate(gate, out, 0);
 
     // NAND(HIGH, X) = NOT(AND(HIGH, X)) = NOT(X) = X
     A.setValue(HIGH);
@@ -107,8 +107,8 @@ describe("Disconnected input handling through WASM", () => {
     const gate = builder.addBasicGate("nor");
     const out = builder.addBasicGate("output");
 
-    builder.connectGates(A, gate, 0);
-    builder.connectGates(gate, out, 0);
+    builder.connectToGate(A, gate, 0);
+    builder.connectToGate(gate, out, 0);
 
     // NOR(LOW, X) = NOT(OR(LOW, X)) = NOT(X) = X
     A.setValue(LOW);

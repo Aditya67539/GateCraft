@@ -18,12 +18,12 @@ function halfAdderCircuitData() {
   const sum = inner.addBasicGate("output");
   const carry = inner.addBasicGate("output");
 
-  inner.connectGates(A, xor, 0);
-  inner.connectGates(B, xor, 1);
-  inner.connectGates(xor, sum, 0);
-  inner.connectGates(A, and, 0);
-  inner.connectGates(B, and, 1);
-  inner.connectGates(and, carry, 0);
+  inner.connectToGate(A, xor, 0);
+  inner.connectToGate(B, xor, 1);
+  inner.connectToGate(xor, sum, 0);
+  inner.connectToGate(A, and, 0);
+  inner.connectToGate(B, and, 1);
+  inner.connectToGate(and, carry, 0);
   inner.buildFanout();
 
   return {
@@ -44,14 +44,14 @@ function fullAdderCircuitData() {
   const sum = inner.addBasicGate("output");
   const carry = inner.addBasicGate("output");
 
-  inner.connectGates(A, ha1, 0);
-  inner.connectGates(B, ha1, 1);
-  inner.connectGates(ha1, ha2, 0, 0); // sum of ha1 -> A of ha2
-  inner.connectGates(Cin, ha2, 1);     // Cin -> B of ha2
-  inner.connectGates(ha2, sum, 0, 0);  // sum of ha2 -> output sum
-  inner.connectGates(ha1, orGate, 0, 1); // carry of ha1 -> OR
-  inner.connectGates(ha2, orGate, 1, 1); // carry of ha2 -> OR
-  inner.connectGates(orGate, carry, 0);
+  inner.connectToGate(A, ha1, 0);
+  inner.connectToGate(B, ha1, 1);
+  inner.connectToGate(ha1, ha2, 0, 0); // sum of ha1 -> A of ha2
+  inner.connectToGate(Cin, ha2, 1);     // Cin -> B of ha2
+  inner.connectToGate(ha2, sum, 0, 0);  // sum of ha2 -> output sum
+  inner.connectToGate(ha1, orGate, 0, 1); // carry of ha1 -> OR
+  inner.connectToGate(ha2, orGate, 1, 1); // carry of ha2 -> OR
+  inner.connectToGate(orGate, carry, 0);
   inner.buildFanout();
 
   return {
@@ -85,26 +85,26 @@ function fourBitAdderCircuitData() {
   const Cout = inner.addBasicGate("output");
 
   // FA0: A0, B0, Cin
-  inner.connectGates(A0, fa0, 0);
-  inner.connectGates(B0, fa0, 1);
-  inner.connectGates(Cin, fa0, 2);
-  inner.connectGates(fa0, S0, 0, 0);
+  inner.connectToGate(A0, fa0, 0);
+  inner.connectToGate(B0, fa0, 1);
+  inner.connectToGate(Cin, fa0, 2);
+  inner.connectToGate(fa0, S0, 0, 0);
   // FA1: A1, B1, Cout0
-  inner.connectGates(A1, fa1, 0);
-  inner.connectGates(B1, fa1, 1);
-  inner.connectGates(fa0, fa1, 2, 1); // carry chain
-  inner.connectGates(fa1, S1, 0, 0);
+  inner.connectToGate(A1, fa1, 0);
+  inner.connectToGate(B1, fa1, 1);
+  inner.connectToGate(fa0, fa1, 2, 1); // carry chain
+  inner.connectToGate(fa1, S1, 0, 0);
   // FA2: A2, B2, Cout1
-  inner.connectGates(A2, fa2, 0);
-  inner.connectGates(B2, fa2, 1);
-  inner.connectGates(fa1, fa2, 2, 1);
-  inner.connectGates(fa2, S2, 0, 0);
+  inner.connectToGate(A2, fa2, 0);
+  inner.connectToGate(B2, fa2, 1);
+  inner.connectToGate(fa1, fa2, 2, 1);
+  inner.connectToGate(fa2, S2, 0, 0);
   // FA3: A3, B3, Cout2
-  inner.connectGates(A3, fa3, 0);
-  inner.connectGates(B3, fa3, 1);
-  inner.connectGates(fa2, fa3, 2, 1);
-  inner.connectGates(fa3, S3, 0, 0);
-  inner.connectGates(fa3, Cout, 0, 1);
+  inner.connectToGate(A3, fa3, 0);
+  inner.connectToGate(B3, fa3, 1);
+  inner.connectToGate(fa2, fa3, 2, 1);
+  inner.connectToGate(fa3, S3, 0, 0);
+  inner.connectToGate(fa3, Cout, 0, 1);
   inner.buildFanout();
 
   return {
@@ -134,21 +134,21 @@ describe("4-bit adder with direct inputs", () => {
     const S3 = outer.addBasicGate("output");
     const Cout = outer.addBasicGate("output");
 
-    outer.connectGates(A0, adder, 0);
-    outer.connectGates(A1, adder, 1);
-    outer.connectGates(A2, adder, 2);
-    outer.connectGates(A3, adder, 3);
-    outer.connectGates(B0, adder, 4);
-    outer.connectGates(B1, adder, 5);
-    outer.connectGates(B2, adder, 6);
-    outer.connectGates(B3, adder, 7);
-    outer.connectGates(Cin, adder, 8);
+    outer.connectToGate(A0, adder, 0);
+    outer.connectToGate(A1, adder, 1);
+    outer.connectToGate(A2, adder, 2);
+    outer.connectToGate(A3, adder, 3);
+    outer.connectToGate(B0, adder, 4);
+    outer.connectToGate(B1, adder, 5);
+    outer.connectToGate(B2, adder, 6);
+    outer.connectToGate(B3, adder, 7);
+    outer.connectToGate(Cin, adder, 8);
 
-    outer.connectGates(adder, S0, 0, 0);
-    outer.connectGates(adder, S1, 0, 1);
-    outer.connectGates(adder, S2, 0, 2);
-    outer.connectGates(adder, S3, 0, 3);
-    outer.connectGates(adder, Cout, 0, 4);
+    outer.connectToGate(adder, S0, 0, 0);
+    outer.connectToGate(adder, S1, 0, 1);
+    outer.connectToGate(adder, S2, 0, 2);
+    outer.connectToGate(adder, S3, 0, 3);
+    outer.connectToGate(adder, Cout, 0, 4);
 
     // 5 = 0101, 3 = 0011 => 8 = 1000
     A0.setValue(HIGH);  A1.setValue(LOW); A2.setValue(HIGH);  A3.setValue(LOW);
@@ -186,14 +186,14 @@ describe("4-bit adder with upstream XOR gates (2's complement)", () => {
     const xor2 = outer.addBasicGate("xor");
     const xor3 = outer.addBasicGate("xor");
 
-    outer.connectGates(B0, xor0, 0);
-    outer.connectGates(SUB, xor0, 1);
-    outer.connectGates(B1, xor1, 0);
-    outer.connectGates(SUB, xor1, 1);
-    outer.connectGates(B2, xor2, 0);
-    outer.connectGates(SUB, xor2, 1);
-    outer.connectGates(B3, xor3, 0);
-    outer.connectGates(SUB, xor3, 1);
+    outer.connectToGate(B0, xor0, 0);
+    outer.connectToGate(SUB, xor0, 1);
+    outer.connectToGate(B1, xor1, 0);
+    outer.connectToGate(SUB, xor1, 1);
+    outer.connectToGate(B2, xor2, 0);
+    outer.connectToGate(SUB, xor2, 1);
+    outer.connectToGate(B3, xor3, 0);
+    outer.connectToGate(SUB, xor3, 1);
 
     const adder = outer.addCompositeGate("4-bit-adder", fourBitAdderCircuitData());
     const S0 = outer.addBasicGate("output");
@@ -202,21 +202,21 @@ describe("4-bit adder with upstream XOR gates (2's complement)", () => {
     const S3 = outer.addBasicGate("output");
     const Cout = outer.addBasicGate("output");
 
-    outer.connectGates(A0, adder, 0);
-    outer.connectGates(A1, adder, 1);
-    outer.connectGates(A2, adder, 2);
-    outer.connectGates(A3, adder, 3);
-    outer.connectGates(xor0, adder, 4);
-    outer.connectGates(xor1, adder, 5);
-    outer.connectGates(xor2, adder, 6);
-    outer.connectGates(xor3, adder, 7);
-    outer.connectGates(SUB, adder, 8); // Cin = SUB for 2's complement
+    outer.connectToGate(A0, adder, 0);
+    outer.connectToGate(A1, adder, 1);
+    outer.connectToGate(A2, adder, 2);
+    outer.connectToGate(A3, adder, 3);
+    outer.connectToGate(xor0, adder, 4);
+    outer.connectToGate(xor1, adder, 5);
+    outer.connectToGate(xor2, adder, 6);
+    outer.connectToGate(xor3, adder, 7);
+    outer.connectToGate(SUB, adder, 8); // Cin = SUB for 2's complement
 
-    outer.connectGates(adder, S0, 0, 0);
-    outer.connectGates(adder, S1, 0, 1);
-    outer.connectGates(adder, S2, 0, 2);
-    outer.connectGates(adder, S3, 0, 3);
-    outer.connectGates(adder, Cout, 0, 4);
+    outer.connectToGate(adder, S0, 0, 0);
+    outer.connectToGate(adder, S1, 0, 1);
+    outer.connectToGate(adder, S2, 0, 2);
+    outer.connectToGate(adder, S3, 0, 3);
+    outer.connectToGate(adder, Cout, 0, 4);
 
     // 5 - 3 = 2:
     // A = 0101, B = 0011, SUB = 1
@@ -251,14 +251,14 @@ describe("4-bit adder with upstream XOR gates (2's complement)", () => {
     const xor2 = outer.addBasicGate("xor");
     const xor3 = outer.addBasicGate("xor");
 
-    outer.connectGates(B0, xor0, 0);
-    outer.connectGates(SUB, xor0, 1);
-    outer.connectGates(B1, xor1, 0);
-    outer.connectGates(SUB, xor1, 1);
-    outer.connectGates(B2, xor2, 0);
-    outer.connectGates(SUB, xor2, 1);
-    outer.connectGates(B3, xor3, 0);
-    outer.connectGates(SUB, xor3, 1);
+    outer.connectToGate(B0, xor0, 0);
+    outer.connectToGate(SUB, xor0, 1);
+    outer.connectToGate(B1, xor1, 0);
+    outer.connectToGate(SUB, xor1, 1);
+    outer.connectToGate(B2, xor2, 0);
+    outer.connectToGate(SUB, xor2, 1);
+    outer.connectToGate(B3, xor3, 0);
+    outer.connectToGate(SUB, xor3, 1);
 
     const adder = outer.addCompositeGate("4-bit-adder", fourBitAdderCircuitData());
     const S0 = outer.addBasicGate("output");
@@ -267,21 +267,21 @@ describe("4-bit adder with upstream XOR gates (2's complement)", () => {
     const S3 = outer.addBasicGate("output");
     const Cout = outer.addBasicGate("output");
 
-    outer.connectGates(A0, adder, 0);
-    outer.connectGates(A1, adder, 1);
-    outer.connectGates(A2, adder, 2);
-    outer.connectGates(A3, adder, 3);
-    outer.connectGates(xor0, adder, 4);
-    outer.connectGates(xor1, adder, 5);
-    outer.connectGates(xor2, adder, 6);
-    outer.connectGates(xor3, adder, 7);
-    outer.connectGates(SUB, adder, 8);
+    outer.connectToGate(A0, adder, 0);
+    outer.connectToGate(A1, adder, 1);
+    outer.connectToGate(A2, adder, 2);
+    outer.connectToGate(A3, adder, 3);
+    outer.connectToGate(xor0, adder, 4);
+    outer.connectToGate(xor1, adder, 5);
+    outer.connectToGate(xor2, adder, 6);
+    outer.connectToGate(xor3, adder, 7);
+    outer.connectToGate(SUB, adder, 8);
 
-    outer.connectGates(adder, S0, 0, 0);
-    outer.connectGates(adder, S1, 0, 1);
-    outer.connectGates(adder, S2, 0, 2);
-    outer.connectGates(adder, S3, 0, 3);
-    outer.connectGates(adder, Cout, 0, 4);
+    outer.connectToGate(adder, S0, 0, 0);
+    outer.connectToGate(adder, S1, 0, 1);
+    outer.connectToGate(adder, S2, 0, 2);
+    outer.connectToGate(adder, S3, 0, 3);
+    outer.connectToGate(adder, Cout, 0, 4);
 
     // First: SUB=0, so add mode: 5 + 3 = 8 = 1000
     A0.setValue(HIGH);  A1.setValue(LOW); A2.setValue(HIGH);  A3.setValue(LOW);
@@ -315,9 +315,9 @@ describe("Wire signal consistency", () => {
     const B = outer.addBasicGate("input");
     const out = outer.addBasicGate("output");
 
-    outer.connectGates(A, xor, 0);
-    outer.connectGates(B, xor, 1);
-    outer.connectGates(xor, out, 0);
+    outer.connectToGate(A, xor, 0);
+    outer.connectToGate(B, xor, 1);
+    outer.connectToGate(xor, out, 0);
 
     A.setValue(HIGH);
     B.setValue(LOW);
@@ -343,10 +343,10 @@ describe("Wire signal consistency", () => {
     const sumOut = outer.addBasicGate("output");
     const carryOut = outer.addBasicGate("output");
 
-    outer.connectGates(A, ha, 0);
-    outer.connectGates(B, ha, 1);
-    outer.connectGates(ha, sumOut, 0, 0);
-    outer.connectGates(ha, carryOut, 0, 1);
+    outer.connectToGate(A, ha, 0);
+    outer.connectToGate(B, ha, 1);
+    outer.connectToGate(ha, sumOut, 0, 0);
+    outer.connectToGate(ha, carryOut, 0, 1);
 
     A.setValue(HIGH);
     B.setValue(HIGH);

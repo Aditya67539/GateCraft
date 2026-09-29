@@ -17,14 +17,14 @@ describe("SR Latch", ()=> {
     const Q = builder.addBasicGate("output");
     const notQ = builder.addBasicGate("output");
 
-    builder.connectGates(S, notS, 0);
-    builder.connectGates(R, notR, 0);
-    builder.connectGates(notS, nand1, 0);
-    builder.connectGates(notR, nand2, 0);
-    builder.connectGates(nand1, nand2, 1);
-    builder.connectGates(nand2, nand1, 1);
-    builder.connectGates(nand1, Q, 0);
-    builder.connectGates(nand2, notQ, 0);
+    builder.connectToGate(S, notS, 0);
+    builder.connectToGate(R, notR, 0);
+    builder.connectToGate(notS, nand1, 0);
+    builder.connectToGate(notR, nand2, 0);
+    builder.connectToGate(nand1, nand2, 1);
+    builder.connectToGate(nand2, nand1, 1);
+    builder.connectToGate(nand1, Q, 0);
+    builder.connectToGate(nand2, notQ, 0);
 
     const testCases = [
       [HIGH, LOW, HIGH, LOW],

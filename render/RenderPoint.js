@@ -197,13 +197,54 @@ function overlaps(boundsA, boundsB) {
   )
 }
 
-export function wouldOverlap(candidate, renderNodes, excludeId = null) {
+export function wouldOverlap(candidate, renderNodes, busNodes, excludeId = null) {
   let boundsA = candidate.getBounds();
 
   for (let node of renderNodes) {
     if (node.gate.id === excludeId) continue;
     let boundsB = node.getBounds();
     if (overlaps(boundsA, boundsB)) return true;
+  }
+
+  for (let busNode of busNodes) {
+    if (busNode.bus.id === excludeId) continue;
+    if (overlaps(boundsA, busNode.getStartPointBounds())) return true;
+    if (overlaps(boundsA, busNode.getEndPointBounds())) return true;
+  }
+
+  return false;
+}
+
+/**
+ * Checks whether a ghost bus's active endpoint would overlap with
+ * existing gates or bus endpoints.
+ *
+ * - Before start is placed: checks the start-point bounds.
+ * - After start is placed:  checks the end-point bounds against
+ *   everything AND against the bus's own start point.
+ *
+ * @param {BusNode} ghostBus - The bus currently being placed
+ * @param {Array<RenderPoint>} renderNodes - All placed gate nodes
+ * @param {Array<BusNode>} busNodes - All placed bus nodes
+ * @returns {boolean} true if the active endpoint overlaps something
+ */
+export function wouldBusOverlap(ghostBus, renderNodes, busNodes) {
+  const pointBounds = ghostBus.startPointPlaced
+    ? ghostBus.getEndPointBounds()
+    : ghostBus.getStartPointBounds();
+
+  for (let node of renderNodes) {
+    if (overlaps(pointBounds, node.getBounds())) return true;
+  }
+
+  for (let busNode of busNodes) {
+    if (overlaps(pointBounds, busNode.getStartPointBounds())) return true;
+    if (overlaps(pointBounds, busNode.getEndPointBounds())) return true;
+  }
+
+  // If placing the end point, also check against the bus's own start point
+  if (ghostBus.startPointPlaced) {
+    if (overlaps(pointBounds, ghostBus.getStartPointBounds())) return true;
   }
 
   return false;

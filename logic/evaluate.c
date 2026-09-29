@@ -78,11 +78,20 @@ static const uint8_t ORTABLE[5][5] = {
 
 static const uint8_t TRISTATEBUFFER[5][5] = {
     //                      LOW  HIGH  X   Z   E
-    /* enable = LOW  */ {    3,   3,   3,  3,  4 },
+    /* enable = LOW  */ {    3,   3,   3,  3,  3 },
     /* enable = HIGH */ {    0,   1,   2,  2,  4 },
-    /* enable = X    */ {    2,   2,   2,  2,  4 },
-    /* enable = Z    */ {    2,   2,   2,  2,  4 },
+    /* enable = X    */ {    2,   2,   2,  2,  2 },
+    /* enable = Z    */ {    2,   2,   2,  2,  2 },
     /* enable = E    */ {    4,   4,   4,  4,  4 },
+};
+
+static const uint8_t BUSTABLE[5][5] = {
+    //                      LOW  HIGH  X   Z   E
+    /* LOW  */ {             0,   4,   2,  0,  4 },
+    /* HIGH */ {             4,   1,   2,  1,  4 },
+    /* X    */ {             2,   2,   2,  2,  4 },
+    /* Z    */ {             0,   1,   2,  3,  4 },
+    /* E    */ {             4,   4,   4,  4,  4 },
 };
 
 static inline uint8_t not(uint8_t a) {
@@ -103,6 +112,10 @@ static inline uint8_t xorPair(uint8_t a, uint8_t b) {
 
 static inline uint8_t triStateBufferPair(uint8_t a, uint8_t b) {
     return TRISTATEBUFFER[a][b];
+}
+
+static inline uint8_t busPair(uint8_t a, uint8_t b) {
+    return BUSTABLE[a][b];
 }
 
 
@@ -171,6 +184,13 @@ uint8_t evaluateGate(uint8_t type, uint8_t *inputs, uint8_t inputCount) {
     // Tri-State Buffer
     case 12:
         output = triStateBufferPair(inputs[0], inputs[1]);
+        break;
+    // Bus 
+    case 13:
+        output = 3;
+        for (int i = 0; i < inputCount; i++) {
+            output = busPair(output, inputs[i]);
+        }
         break;
     default:
         break;

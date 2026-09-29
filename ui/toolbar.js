@@ -18,6 +18,7 @@ import {
   resetSignalColors,
 } from "../render/theme.js";
 import { createModal } from "./modal.js";
+import { spawnBusNode } from "../render/BusNode.js";
 
 
 
@@ -33,6 +34,7 @@ const clearConfirm = document.getElementById("clear-confirm-btn");
 
 let _renderNodes = null;
 let _wires = null;
+let _busNodes = null;
 
 function clearCanvas(circuit) {
   if (state.intervalId !== null) {
@@ -42,6 +44,7 @@ function clearCanvas(circuit) {
   circuit.clear();
   _renderNodes.splice(0, _renderNodes.length);
   _wires.splice(0, _wires.length);
+  _busNodes.splice(0, _busNodes.length);
 }
 
 // ─── Settings panel helpers ─────────────────────────────────────
@@ -410,9 +413,10 @@ const saveAsCompositeBtn = document.getElementById("btn-save-gate");
 const clearBtn = document.getElementById("btn-clear-canvas");
 const settingsBtn = document.getElementById("btn-settings");
 // ─── Main init ──────────────────────────────────────────────────
-export function initToolbar(p, circuit, renderNodes, wires) {
+export function initToolbar(p, circuit, renderNodes, wires, busNodes) {
   _renderNodes = renderNodes;
   _wires = wires;
+  _busNodes = busNodes;
 
   const warningModal = createModal({
     overlay: clearWarningModal,
@@ -428,7 +432,7 @@ export function initToolbar(p, circuit, renderNodes, wires) {
     onConfirm: () => {
       const name = modalInput.value.trim();
       if (!name) { modalInput.focus(); return false; };
-      saveCompositeGate(name, _renderNodes, _wires);
+      saveCompositeGate(name, _renderNodes, _wires, _busNodes);
       clearCanvas(circuit);
       refreshCompositeSection();
     },
@@ -455,7 +459,11 @@ export function initToolbar(p, circuit, renderNodes, wires) {
       if (!type) return;          // skip composite-btn clicks (no data-type)
       state.justPlacedFromToolbar = true;
       const { x: worldMouseX, y: worldMouseY } = screenToWorld(p.mouseX, p.mouseY);
-      spawnBasicNode(type, worldMouseX, worldMouseY);
+      if (type === "bus") {
+        spawnBusNode(worldMouseX, worldMouseY);
+      } else {
+        spawnBasicNode(type, worldMouseX, worldMouseY);
+      }
     });
   });
 

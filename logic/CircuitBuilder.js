@@ -1,5 +1,5 @@
 import { settleCircuit, createAccumulator, flatten, buildTypedArrays, clearAccumulator, evaluateWasm } from "./evaluate.js";
-import { CompositeGate, createBasicGate, createCompositeGate, Gate, Output } from "./gates.js";
+import { Bus, CompositeGate, createBasicGate, createCompositeGate, Gate, Output } from "./gates.js";
 import { Wire } from "./wire.js";
 import { initWasm } from "#wasmLoader";
 
@@ -15,6 +15,14 @@ export class CircuitBuilder {
     this.gates = new Map();
     /** @type {Array<Wire>} List of wire objects connecting gates */
     this.wires = [];
+    /** @type {Map<number, Bus>} Map of busId -> bus instance */
+    this.buses = new Map();
+    /**
+     * Whether the typed data is out of date.
+     * Set to true whenever a wire is connected or removed, since this changes the fanout
+     * relationships used by the evaluation engine. 
+     * @type {boolean}
+     */
     this.dirty = false;
     this.accumulator = createAccumulator();
     const { indexMap } = flatten(this, this.accumulator);
@@ -48,6 +56,17 @@ export class CircuitBuilder {
   }
 
   /**
+   * Creates and adds a bus instance. 
+   * 
+   * @returns {Gate} The instantiated bus object
+   */
+  addBus() {
+    const bus = createBasicGate("bus");
+    this.buses.set(bus.id, bus);
+    return bus;
+  }
+
+  /**
    * Registers an existing gate instance into the circuit.
    *
    * @param {Gate} gate - Gate instance
@@ -57,22 +76,27 @@ export class CircuitBuilder {
   }
 
   /**
+   * Registers an existing bus instance into the circuit. 
+   * 
+   * @param {Gate} bus - Bus instance
+   */
+  registerBus(bus) {
+    this.buses.set(bus.id, bus);
+  }
+
+  /**
    * Removes a gate and all associated wires from the circuit. 
    * Also updates the input indices of affected gates and settles the circuit. 
    * 
    * @param {number} gateId - ID of the gate to remove
    */
   removeGate(gateId) {
-    // Find wires connected to this gate
-    const affectedWires = this.wires.filter(
-      w => w.from.id === gateId || w.to.id === gateId
-    );
-
-    // Disconnect each affected wire
-    for (const wire of affectedWires) {
-      const toGate = wire.to;
-      const index = wire.toInputIndex;
-      this.disconnectWires(toGate, index);
+    // Find wires connected to this gate and disconnect each of them
+    for (const wire of this.wires) {
+      if (wire.from.id === gateId || wire.to.id === gateId) {
+        const toGate = wire.to;
+        this.disconnectWire(toGate, wire);
+      }
     }
 
     // Remove all wires connected to this gate
@@ -84,21 +108,64 @@ export class CircuitBuilder {
     this.settle();
   }
 
+  /**
+   * Removes a bus and all associated wires from the circuit,
+   * Also updates the input indices of affected gates and settles the circuit. 
+   * 
+   * @param {number} busId - ID of the bus to remove
+   */
+  removeBus(busId) {
+    for (const wire of this.wires) {
+      if (wire.from.id === busId || wire.to.id === busId) {
+        const toGate = wire.to;
+        this.disconnectWire(toGate, wire);
+      }
+    }
+
+    this.wires = this.wires.filter(
+      w => w.from.id !== busId && w.to.id !== busId
+    );
+
+    this.buses.delete(busId);
+    this.settle();
+  }
+
 
   /**
-   * Connects two gates with a wire. 
+   * Connect a source node to a destination gate with a wire.  
    * 
-   * @param {Gate} fromGate - Source gate
+   * @param {Gate|Bus} from - Source gate or bus
    * @param {Gate} toGate - Destination gate
    * @param {number} toInputIndex - Input index of destination gate
    * @param {?number} fromOutputIndex - Output index of source gate (if multi-output)
-   * @param {?Boolean} settle - Settles the circuit if true
+   * @param {?boolean} settle - Settles the circuit if true
    * @returns {{ok: boolean, wire?: Wire, error?: string}} 
    * Result object containing the connection status and the instantiated wire
    * when the connection succeeds. 
    */
-  connectGates(fromGate, toGate, toInputIndex, fromOutputIndex = null, settle = true) {
-    const result = toGate.connect(fromGate, toInputIndex, fromOutputIndex);
+  connectToGate(from, toGate, toInputIndex, fromOutputIndex = null, settle = true) {
+    const result = toGate.connect(from, toInputIndex, fromOutputIndex);
+    if (!result.ok) {
+      return result;
+    }
+    this.wires.push(result.wire);
+    this.dirty = true;
+    if (settle) this.settle();
+    return result;
+  }
+
+  /**
+   * 
+   * @param {Bus} bus - Destination bus
+   * @param {Gate} fromGate - Source gate
+   * @param {?number} fromOutputIndex - Output index of source gate (if multi-output)
+   * @param {?boolean} settle - Settles the circuit if true
+   * @returns {{ok: boolean, wire?: Wire, error?: string}}
+   * Result object containing the connection status and the instantiated wire
+   * when the connection succeeds. 
+   */
+  connectToBus(bus, fromGate, fromOutputIndex = null, settle = true) {
+    const result = bus.connect(fromGate, fromOutputIndex);
     if (!result.ok) {
       return result;
     }
@@ -111,11 +178,26 @@ export class CircuitBuilder {
   /**
    * Disconnects a wire from a gate's input. 
    * 
-   * @param {Gate} toGate - Target gate whose input is being removed
-   * @param {number} removedIndex - Index of the input to remove
+   * @param {Gate|Bus} destination - Target gate or bus whose input is being removed
+   * @param {Wire} wire - Target wire that is being disconnected
    */
-  disconnectWires(toGate, removedIndex) {
-    toGate.inputs[removedIndex] = undefined;
+  disconnectWire(destination, wire) {
+    const index = destination.inputs.indexOf(wire);
+    if (index === -1) return;
+    this.dirty = true;
+    if (destination.type === "bus") {
+      destination.inputs.splice(index, 1);
+      destination.inputCount--;
+
+      for (const w of this.wires) {
+        if (w.to.id === destination.id && w.toInputIndex > index) {
+          w.toInputIndex--;
+        }
+      }
+
+      return;
+    }
+    destination.inputs[index] = undefined;
   }
 
   /**
@@ -124,10 +206,9 @@ export class CircuitBuilder {
    * @param {Wire} wire - Wire object to remove
    */
   removeWire(wire) {
-    const toGate = wire.to;
-    const removedIndex = wire.toInputIndex;
+    const destination = wire.to;
 
-    this.disconnectWires(toGate, removedIndex);
+    this.disconnectWire(destination, wire);
 
     this.wires = this.wires.filter(w => w !== wire);
     this.settle();
@@ -181,6 +262,15 @@ export class CircuitBuilder {
   getGates() {
     return this.gates.values();
   }
+  
+  /**
+   * Returns all buses in the circuit. 
+   * 
+   * @returns {Array<Bus>} List of bus instances
+   */
+  getBuses() {
+    return this.buses.values();
+  }
 
   /**
    * Returns all the wires in the circuit.  
@@ -193,10 +283,11 @@ export class CircuitBuilder {
 
   /**
    * Clears the entire circuit.
-   * Removes all gates and wires, resetting the builder to an empty state.
+   * Removes all gates, buses and wires, resetting the builder to an empty state.
    */
   clear() {
     this.gates.clear();
+    this.buses.clear();
     this.wires = [];
   }
 }

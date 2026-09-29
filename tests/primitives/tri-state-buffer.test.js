@@ -13,9 +13,9 @@ describe("Tri-state Buffer", () => {
     const gate = builder.addBasicGate("Tri-state Buffer");
     const out = builder.addBasicGate("output");
 
-    builder.connectGates(enable, gate, 0);  // input 0 = enable (upper port)
-    builder.connectGates(data, gate, 1);    // input 1 = data   (lower port)
-    builder.connectGates(gate, out, 0);
+    builder.connectToGate(enable, gate, 0);  // input 0 = enable (upper port)
+    builder.connectToGate(data, gate, 1);    // input 1 = data   (lower port)
+    builder.connectToGate(gate, out, 0);
 
     return { builder, data, enable, gate, out };
   }
@@ -119,7 +119,7 @@ describe("Tri-state Buffer", () => {
     // Create a tri-state buffer with no connections
     const gate = builder.addBasicGate("Tri-state Buffer");
     const out = builder.addBasicGate("output");
-    builder.connectGates(gate, out, 0);
+    builder.connectToGate(gate, out, 0);
 
     builder.settle();
 
@@ -135,8 +135,8 @@ describe("Tri-state Buffer", () => {
     const gate = builder.addBasicGate("Tri-state Buffer");
     const out = builder.addBasicGate("output");
 
-    builder.connectGates(data, gate, 1);  // data on port 1
-    builder.connectGates(gate, out, 0);
+    builder.connectToGate(data, gate, 1);  // data on port 1
+    builder.connectToGate(gate, out, 0);
 
     data.setValue(HIGH);
     builder.settle();
@@ -152,8 +152,8 @@ describe("Tri-state Buffer", () => {
     const gate = builder.addBasicGate("Tri-state Buffer");
     const out = builder.addBasicGate("output");
 
-    builder.connectGates(enable, gate, 0);  // enable on port 0
-    builder.connectGates(gate, out, 0);
+    builder.connectToGate(enable, gate, 0);  // enable on port 0
+    builder.connectToGate(gate, out, 0);
 
     enable.setValue(HIGH);
     builder.settle();

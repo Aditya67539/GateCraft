@@ -1,6 +1,60 @@
 import { isNearWaypoint } from "../input/mouseHandlers.js";
 import { screenToWorld } from "../state.js";
-import { getOctilinearSnap } from "./draw.js";
+
+class Connection {
+  constructor({ wire, waypoints, isCustomRouted }) {
+    this.wire = wire;
+    this.waypoints = waypoints;
+    this.isCustomRouted = isCustomRouted;
+  }
+
+  /** @returns {{ start: Point, waypoints: Array<Point>, end: Point }} */
+  getPoints(nodeMap, busMap) {
+    throw new Error("abstract");
+  }
+}
+
+export class WireConnection extends Connection {
+  constructor(data) {
+    super(data);
+  }
+
+  getPoints(nodeMap, busMap) {
+    const ports = getWirePorts(this.wire, nodeMap);
+    return {
+      start: ports.start,
+      waypoints: this.waypoints,
+      end: ports.end,
+    }
+  }
+}
+
+export class BusConnection extends Connection {
+  constructor(data, busId, gateId, portIndex, direction) {
+    super(data);
+    this.tapRef = data.tapRef;
+    this.busId = busId;
+    this.gateId = gateId;
+    this.portIndex = portIndex;
+    this.direction = direction;
+  }
+
+  getPoints(nodeMap, busMap) {
+    const bus = busMap.get(this.busId);
+    const node = nodeMap.get(this.gateId);
+    const tapPoint = bus.getTapPoint(this.tapRef);
+
+    if (this.direction === "in") {
+      // Gate output is the start, and tap on the bus is end
+      const startPoint = node.getOutputPortByIndex(this.portIndex, node.gate.outputCount);
+      return { start: startPoint, waypoints: this.waypoints, end: tapPoint };
+    } else if (this.direction === "out") {
+      // Tap on the bus is start, and gate input is the end
+      const endPoint = node.getInputPortByIndex(this.portIndex, node.gate.inputCount);
+      return { start: tapPoint, waypoints: this.waypoints, end: endPoint };
+    }
+  }
+}
 
 export function initWire(wire, customWaypoints) {
   let waypoints = [];
@@ -35,22 +89,28 @@ export function getWirePorts(wire, nodeMap) {
   return { start: start, end: end };
 }
 
-export function computeWaypoints(startPort, endPort, spacing) {
-  let waypoints = [];
-  if (startPort.x <= endPort.x) {
-    // 2 Waypoints
-    waypoints.push({ x: endPort.x - spacing, y: startPort.y });
-    waypoints.push({ x: endPort.x - spacing, y: endPort.y });
-  } else {
-    // 4 Waypoints
-    const corridorY = (startPort.y + endPort.y) / 2;
+export function getOctilinearSnap(x1, y1, x2, y2) {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
 
-    waypoints.push({ x: startPort.x + spacing, y: startPort.y });
-    waypoints.push({ x: startPort.x + spacing, y: corridorY });
-    waypoints.push({ x: endPort.x - spacing,   y: corridorY });
-    waypoints.push({ x: endPort.x - spacing,   y: endPort.y });
+  const ax = Math.abs(dx);
+  const ay = Math.abs(dy);
+
+  const TAN30 = Math.tan(30 * Math.PI / 180);
+  const TAN60 = Math.tan(60 * Math.PI / 180);
+
+  let x = x2;
+  let y = y2;
+
+  if (ay <= ax * TAN30) y = y1;
+  else if (ay >= ax * TAN60) x = x1;
+  else {
+    const d = Math.min(ax, ay);
+    x = x1 + Math.sign(dx) * d;
+    y = y1 + Math.sign(dy) * d;
   }
-  return waypoints;
+
+  return { x, y };
 }
 
 // Uses document.addEventListener instead of p5's keyPressed because p5 only
@@ -78,7 +138,7 @@ export function setCustomWaypoints(p, startPort) {
 
       if (waypoints.length !== 0) {
         const waypoint_count = waypoints.length;
-        if (!isNearWaypoint(wx, wy, waypoints[waypoint_count - 1], p)) {
+        if (!isNearWaypoint(wx, wy, waypoints[waypoint_count - 1])) {
           waypoints.push({ x: wx, y: wy });
         }
       } else {
@@ -93,4 +153,56 @@ export function setCustomWaypoints(p, startPort) {
 
   document.addEventListener("keydown", onKeyDown);
   return { waypoints, cleanup };
+}
+
+
+export function projectPointOntoSegment(A, B, O) {
+  const abx = B.x - A.x;
+  const aby = B.y - A.y;
+  const aox = O.x - A.x;
+  const aoy = O.y - A.y;
+
+  const abLenSq = abx * abx + aby * aby;
+
+  if (abLenSq === 0) {
+    const distSq = aox * aox + aoy * aoy;
+    return { t: 0, point: { x: A.x, y: A.y }, distSq };
+  }
+
+  let t = (aox * abx + aoy * aby) / abLenSq;
+  t = Math.max(0, Math.min(1, t));
+
+  const point = { x: A.x + t * abx, y: A.y + t * aby };
+
+  const dx = O.x - point.x;
+  const dy = O.y - point.y;
+  const distSq = dx * dx + dy * dy;
+
+  return { t, point, distSq };
+}
+
+
+export function getPointRef(busNode, clickX, clickY) {
+  const { start, waypoints, end } = busNode.getPoints();
+  const points = [start, ...waypoints, end];
+
+  let best = { segmentIndex: null, t: null };
+  let bestDist = Infinity;
+
+  for (let i = 0; i < points.length - 1; i++) {
+    const A = points[i];
+    const B = points[i + 1];
+
+    const result = projectPointOntoSegment(A, B, { x: clickX, y: clickY });
+    if (result.distSq < bestDist) {
+      best = { segmentIndex: i, t: result.t };
+      bestDist = result.distSq;
+    }
+  }
+  return best;
+}
+
+
+export function dist(x1, y1, x2, y2) {
+  return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
 }

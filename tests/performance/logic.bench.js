@@ -15,9 +15,9 @@ function buildANDGate(withWasm = true) {
   const B = b.addBasicGate("input");
   const gate = b.addBasicGate("and");
   const out = b.addBasicGate("output");
-  b.connectGates(A, gate, 0, null, false);
-  b.connectGates(B, gate, 1, null, false);
-  b.connectGates(gate, out, 0, null, false);
+  b.connectToGate(A, gate, 0, null, false);
+  b.connectToGate(B, gate, 1, null, false);
+  b.connectToGate(gate, out, 0, null, false);
   A.setValue(HIGH);
   B.setValue(HIGH);
   if (withWasm) b.buildTypedData();
@@ -29,8 +29,8 @@ function buildNOTGate(withWasm = true) {
   const A = b.addBasicGate("input");
   const gate = b.addBasicGate("not");
   const out = b.addBasicGate("output");
-  b.connectGates(A, gate, 0, null, false);
-  b.connectGates(gate, out, 0, null, false);
+  b.connectToGate(A, gate, 0, null, false);
+  b.connectToGate(gate, out, 0, null, false);
   A.setValue(HIGH);
   if (withWasm) b.buildTypedData();
   return { builder: b, A, out };
@@ -42,9 +42,9 @@ function buildXORGate(withWasm = true) {
   const B = b.addBasicGate("input");
   const gate = b.addBasicGate("xor");
   const out = b.addBasicGate("output");
-  b.connectGates(A, gate, 0, null, false);
-  b.connectGates(B, gate, 1, null, false);
-  b.connectGates(gate, out, 0, null, false);
+  b.connectToGate(A, gate, 0, null, false);
+  b.connectToGate(B, gate, 1, null, false);
+  b.connectToGate(gate, out, 0, null, false);
   A.setValue(HIGH);
   B.setValue(LOW);
   if (withWasm) b.buildTypedData();
@@ -60,12 +60,12 @@ function buildHalfAdder(withWasm = true) {
   const sum = b.addBasicGate("output");
   const carry = b.addBasicGate("output");
 
-  b.connectGates(A, xor, 0, null, false);
-  b.connectGates(B, xor, 1, null, false);
-  b.connectGates(xor, sum, 0, null, false);
-  b.connectGates(A, and, 0, null, false);
-  b.connectGates(B, and, 1, null, false);
-  b.connectGates(and, carry, 0, null, false);
+  b.connectToGate(A, xor, 0, null, false);
+  b.connectToGate(B, xor, 1, null, false);
+  b.connectToGate(xor, sum, 0, null, false);
+  b.connectToGate(A, and, 0, null, false);
+  b.connectToGate(B, and, 1, null, false);
+  b.connectToGate(and, carry, 0, null, false);
 
   if (withWasm) b.buildTypedData();
   return { builder: b, A, B, sum, carry };
@@ -87,20 +87,20 @@ function buildFullAdder(withWasm = true) {
   const sum = b.addBasicGate("output");
   const carry = b.addBasicGate("output");
 
-  b.connectGates(A, xor1, 0, null, false);
-  b.connectGates(B, xor1, 1, null, false);
-  b.connectGates(xor1, xor2, 0, null, false);
-  b.connectGates(C, xor2, 1, null, false);
-  b.connectGates(xor2, sum, 0, null, false);
-  b.connectGates(A, and1, 0, null, false);
-  b.connectGates(B, and1, 1, null, false);
-  b.connectGates(A, or1, 0, null, false);
-  b.connectGates(B, or1, 1, null, false);
-  b.connectGates(and1, or2, 0, null, false);
-  b.connectGates(or1, and2, 0, null, false);
-  b.connectGates(C, and2, 1, null, false);
-  b.connectGates(and2, or2, 1, null, false);
-  b.connectGates(or2, carry, 0, null, false);
+  b.connectToGate(A, xor1, 0, null, false);
+  b.connectToGate(B, xor1, 1, null, false);
+  b.connectToGate(xor1, xor2, 0, null, false);
+  b.connectToGate(C, xor2, 1, null, false);
+  b.connectToGate(xor2, sum, 0, null, false);
+  b.connectToGate(A, and1, 0, null, false);
+  b.connectToGate(B, and1, 1, null, false);
+  b.connectToGate(A, or1, 0, null, false);
+  b.connectToGate(B, or1, 1, null, false);
+  b.connectToGate(and1, or2, 0, null, false);
+  b.connectToGate(or1, and2, 0, null, false);
+  b.connectToGate(C, and2, 1, null, false);
+  b.connectToGate(and2, or2, 1, null, false);
+  b.connectToGate(or2, carry, 0, null, false);
 
   if (withWasm) b.buildTypedData();
   return { builder: b, A, B, C, sum, carry };
@@ -117,14 +117,14 @@ function buildSRLatch(withWasm = true) {
   const Q = b.addBasicGate("output");
   const notQ = b.addBasicGate("output");
 
-  b.connectGates(S, notS, 0, null, false);
-  b.connectGates(R, notR, 0, null, false);
-  b.connectGates(notS, nand1, 0, null, false);
-  b.connectGates(notR, nand2, 0, null, false);
-  b.connectGates(nand1, nand2, 1, null, false);
-  b.connectGates(nand2, nand1, 1, null, false);
-  b.connectGates(nand1, Q, 0, null, false);
-  b.connectGates(nand2, notQ, 0, null, false);
+  b.connectToGate(S, notS, 0, null, false);
+  b.connectToGate(R, notR, 0, null, false);
+  b.connectToGate(notS, nand1, 0, null, false);
+  b.connectToGate(notR, nand2, 0, null, false);
+  b.connectToGate(nand1, nand2, 1, null, false);
+  b.connectToGate(nand2, nand1, 1, null, false);
+  b.connectToGate(nand1, Q, 0, null, false);
+  b.connectToGate(nand2, notQ, 0, null, false);
 
   if (withWasm) b.buildTypedData();
   return { builder: b, S, R, Q, notQ };
@@ -142,17 +142,17 @@ function buildDLatch(withWasm = true) {
   const Q = b.addBasicGate("output");
   const notQ = b.addBasicGate("output");
 
-  b.connectGates(D, notD, 0, null, false);
-  b.connectGates(notD, and1, 0, null, false);
-  b.connectGates(E, and1, 1, null, false);
-  b.connectGates(E, and2, 0, null, false);
-  b.connectGates(D, and2, 1, null, false);
-  b.connectGates(and1, nor1, 0, null, false);
-  b.connectGates(nor2, nor1, 1, null, false);
-  b.connectGates(nor1, nor2, 0, null, false);
-  b.connectGates(and2, nor2, 1, null, false);
-  b.connectGates(nor1, Q, 0, null, false);
-  b.connectGates(nor2, notQ, 0, null, false);
+  b.connectToGate(D, notD, 0, null, false);
+  b.connectToGate(notD, and1, 0, null, false);
+  b.connectToGate(E, and1, 1, null, false);
+  b.connectToGate(E, and2, 0, null, false);
+  b.connectToGate(D, and2, 1, null, false);
+  b.connectToGate(and1, nor1, 0, null, false);
+  b.connectToGate(nor2, nor1, 1, null, false);
+  b.connectToGate(nor1, nor2, 0, null, false);
+  b.connectToGate(and2, nor2, 1, null, false);
+  b.connectToGate(nor1, Q, 0, null, false);
+  b.connectToGate(nor2, notQ, 0, null, false);
 
   if (withWasm) b.buildTypedData();
   return { builder: b, D, E, Q, notQ };
@@ -185,22 +185,22 @@ function buildRippleCarryAdder(bits, withWasm = true) {
     const or2 = b.addBasicGate("or");
     const sum = b.addBasicGate("output");
 
-    b.connectGates(A[i], xor1, 0, null, false);
-    b.connectGates(B[i], xor1, 1, null, false);
-    b.connectGates(xor1, xor2, 0, null, false);
-    b.connectGates(prevCarry, xor2, 1, null, false);
-    b.connectGates(xor2, sum, 0, null, false);
+    b.connectToGate(A[i], xor1, 0, null, false);
+    b.connectToGate(B[i], xor1, 1, null, false);
+    b.connectToGate(xor1, xor2, 0, null, false);
+    b.connectToGate(prevCarry, xor2, 1, null, false);
+    b.connectToGate(xor2, sum, 0, null, false);
 
-    b.connectGates(A[i], and1, 0, null, false);
-    b.connectGates(B[i], and1, 1, null, false);
+    b.connectToGate(A[i], and1, 0, null, false);
+    b.connectToGate(B[i], and1, 1, null, false);
 
-    b.connectGates(A[i], or1, 0, null, false);
-    b.connectGates(B[i], or1, 1, null, false);
+    b.connectToGate(A[i], or1, 0, null, false);
+    b.connectToGate(B[i], or1, 1, null, false);
 
-    b.connectGates(and1, or2, 0, null, false);
-    b.connectGates(or1, and2, 0, null, false);
-    b.connectGates(prevCarry, and2, 1, null, false);
-    b.connectGates(and2, or2, 1, null, false);
+    b.connectToGate(and1, or2, 0, null, false);
+    b.connectToGate(or1, and2, 0, null, false);
+    b.connectToGate(prevCarry, and2, 1, null, false);
+    b.connectToGate(and2, or2, 1, null, false);
 
     S.push(sum);
 
@@ -208,7 +208,7 @@ function buildRippleCarryAdder(bits, withWasm = true) {
   }
 
   const Cout = b.addBasicGate("output");
-  b.connectGates(prevCarry, Cout, 0, null, false);
+  b.connectToGate(prevCarry, Cout, 0, null, false);
   if (withWasm) b.buildTypedData();
 
   return { builder: b, A, B, Cin, S, Cout };
@@ -225,8 +225,8 @@ function buildWideFanout(width, withWasm = true) {
   for (let i = 0; i < width; i++) {
     const gate = b.addBasicGate("or");
     const out = b.addBasicGate("output");
-    b.connectGates(src, gate, 0, null, false);
-    b.connectGates(gate, out, 0, null, false);
+    b.connectToGate(src, gate, 0, null, false);
+    b.connectToGate(gate, out, 0, null, false);
   }
 
   if (withWasm) b.buildTypedData();
@@ -245,12 +245,12 @@ function buildDeepChain(depth, withWasm = true) {
   let prev = src;
   for (let i = 0; i < depth; i++) {
     const not = b.addBasicGate("not");
-    b.connectGates(prev, not, 0, null, false);
+    b.connectToGate(prev, not, 0, null, false);
     prev = not;
   }
 
   const out = b.addBasicGate("output");
-  b.connectGates(prev, out, 0, null, false);
+  b.connectToGate(prev, out, 0, null, false);
 
   if (withWasm) b.buildTypedData();
 
@@ -271,12 +271,12 @@ function halfAdderCircuitData(withWasm = true) {
   const sum = inner.addBasicGate("output");
   const carry = inner.addBasicGate("output");
 
-  inner.connectGates(A, xor, 0, null, false);
-  inner.connectGates(B, xor, 1, null, false);
-  inner.connectGates(xor, sum, 0, null, false);
-  inner.connectGates(A, and, 0, null, false);
-  inner.connectGates(B, and, 1, null, false);
-  inner.connectGates(and, carry, 0, null, false);
+  inner.connectToGate(A, xor, 0, null, false);
+  inner.connectToGate(B, xor, 1, null, false);
+  inner.connectToGate(xor, sum, 0, null, false);
+  inner.connectToGate(A, and, 0, null, false);
+  inner.connectToGate(B, and, 1, null, false);
+  inner.connectToGate(and, carry, 0, null, false);
   inner.buildFanout();
 
   if (withWasm) inner.buildTypedData();
@@ -297,8 +297,8 @@ function notCircuitData(withWasm = true) {
   const not = inner.addBasicGate("not");
   const Q = inner.addBasicGate("output");
 
-  inner.connectGates(A, not, 0, null, false);
-  inner.connectGates(not, Q, 0, null, false);
+  inner.connectToGate(A, not, 0, null, false);
+  inner.connectToGate(not, Q, 0, null, false);
   inner.buildFanout();
 
   if (withWasm) inner.buildTypedData();
@@ -321,10 +321,10 @@ function buildCompositeHalfAdder(withWasm = true) {
   const sum = b.addBasicGate("output");
   const carry = b.addBasicGate("output");
 
-  b.connectGates(A, comp, 0, null, false);
-  b.connectGates(B, comp, 1, null, false);
-  b.connectGates(comp, sum, 0, 0, false);
-  b.connectGates(comp, carry, 0, 1, false);
+  b.connectToGate(A, comp, 0, null, false);
+  b.connectToGate(B, comp, 1, null, false);
+  b.connectToGate(comp, sum, 0, 0, false);
+  b.connectToGate(comp, carry, 0, 1, false);
 
   if (withWasm) b.buildTypedData();
 
@@ -350,25 +350,25 @@ function buildCompositeRCA(bits, withWasm = true) {
 
   for (let i = 0; i < bits; i++) {
     const ha1 = b.addCompositeGate("ha", halfAdderCircuitData(false));
-    b.connectGates(A[i], ha1, 0, null, false);
-    b.connectGates(B[i], ha1, 1, null, false);
+    b.connectToGate(A[i], ha1, 0, null, false);
+    b.connectToGate(B[i], ha1, 1, null, false);
 
     const ha2 = b.addCompositeGate("ha", halfAdderCircuitData(false));
-    b.connectGates(ha1, ha2, 0, 0, false);
-    b.connectGates(prevCarry, ha2, 1, null, false);
+    b.connectToGate(ha1, ha2, 0, 0, false);
+    b.connectToGate(prevCarry, ha2, 1, null, false);
 
     const sum = b.addBasicGate("output");
-    b.connectGates(ha2, sum, 0, 0, false);
+    b.connectToGate(ha2, sum, 0, 0, false);
     S.push(sum);
 
     const or = b.addBasicGate("or");
-    b.connectGates(ha1, or, 0, 1, false);
-    b.connectGates(ha2, or, 1, 1, false);
+    b.connectToGate(ha1, or, 0, 1, false);
+    b.connectToGate(ha2, or, 1, 1, false);
     prevCarry = or;
   }
 
   const Cout = b.addBasicGate("output");
-  b.connectGates(prevCarry, Cout, 0, null, false);
+  b.connectToGate(prevCarry, Cout, 0, null, false);
   if (withWasm) b.buildTypedData();
 
   return { builder: b, A, B, Cin, S, Cout };
@@ -385,9 +385,9 @@ function buildNestedComposite(withWasm = true) {
   const not2 = middle.addCompositeGate("not", notCircuitData());
   const mQ = middle.addBasicGate("output");
 
-  middle.connectGates(mA, not1, 0, null, false);
-  middle.connectGates(not1, not2, 0, 0, false);
-  middle.connectGates(not2, mQ, 0, 0, false);
+  middle.connectToGate(mA, not1, 0, null, false);
+  middle.connectToGate(not1, not2, 0, 0, false);
+  middle.connectToGate(not2, mQ, 0, 0, false);
   middle.buildFanout();
 
   const doubleNotData = {
@@ -402,8 +402,8 @@ function buildNestedComposite(withWasm = true) {
   const comp = b.addCompositeGate("double-not", doubleNotData);
   const out = b.addBasicGate("output");
 
-  b.connectGates(A, comp, 0, null, false);
-  b.connectGates(comp, out, 0, 0, false);
+  b.connectToGate(A, comp, 0, null, false);
+  b.connectToGate(comp, out, 0, 0, false);
 
   if (withWasm) b.buildTypedData();
 
