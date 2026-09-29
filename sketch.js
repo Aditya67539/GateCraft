@@ -5,7 +5,7 @@ import { registerMouseHandlers, isNearWaypoint, isNearPort, busMap, nodeMap } fr
 import { initToolbar } from "./ui/toolbar.js";
 import { getActiveTheme, applyTheme } from "./render/theme.js";
 import { CircuitBuilder } from "./logic/CircuitBuilder.js";
-import { snapPointToGrid, wouldOverlap } from "./render/RenderPoint.js";
+import { snapPointToGrid, wouldBusOverlap, wouldOverlap } from "./render/RenderPoint.js";
 import { registerKeyboardHandlers } from "./input/keyboardHandlers.js";
 import { drawMinimap } from "./render/minimap.js";
 import { getOctilinearSnap } from "./render/wireGeometry.js";
@@ -166,7 +166,8 @@ const sketch = (p) => {
       }
     }
     if (state.ghostBus) {
-      drawGhostBus(state.ghostBus, p);
+      let status = wouldBusOverlap(state.ghostBus, renderNodes, busNodes) ? "invalid" : "valid";
+      drawGhostBus(state.ghostBus, p, status);
       if (state.mode === "placing") {
         const { x, y } = screenToWorld(p.mouseX, p.mouseY);
         if (!state.ghostBus.startPointPlaced && !state.ghostBus.endPointPlaced) {

@@ -26,7 +26,7 @@ export function drawGate(renderNode, p, status = null) {
     drawDisplay(renderNode, p);
     drawInputPort(renderNode, theme, p);
     drawOutputPort(renderNode, theme, p);
-    if (status) drawOverlay(renderNode, status, p);
+    if (status) drawOverlay(renderNode.getBounds(), status, p);
 
     p.fill(0);
     p.stroke(0);
@@ -123,7 +123,7 @@ export function drawGate(renderNode, p, status = null) {
   drawOutputPort(renderNode, theme, p);
   drawInputPort(renderNode, theme, p);
 
-  if (status) drawOverlay(renderNode, status, p);
+  if (status) drawOverlay(renderNode.getBounds(), status, p);
 
   p.fill(0);
   p.stroke(0);
@@ -131,7 +131,6 @@ export function drawGate(renderNode, p, status = null) {
 }
 
 export function drawBus(busNode, p) {
-  // TODO: draw circles for waypoints
   const theme = getActiveTheme();
   p.strokeWeight(5);
 
@@ -148,7 +147,7 @@ export function drawBus(busNode, p) {
   p.strokeWeight(1);
 }
 
-export function drawGhostBus(busNode, p) {
+export function drawGhostBus(busNode, p, status = null) {
   const theme = getActiveTheme();
   p.strokeWeight(5);
 
@@ -210,6 +209,11 @@ export function drawGhostBus(busNode, p) {
 
     p.line(x1, y1, endX, endY);
   }
+
+  if (status) {
+    let bounds = busNode.startPointPlaced ? busNode.getEndPointBounds(8) : busNode.getStartPointBounds(8);
+    drawOverlay(bounds, status, p);
+  };
 }
 
 function drawPoint(x, y, color, p) {
@@ -217,8 +221,7 @@ function drawPoint(x, y, color, p) {
   p.circle(x, y, 16);
 }
 
-function drawOverlay(node, status, p) {
-  const bounds = node.getBounds();
+function drawOverlay(bounds, status, p) {
   const bw = bounds.right - bounds.left;
   const bh = bounds.bottom - bounds.top;
 
