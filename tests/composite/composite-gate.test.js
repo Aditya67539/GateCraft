@@ -284,11 +284,13 @@ describe("Composite Gate – buildCircuitFromData round-trip", () => {
         { id: carry.id, type: "output" },
       ],
       wires: inner.wires.map((w) => ({
-        fromGateId: w.from.id,
-        toGateId: w.to.id,
+        from: w.from.id,
+        to: w.to.id,
         toInputIndex: w.toInputIndex,
         fromOutputIndex: w.fromOutputIndex,
+        isBusConnection: false,
       })),
+      buses: [],
       inputOrder: [A.id, B.id],
       outputOrder: [sum.id, carry.id],
     };
