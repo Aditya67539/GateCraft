@@ -87,8 +87,8 @@ function getCircuitData(renderNodes, wireInfos, busNodes) {
   
   for (const w of wireInfos) {
     const data = {
-      from: w.wire.from.id,
-      to: w.wire.to.id,
+      fromId: w.wire.from.id,
+      toId: w.wire.to.id,
       toInputIndex: w.wire.toInputIndex,
       fromOutputIndex: w.wire.fromOutputIndex,
     }
@@ -151,8 +151,8 @@ function getRenderData(renderNodes, wireInfos, busNodes) {
 
   for (const w of wireInfos) {
     const data = {
-      from: w.wire.from.id,
-      to: w.wire.to.id,
+      fromId: w.wire.from.id,
+      toId: w.wire.to.id,
       waypoints: w.waypoints,
       isCustomRouted: w.isCustomRouted,
     };
@@ -255,8 +255,8 @@ export function buildCircuitFromData(circuitData, renderData = null) {
   }
 
   for (const wireSpec of circuitData.wires) {
-    const fromId = idMap[wireSpec.from];
-    const toId = idMap[wireSpec.to];
+    const fromId = idMap[wireSpec.fromId];
+    const toId = idMap[wireSpec.toId];
     const from = builder.gates.get(fromId) || builder.buses.get(fromId);
     const to = builder.gates.get(toId) || builder.buses.get(toId);
     if (from && to) {
