@@ -3,6 +3,8 @@ import { RenderPoint } from "./render/RenderPoint.js";
 import { BusConnection, WireConnection } from "./render/wireGeometry.js";
 
 const STORAGE_KEY = "compositeGates";
+const FOLDERS_KEY = "compositeGateFolders";
+const DEFAULT_FOLDER = "Unsorted";
 
 /**
  * Retrieves the composite gate store from localStorage. 
@@ -23,6 +25,27 @@ function getStore() {
  */
 function setStore(store) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+}
+
+/**
+ * Retrieves the folder store from localStorage.
+ * Structure: { folders: string[], gateToFolder: { [gateName]: folderName } }
+ *
+ * @returns {{ folders: string[], gateToFolder: Object<string, string> }}
+ */
+function getFolderStore() {
+  const raw = localStorage.getItem(FOLDERS_KEY);
+  if (raw) return JSON.parse(raw);
+  return { folders: [DEFAULT_FOLDER], gateToFolder: {} };
+}
+
+/**
+ * Persists the folder store to localStorage.
+ *
+ * @param {{ folders: string[], gateToFolder: Object<string, string> }} folderStore
+ */
+function setFolderStore(folderStore) {
+  localStorage.setItem(FOLDERS_KEY, JSON.stringify(folderStore));
 }
 
 /**
@@ -153,13 +176,21 @@ function getRenderData(renderNodes, wireInfos, busNodes) {
  * @param {Array<Object>} wires - Array of wire objects containing Wire instances. 
  * @param {Array<BusNode>} buses - Array of BusNode objects. 
  */
-export function saveCompositeGate(name, renderNodes, wires, buses) {
+export function saveCompositeGate(name, renderNodes, wires, buses, folder = DEFAULT_FOLDER) {
   const circuitData = getCircuitData(renderNodes, wires, buses);
   const renderData = getRenderData(renderNodes, wires, buses);
 
   const store = getStore();
   store[name] = { circuitData, renderData };
   setStore(store);
+
+  // Assign folder
+  const folderStore = getFolderStore();
+  if (!folderStore.folders.includes(folder)) {
+    folderStore.folders.push(folder);
+  }
+  folderStore.gateToFolder[name] = folder;
+  setFolderStore(folderStore);
 }
 
 /**
@@ -279,6 +310,11 @@ export function deleteCompositeGate(name) {
   const store = getStore();
   delete store[name];
   setStore(store);
+
+  // Remove folder assignment
+  const folderStore = getFolderStore();
+  delete folderStore.gateToFolder[name];
+  setFolderStore(folderStore);
 }
 
 /**
@@ -294,5 +330,131 @@ export function renameCompositeGate(oldName, newName) {
   store[newName] = store[oldName];
   delete store[oldName];
   setStore(store);
+
+  // Update folder assignment
+  const folderStore = getFolderStore();
+  if (folderStore.gateToFolder[oldName]) {
+    folderStore.gateToFolder[newName] = folderStore.gateToFolder[oldName];
+    delete folderStore.gateToFolder[oldName];
+    setFolderStore(folderStore);
+  }
+
   return true;
 }
+
+// ─── Folder management ──────────────────────────────────────────
+
+/**
+ * Lists all composite gate folders in order.
+ *
+ * @returns {string[]} Array of folder names.
+ */
+export function listCompositeFolders() {
+  const folderStore = getFolderStore();
+  return [...folderStore.folders];
+}
+
+/**
+ * Creates a new composite gate folder.
+ *
+ * @param {string} name - Name of the folder to create.
+ * @returns {boolean} True if created, false if it already exists.
+ */
+export function createCompositeFolder(name) {
+  const folderStore = getFolderStore();
+  if (folderStore.folders.includes(name)) return false;
+  folderStore.folders.push(name);
+  setFolderStore(folderStore);
+  return true;
+}
+
+/**
+ * Deletes a composite gate folder. Gates in it are moved to "Unsorted".
+ *
+ * @param {string} name - Name of the folder to delete.
+ * @returns {boolean} True if deleted, false if it's the default folder or doesn't exist.
+ */
+export function deleteCompositeFolder(name) {
+  if (name === DEFAULT_FOLDER) return false;
+  const folderStore = getFolderStore();
+  const idx = folderStore.folders.indexOf(name);
+  if (idx === -1) return false;
+  folderStore.folders.splice(idx, 1);
+
+  // Move gates from deleted folder to default
+  for (const [gate, folder] of Object.entries(folderStore.gateToFolder)) {
+    if (folder === name) {
+      folderStore.gateToFolder[gate] = DEFAULT_FOLDER;
+    }
+  }
+
+  setFolderStore(folderStore);
+  return true;
+}
+
+/**
+ * Renames a composite gate folder.
+ *
+ * @param {string} oldName - Current folder name.
+ * @param {string} newName - New folder name.
+ * @returns {boolean} True if renamed, false otherwise.
+ */
+export function renameCompositeFolder(oldName, newName) {
+  if (oldName === DEFAULT_FOLDER) return false;
+  const folderStore = getFolderStore();
+  const idx = folderStore.folders.indexOf(oldName);
+  if (idx === -1 || folderStore.folders.includes(newName)) return false;
+  folderStore.folders[idx] = newName;
+
+  // Update gate assignments
+  for (const [gate, folder] of Object.entries(folderStore.gateToFolder)) {
+    if (folder === oldName) {
+      folderStore.gateToFolder[gate] = newName;
+    }
+  }
+
+  setFolderStore(folderStore);
+  return true;
+}
+
+/**
+ * Gets the folder a gate belongs to.
+ *
+ * @param {string} gateName - Name of the composite gate.
+ * @returns {string} The folder name.
+ */
+export function getGateFolder(gateName) {
+  const folderStore = getFolderStore();
+  return folderStore.gateToFolder[gateName] || DEFAULT_FOLDER;
+}
+
+/**
+ * Moves a gate to a different folder.
+ *
+ * @param {string} gateName - Name of the composite gate.
+ * @param {string} folderName - Target folder name.
+ * @returns {boolean} True if moved successfully.
+ */
+export function setGateFolder(gateName, folderName) {
+  const folderStore = getFolderStore();
+  if (!folderStore.folders.includes(folderName)) return false;
+  folderStore.gateToFolder[gateName] = folderName;
+  setFolderStore(folderStore);
+  return true;
+}
+
+/**
+ * Lists all gates in a specific folder.
+ *
+ * @param {string} folderName - Name of the folder.
+ * @returns {string[]} Array of gate names in that folder.
+ */
+export function listGatesInFolder(folderName) {
+  const folderStore = getFolderStore();
+  const gateStore = getStore();
+  return Object.keys(gateStore).filter(
+    name => (folderStore.gateToFolder[name] || DEFAULT_FOLDER) === folderName
+  );
+}
+
+export { DEFAULT_FOLDER };
