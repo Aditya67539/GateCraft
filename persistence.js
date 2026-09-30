@@ -381,14 +381,22 @@ export function deleteCompositeFolder(name) {
   if (idx === -1) return false;
   folderStore.folders.splice(idx, 1);
 
-  // Move gates from deleted folder to default
+  // Delete gates from the deleted folder
+  const gateStore = getStore();
+  let gateStoreModified = false;
+  
   for (const [gate, folder] of Object.entries(folderStore.gateToFolder)) {
     if (folder === name) {
-      folderStore.gateToFolder[gate] = DEFAULT_FOLDER;
+      delete folderStore.gateToFolder[gate];
+      delete gateStore[gate];
+      gateStoreModified = true;
     }
   }
 
   setFolderStore(folderStore);
+  if (gateStoreModified) {
+    setStore(gateStore);
+  }
   return true;
 }
 

@@ -268,16 +268,166 @@ function hideContextMenu() {
   state.isAnyModalOpen = false;
 }
 
-// Close context menu on any click or Escape
-document.addEventListener("click", hideContextMenu);
+// ─── Folder context menu ────────────────────────────────────────
+const folderCtxMenu = document.getElementById("folder-context-menu");
+let _ctxTargetFolder = null;
+
+function showFolderContextMenu(e, folderName) {
+  e.preventDefault();
+  e.stopPropagation();
+  _ctxTargetFolder = folderName;
+
+  // Hide the gate context menu if open
+  hideContextMenu();
+
+  const x = Math.min(e.clientX, window.innerWidth - 170);
+  const y = Math.min(e.clientY, window.innerHeight - 100);
+  folderCtxMenu.style.left = `${x}px`;
+  folderCtxMenu.style.top = `${y}px`;
+  folderCtxMenu.classList.add("open");
+
+  state.isAnyModalOpen = true;
+}
+
+function hideFolderContextMenu() {
+  if (!folderCtxMenu.classList.contains("open")) return;
+
+  folderCtxMenu.classList.remove("open");
+  _ctxTargetFolder = null;
+
+  state.isAnyModalOpen = false;
+}
+
+// Folder context menu actions
+document.getElementById("ctx-folder-rename").addEventListener("click", () => {
+  const folderName = _ctxTargetFolder;
+  hideFolderContextMenu();
+  if (!folderName || folderName === DEFAULT_FOLDER) return;
+
+  const renameFolderModal = document.getElementById("rename-folder-modal");
+  const renameFolderInput = document.getElementById("rename-folder-input");
+  const renameFolderSave = document.getElementById("rename-folder-save-btn");
+  const renameFolderCancel = document.getElementById("rename-folder-cancel-btn");
+
+  renameFolderInput.value = folderName;
+  renameFolderModal.classList.add("open");
+  renameFolderInput.focus();
+  renameFolderInput.select();
+  state.isAnyModalOpen = true;
+
+  const doRename = () => {
+    const newName = renameFolderInput.value.trim();
+    if (!newName || newName === folderName) {
+      renameFolderModal.classList.remove("open");
+      state.isAnyModalOpen = false;
+      cleanup();
+      return;
+    }
+    if (renameCompositeFolder(folderName, newName)) {
+      // Preserve collapsed state under the new name
+      if (_collapsedFolders.has(folderName)) {
+        _collapsedFolders.delete(folderName);
+        _collapsedFolders.add(newName);
+      }
+      refreshCompositeSection();
+    }
+    renameFolderModal.classList.remove("open");
+    state.isAnyModalOpen = false;
+    cleanup();
+  };
+
+  const doCancel = () => {
+    renameFolderModal.classList.remove("open");
+    state.isAnyModalOpen = false;
+    cleanup();
+  };
+
+  const onKey = (e) => {
+    if (e.key === "Enter") doRename();
+    if (e.key === "Escape") doCancel();
+  };
+
+  const onOverlay = (e) => {
+    if (e.target === renameFolderModal) doCancel();
+  };
+
+  function cleanup() {
+    renameFolderSave.removeEventListener("click", doRename);
+    renameFolderCancel.removeEventListener("click", doCancel);
+    renameFolderInput.removeEventListener("keydown", onKey);
+    renameFolderModal.removeEventListener("click", onOverlay);
+  }
+
+  renameFolderSave.addEventListener("click", doRename);
+  renameFolderCancel.addEventListener("click", doCancel);
+  renameFolderInput.addEventListener("keydown", onKey);
+  renameFolderModal.addEventListener("click", onOverlay);
+});
+
+document.getElementById("ctx-folder-delete").addEventListener("click", () => {
+  const folderName = _ctxTargetFolder;
+  hideFolderContextMenu();
+  if (!folderName || folderName === DEFAULT_FOLDER) return;
+
+  const deleteModal = document.getElementById("delete-folder-warning-modal");
+  const cancelBtn = document.getElementById("delete-folder-cancel-btn");
+  const confirmBtn = document.getElementById("delete-folder-confirm-btn");
+
+  deleteModal.classList.add("open");
+  state.isAnyModalOpen = true;
+
+  const doDelete = () => {
+    _collapsedFolders.delete(folderName);
+    deleteCompositeFolder(folderName);
+    refreshCompositeSection();
+    deleteModal.classList.remove("open");
+    state.isAnyModalOpen = false;
+    cleanup();
+  };
+
+  const doCancel = () => {
+    deleteModal.classList.remove("open");
+    state.isAnyModalOpen = false;
+    cleanup();
+  };
+  
+  const onKey = (e) => {
+    if (e.key === "Enter") doDelete();
+    if (e.key === "Escape") doCancel();
+  };
+
+  const onOverlay = (e) => {
+    if (e.target === deleteModal) doCancel();
+  };
+
+  function cleanup() {
+    confirmBtn.removeEventListener("click", doDelete);
+    cancelBtn.removeEventListener("click", doCancel);
+    document.removeEventListener("keydown", onKey);
+    deleteModal.removeEventListener("click", onOverlay);
+  }
+
+  confirmBtn.addEventListener("click", doDelete);
+  cancelBtn.addEventListener("click", doCancel);
+  document.addEventListener("keydown", onKey);
+  deleteModal.addEventListener("click", onOverlay);
+});
+
+// Close context menus on any click or Escape
+document.addEventListener("click", (e) => {
+  hideContextMenu();
+  hideFolderContextMenu();
+});
 document.addEventListener("contextmenu", (e) => {
-  // Close if right-clicking elsewhere
   if (ctxMenu.classList.contains("open") && !ctxMenu.contains(e.target)) {
     hideContextMenu();
   }
+  if (folderCtxMenu.classList.contains("open") && !folderCtxMenu.contains(e.target)) {
+    hideFolderContextMenu();
+  }
 });
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") hideContextMenu();
+  if (e.key === "Escape") { hideContextMenu(); hideFolderContextMenu(); }
   if (e.key === "Tab") e.preventDefault();
 });
 
@@ -423,11 +573,6 @@ function refreshCompositeSection(p = null) {
   folders.forEach(folderName => {
     const gates = listGatesInFolder(folderName);
 
-    // Skip empty non-default folders (but always show Unsorted)
-    if (gates.length === 0 && folderName !== DEFAULT_FOLDER && folders.length > 1) {
-      // Still render the folder header even if empty, so user can see it
-    }
-
     const folderEl = document.createElement("div");
     folderEl.className = "composite-folder";
     if (_collapsedFolders.has(folderName)) {
@@ -450,6 +595,10 @@ function refreshCompositeSection(p = null) {
         _collapsedFolders.delete(folderName);
       }
     });
+    // Right-click: show folder context menu
+    if (folderName !== DEFAULT_FOLDER) {
+      header.addEventListener("contextmenu", (e) => showFolderContextMenu(e, folderName));
+    }
     folderEl.appendChild(header);
 
     // Folder content
