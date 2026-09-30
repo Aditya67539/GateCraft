@@ -23,8 +23,8 @@ function serializeGateOnly(builder, inputOrder, outputOrder) {
   }
 
   const wires = builder.wires.map((w) => ({
-    from: w.from.id,
-    to: w.to.id,
+    fromId: w.from.id,
+    toId: w.to.id,
     toInputIndex: w.toInputIndex,
     fromOutputIndex: w.fromOutputIndex,
     isBusConnection: false,
@@ -58,8 +58,8 @@ function serializeWithBuses(builder, inputOrder, outputOrder, busWireDirections 
 
   const wires = builder.wires.map((w, idx) => {
     const data = {
-      from: w.from.id,
-      to: w.to.id,
+      fromId: w.from.id,
+      toId: w.to.id,
       toInputIndex: w.toInputIndex,
       fromOutputIndex: w.fromOutputIndex,
     };
@@ -100,8 +100,8 @@ describe("Persistence – Backward Compatibility", () => {
         { id: Q.id, type: "output" },
       ],
       wires: [
-        { from: A.id, to: not.id, toInputIndex: 0, fromOutputIndex: null },
-        { from: not.id, to: Q.id, toInputIndex: 0, fromOutputIndex: null },
+        { fromId: A.id, toId: not.id, toInputIndex: 0, fromOutputIndex: null },
+        { fromId: not.id, toId: Q.id, toInputIndex: 0, fromOutputIndex: null },
       ],
       // No `buses` property — simulates a save from before bus support
       // No `isBusConnection` on wires either
@@ -148,9 +148,9 @@ describe("Persistence – Backward Compatibility", () => {
         { id: Q.id, type: "output" },
       ],
       wires: [
-        { from: A.id, to: andGate.id, toInputIndex: 0, fromOutputIndex: null },
-        { from: B.id, to: andGate.id, toInputIndex: 1, fromOutputIndex: null },
-        { from: andGate.id, to: Q.id, toInputIndex: 0, fromOutputIndex: null },
+        { fromId: A.id, toId: andGate.id, toInputIndex: 0, fromOutputIndex: null },
+        { fromId: B.id, toId: andGate.id, toInputIndex: 1, fromOutputIndex: null },
+        { fromId: andGate.id, toId: Q.id, toInputIndex: 0, fromOutputIndex: null },
       ],
       buses: [],
       inputOrder: [A.id, B.id],
