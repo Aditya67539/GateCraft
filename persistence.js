@@ -6,6 +6,36 @@ const STORAGE_KEY = "compositeGates";
 const FOLDERS_KEY = "compositeGateFolders";
 const DEFAULT_FOLDER = "Unsorted";
 
+function migrateSavedComposite() {
+  const compositeGates = listCompositeGates();
+  const store = getStore();
+
+  for (const name of compositeGates) {
+    const { circuitData, renderData } = loadCompositeGate(name);
+
+    for (let i = 0; i < circuitData.wires.length; i++) {
+      circuitData.wires[i] = normalizeWireSpec(circuitData.wires[i]);
+    }
+
+    for (let i = 0; i < renderData.wires.length; i++) {
+      renderData.wires[i] = normalizeWireSpec(renderData.wires[i]);
+    }
+
+    store[name] = { circuitData, renderData };
+    setStore(store);
+  }
+}
+
+function normalizeWireSpec(w) {
+  if ((w.fromId === undefined && w.fromGateId !== undefined) && (w.toId === undefined && w.toGateId !== undefined)) {
+    const { fromGateId, toGateId, ...rest } = w;
+    return { ...rest, fromId: fromGateId, toId: toGateId };
+  }
+  return w;
+}
+
+migrateSavedComposite();
+
 /**
  * Retrieves the composite gate store from localStorage. 
  * 
@@ -87,8 +117,8 @@ function getCircuitData(renderNodes, wireInfos, busNodes) {
   
   for (const w of wireInfos) {
     const data = {
-      from: w.wire.from.id,
-      to: w.wire.to.id,
+      fromId: w.wire.from.id,
+      toId: w.wire.to.id,
       toInputIndex: w.wire.toInputIndex,
       fromOutputIndex: w.wire.fromOutputIndex,
     }
@@ -151,8 +181,8 @@ function getRenderData(renderNodes, wireInfos, busNodes) {
 
   for (const w of wireInfos) {
     const data = {
-      from: w.wire.from.id,
-      to: w.wire.to.id,
+      fromId: w.wire.from.id,
+      toId: w.wire.to.id,
       waypoints: w.waypoints,
       isCustomRouted: w.isCustomRouted,
     };
@@ -255,8 +285,8 @@ export function buildCircuitFromData(circuitData, renderData = null) {
   }
 
   for (const wireSpec of circuitData.wires) {
-    const fromId = idMap[wireSpec.from];
-    const toId = idMap[wireSpec.to];
+    const fromId = idMap[wireSpec.fromId];
+    const toId = idMap[wireSpec.toId];
     const from = builder.gates.get(fromId) || builder.buses.get(fromId);
     const to = builder.gates.get(toId) || builder.buses.get(toId);
     if (from && to) {
