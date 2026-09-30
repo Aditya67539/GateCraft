@@ -238,6 +238,23 @@ const _collapsedFolders = new Set();
 const ctxMenu = document.getElementById("composite-context-menu");
 let _ctxTargetName = null;
 
+function positionMenu(menu, startX, startY) {
+  menu.classList.add("open");
+  menu.style.left = `${startX}px`;
+  menu.style.top = `${startY}px`;
+
+  const rect = menu.getBoundingClientRect();
+  let x = startX;
+  let y = startY;
+
+  if (rect.bottom > window.innerHeight) {
+    y = Math.max(0, startY - rect.height);
+  }
+
+  menu.style.left = `${x}px`;
+  menu.style.top = `${y}px`;
+}
+
 function showContextMenu(e, name) {
   e.preventDefault();
   e.stopPropagation();
@@ -248,11 +265,7 @@ function showContextMenu(e, name) {
   ctxFolderSubmenu.classList.remove("open");
 
   // Position the menu near the cursor, clamped to viewport
-  const x = Math.min(e.clientX, window.innerWidth - 170);
-  const y = Math.min(e.clientY, window.innerHeight - 100);
-  ctxMenu.style.left = `${x}px`;
-  ctxMenu.style.top = `${y}px`;
-  ctxMenu.classList.add("open");
+  positionMenu(ctxMenu, e.clientX, e.clientY);
 
   state.isAnyModalOpen = true;
 }
@@ -280,11 +293,7 @@ function showFolderContextMenu(e, folderName) {
   // Hide the gate context menu if open
   hideContextMenu();
 
-  const x = Math.min(e.clientX, window.innerWidth - 170);
-  const y = Math.min(e.clientY, window.innerHeight - 100);
-  folderCtxMenu.style.left = `${x}px`;
-  folderCtxMenu.style.top = `${y}px`;
-  folderCtxMenu.classList.add("open");
+  positionMenu(folderCtxMenu, e.clientX, e.clientY);
 
   state.isAnyModalOpen = true;
 }
@@ -503,7 +512,29 @@ const ctxFolderSubmenu = document.getElementById("ctx-folder-submenu");
 
 ctxMoveToFolder.addEventListener("click", (e) => {
   e.stopPropagation();
-  ctxFolderSubmenu.classList.toggle("open");
+  if (ctxFolderSubmenu.classList.contains("open")) {
+    ctxFolderSubmenu.classList.remove("open");
+  } else {
+    // Position submenu to the right of the trigger item
+    const triggerRect = ctxMoveToFolder.getBoundingClientRect();
+    
+    ctxFolderSubmenu.classList.add("open");
+    // Temporarily position to get width
+    ctxFolderSubmenu.style.left = `${triggerRect.right}px`;
+    ctxFolderSubmenu.style.top = `${triggerRect.top}px`;
+    
+    const submenuRect = ctxFolderSubmenu.getBoundingClientRect();
+    let x = triggerRect.right;
+    let y = triggerRect.top;
+    
+    // If it overflows bottom, adjust upwards
+    if (submenuRect.bottom > window.innerHeight) {
+      y = Math.max(0, triggerRect.bottom - submenuRect.height);
+    }
+    
+    ctxFolderSubmenu.style.left = `${x}px`;
+    ctxFolderSubmenu.style.top = `${y}px`;
+  }
 });
 
 function populateFolderSubmenu(gateName) {
