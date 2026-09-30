@@ -7,6 +7,14 @@ import {
   deleteCompositeGate,
   renameCompositeGate,
   buildCircuitFromData,
+  listCompositeFolders,
+  createCompositeFolder,
+  deleteCompositeFolder,
+  renameCompositeFolder,
+  getGateFolder,
+  setGateFolder,
+  listGatesInFolder,
+  DEFAULT_FOLDER,
 } from "../persistence.js";
 import {
   themes,
@@ -221,23 +229,43 @@ document.querySelectorAll(".sidebar-section-header").forEach(header => {
 
 // ─── Sidebar composite section ──────────────────────────────────
 const compositeSection = document.getElementById("composite-section");
-const compositeBtnGrid = document.getElementById("composite-btn-grid");
+const compositeFoldersContainer = document.getElementById("composite-folders-container");
+
+// Track collapsed state of folders across refreshes
+const _collapsedFolders = new Set();
 
 // ─── Custom context menu ───────────────────────────────────────
 const ctxMenu = document.getElementById("composite-context-menu");
 let _ctxTargetName = null;
+
+function positionMenu(menu, startX, startY) {
+  menu.classList.add("open");
+  menu.style.left = `${startX}px`;
+  menu.style.top = `${startY}px`;
+
+  const rect = menu.getBoundingClientRect();
+  let x = startX;
+  let y = startY;
+
+  if (rect.bottom > window.innerHeight) {
+    y = Math.max(0, startY - rect.height);
+  }
+
+  menu.style.left = `${x}px`;
+  menu.style.top = `${y}px`;
+}
 
 function showContextMenu(e, name) {
   e.preventDefault();
   e.stopPropagation();
   _ctxTargetName = name;
 
+  // Populate folder submenu
+  populateFolderSubmenu(name);
+  ctxFolderSubmenu.classList.remove("open");
+
   // Position the menu near the cursor, clamped to viewport
-  const x = Math.min(e.clientX, window.innerWidth - 170);
-  const y = Math.min(e.clientY, window.innerHeight - 100);
-  ctxMenu.style.left = `${x}px`;
-  ctxMenu.style.top = `${y}px`;
-  ctxMenu.classList.add("open");
+  positionMenu(ctxMenu, e.clientX, e.clientY);
 
   state.isAnyModalOpen = true;
 }
@@ -247,21 +275,168 @@ function hideContextMenu() {
   if (!ctxMenu.classList.contains("open")) return;
 
   ctxMenu.classList.remove("open");
+  ctxFolderSubmenu.classList.remove("open");
   _ctxTargetName = null;
 
   state.isAnyModalOpen = false;
 }
 
-// Close context menu on any click or Escape
-document.addEventListener("click", hideContextMenu);
+// ─── Folder context menu ────────────────────────────────────────
+const folderCtxMenu = document.getElementById("folder-context-menu");
+let _ctxTargetFolder = null;
+
+function showFolderContextMenu(e, folderName) {
+  e.preventDefault();
+  e.stopPropagation();
+  _ctxTargetFolder = folderName;
+
+  // Hide the gate context menu if open
+  hideContextMenu();
+
+  positionMenu(folderCtxMenu, e.clientX, e.clientY);
+
+  state.isAnyModalOpen = true;
+}
+
+function hideFolderContextMenu() {
+  if (!folderCtxMenu.classList.contains("open")) return;
+
+  folderCtxMenu.classList.remove("open");
+  _ctxTargetFolder = null;
+
+  state.isAnyModalOpen = false;
+}
+
+// Folder context menu actions
+document.getElementById("ctx-folder-rename").addEventListener("click", () => {
+  const folderName = _ctxTargetFolder;
+  hideFolderContextMenu();
+  if (!folderName || folderName === DEFAULT_FOLDER) return;
+
+  const renameFolderModal = document.getElementById("rename-folder-modal");
+  const renameFolderInput = document.getElementById("rename-folder-input");
+  const renameFolderSave = document.getElementById("rename-folder-save-btn");
+  const renameFolderCancel = document.getElementById("rename-folder-cancel-btn");
+
+  renameFolderInput.value = folderName;
+  renameFolderModal.classList.add("open");
+  renameFolderInput.focus();
+  renameFolderInput.select();
+  state.isAnyModalOpen = true;
+
+  const doRename = () => {
+    const newName = renameFolderInput.value.trim();
+    if (!newName || newName === folderName) {
+      renameFolderModal.classList.remove("open");
+      state.isAnyModalOpen = false;
+      cleanup();
+      return;
+    }
+    if (renameCompositeFolder(folderName, newName)) {
+      // Preserve collapsed state under the new name
+      if (_collapsedFolders.has(folderName)) {
+        _collapsedFolders.delete(folderName);
+        _collapsedFolders.add(newName);
+      }
+      refreshCompositeSection();
+    }
+    renameFolderModal.classList.remove("open");
+    state.isAnyModalOpen = false;
+    cleanup();
+  };
+
+  const doCancel = () => {
+    renameFolderModal.classList.remove("open");
+    state.isAnyModalOpen = false;
+    cleanup();
+  };
+
+  const onKey = (e) => {
+    if (e.key === "Enter") doRename();
+    if (e.key === "Escape") doCancel();
+  };
+
+  const onOverlay = (e) => {
+    if (e.target === renameFolderModal) doCancel();
+  };
+
+  function cleanup() {
+    renameFolderSave.removeEventListener("click", doRename);
+    renameFolderCancel.removeEventListener("click", doCancel);
+    renameFolderInput.removeEventListener("keydown", onKey);
+    renameFolderModal.removeEventListener("click", onOverlay);
+  }
+
+  renameFolderSave.addEventListener("click", doRename);
+  renameFolderCancel.addEventListener("click", doCancel);
+  renameFolderInput.addEventListener("keydown", onKey);
+  renameFolderModal.addEventListener("click", onOverlay);
+});
+
+document.getElementById("ctx-folder-delete").addEventListener("click", () => {
+  const folderName = _ctxTargetFolder;
+  hideFolderContextMenu();
+  if (!folderName || folderName === DEFAULT_FOLDER) return;
+
+  const deleteModal = document.getElementById("delete-folder-warning-modal");
+  const cancelBtn = document.getElementById("delete-folder-cancel-btn");
+  const confirmBtn = document.getElementById("delete-folder-confirm-btn");
+
+  deleteModal.classList.add("open");
+  state.isAnyModalOpen = true;
+
+  const doDelete = () => {
+    _collapsedFolders.delete(folderName);
+    deleteCompositeFolder(folderName);
+    refreshCompositeSection();
+    deleteModal.classList.remove("open");
+    state.isAnyModalOpen = false;
+    cleanup();
+  };
+
+  const doCancel = () => {
+    deleteModal.classList.remove("open");
+    state.isAnyModalOpen = false;
+    cleanup();
+  };
+  
+  const onKey = (e) => {
+    if (e.key === "Enter") doDelete();
+    if (e.key === "Escape") doCancel();
+  };
+
+  const onOverlay = (e) => {
+    if (e.target === deleteModal) doCancel();
+  };
+
+  function cleanup() {
+    confirmBtn.removeEventListener("click", doDelete);
+    cancelBtn.removeEventListener("click", doCancel);
+    document.removeEventListener("keydown", onKey);
+    deleteModal.removeEventListener("click", onOverlay);
+  }
+
+  confirmBtn.addEventListener("click", doDelete);
+  cancelBtn.addEventListener("click", doCancel);
+  document.addEventListener("keydown", onKey);
+  deleteModal.addEventListener("click", onOverlay);
+});
+
+// Close context menus on any click or Escape
+document.addEventListener("click", (e) => {
+  hideContextMenu();
+  hideFolderContextMenu();
+});
 document.addEventListener("contextmenu", (e) => {
-  // Close if right-clicking elsewhere
   if (ctxMenu.classList.contains("open") && !ctxMenu.contains(e.target)) {
     hideContextMenu();
   }
+  if (folderCtxMenu.classList.contains("open") && !folderCtxMenu.contains(e.target)) {
+    hideFolderContextMenu();
+  }
 });
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") hideContextMenu();
+  if (e.key === "Escape") { hideContextMenu(); hideFolderContextMenu(); }
   if (e.key === "Tab") e.preventDefault();
 });
 
@@ -331,6 +506,60 @@ document.getElementById("ctx-delete").addEventListener("click", () => {
   refreshCompositeSection();
 });
 
+// ─── Move to Folder submenu ─────────────────────────────────────
+const ctxMoveToFolder = document.getElementById("ctx-move-to-folder");
+const ctxFolderSubmenu = document.getElementById("ctx-folder-submenu");
+
+ctxMoveToFolder.addEventListener("click", (e) => {
+  e.stopPropagation();
+  if (ctxFolderSubmenu.classList.contains("open")) {
+    ctxFolderSubmenu.classList.remove("open");
+  } else {
+    // Position submenu to the right of the trigger item
+    const triggerRect = ctxMoveToFolder.getBoundingClientRect();
+    
+    ctxFolderSubmenu.classList.add("open");
+    // Temporarily position to get width
+    ctxFolderSubmenu.style.left = `${triggerRect.right}px`;
+    ctxFolderSubmenu.style.top = `${triggerRect.top}px`;
+    
+    const submenuRect = ctxFolderSubmenu.getBoundingClientRect();
+    let x = triggerRect.right;
+    let y = triggerRect.top;
+    
+    // If it overflows bottom, adjust upwards
+    if (submenuRect.bottom > window.innerHeight) {
+      y = Math.max(0, triggerRect.bottom - submenuRect.height);
+    }
+    
+    ctxFolderSubmenu.style.left = `${x}px`;
+    ctxFolderSubmenu.style.top = `${y}px`;
+  }
+});
+
+function populateFolderSubmenu(gateName) {
+  ctxFolderSubmenu.innerHTML = "";
+  const folders = listCompositeFolders();
+  const currentFolder = getGateFolder(gateName);
+
+  const folderIconSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`;
+
+  folders.forEach(folder => {
+    const btn = document.createElement("button");
+    btn.className = `ctx-submenu-item${folder === currentFolder ? " active" : ""}`;
+    btn.innerHTML = `<span class="folder-icon">${folderIconSvg}</span>${folder}`;
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (folder !== currentFolder) {
+        setGateFolder(gateName, folder);
+        refreshCompositeSection();
+      }
+      hideContextMenu();
+    });
+    ctxFolderSubmenu.appendChild(btn);
+  });
+}
+
 // ─── Custom tooltip ───────────────────────────────────────────
 const tooltip = document.getElementById("sidebar-tooltip");
 let _tooltipTimeout = null;
@@ -356,48 +585,103 @@ function hideTooltip() {
 }
 
 function refreshCompositeSection(p = null) {
-  compositeBtnGrid.innerHTML = "";
+  compositeFoldersContainer.innerHTML = "";
 
-  const names = listCompositeGates();
+  const folders = listCompositeFolders();
+  const allGates = listCompositeGates();
 
-  if (names.length === 0) {
+  if (allGates.length === 0 && folders.length <= 1) {
     const empty = document.createElement("p");
     empty.className = "composite-empty";
     empty.textContent = "No saved gates";
-    compositeBtnGrid.appendChild(empty);
+    compositeFoldersContainer.appendChild(empty);
     return;
   }
 
-  names.forEach(name => {
-    const btn = document.createElement("button");
-    btn.className = "addComponent composite-btn";
-    btn.textContent = name;
+  const folderIconSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`;
+  const chevronSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
 
-    // Left-click: place the gate
-    btn.addEventListener("click", () => {
-      const circuit = loadCompositeGate(name);
-      if (!circuit) return;
-      const compositeGate = buildCircuitFromData(circuit.circuitData, circuit.renderData);
-      state.justPlacedFromToolbar = true;
-      const { x: worldMouseX, y: worldMouseY } = p ? screenToWorld(p.mouseX, p.mouseY) : { x: 0, y: 0 };
-      spawnCompositeNode(name, compositeGate, worldMouseX, worldMouseY);
-    });
+  folders.forEach(folderName => {
+    const gates = listGatesInFolder(folderName);
 
-    // Right-click: show context menu
-    btn.addEventListener("contextmenu", (e) => showContextMenu(e, name));
+    const folderEl = document.createElement("div");
+    folderEl.className = "composite-folder";
+    if (_collapsedFolders.has(folderName)) {
+      folderEl.classList.add("collapsed");
+    }
 
-    // Custom tooltip on hover (only if text is truncated)
-    btn.addEventListener("mouseenter", (e) => {
-      if (btn.scrollWidth > btn.clientWidth) {
-        showTooltip(e, name);
+    // Folder header
+    const header = document.createElement("button");
+    header.className = "composite-folder-header";
+    header.innerHTML = `
+      <span class="composite-folder-icon">${folderIconSvg}</span>
+      <span class="composite-folder-label">${folderName}</span>
+      <span class="composite-folder-chevron">${chevronSvg}</span>
+    `;
+    header.addEventListener("click", () => {
+      folderEl.classList.toggle("collapsed");
+      if (folderEl.classList.contains("collapsed")) {
+        _collapsedFolders.add(folderName);
+      } else {
+        _collapsedFolders.delete(folderName);
       }
     });
-    btn.addEventListener("mousemove", (e) => {
-      if (tooltip.classList.contains("visible")) positionTooltip(e);
-    });
-    btn.addEventListener("mouseleave", hideTooltip);
+    // Right-click: show folder context menu
+    if (folderName !== DEFAULT_FOLDER) {
+      header.addEventListener("contextmenu", (e) => showFolderContextMenu(e, folderName));
+    }
+    folderEl.appendChild(header);
 
-    compositeBtnGrid.appendChild(btn);
+    // Folder content
+    const content = document.createElement("div");
+    content.className = "composite-folder-content";
+
+    if (gates.length === 0) {
+      const emptyMsg = document.createElement("p");
+      emptyMsg.className = "composite-folder-empty";
+      emptyMsg.textContent = "Empty folder";
+      content.appendChild(emptyMsg);
+    } else {
+      const grid = document.createElement("div");
+      grid.className = "sidebar-btn-grid";
+
+      gates.forEach(name => {
+        const btn = document.createElement("button");
+        btn.className = "addComponent composite-btn";
+        btn.textContent = name;
+
+        // Left-click: place the gate
+        btn.addEventListener("click", () => {
+          const circuit = loadCompositeGate(name);
+          if (!circuit) return;
+          const compositeGate = buildCircuitFromData(circuit.circuitData, circuit.renderData);
+          state.justPlacedFromToolbar = true;
+          const { x: worldMouseX, y: worldMouseY } = p ? screenToWorld(p.mouseX, p.mouseY) : { x: 0, y: 0 };
+          spawnCompositeNode(name, compositeGate, worldMouseX, worldMouseY);
+        });
+
+        // Right-click: show context menu
+        btn.addEventListener("contextmenu", (e) => showContextMenu(e, name));
+
+        // Custom tooltip on hover (only if text is truncated)
+        btn.addEventListener("mouseenter", (e) => {
+          if (btn.scrollWidth > btn.clientWidth) {
+            showTooltip(e, name);
+          }
+        });
+        btn.addEventListener("mousemove", (e) => {
+          if (tooltip.classList.contains("visible")) positionTooltip(e);
+        });
+        btn.addEventListener("mouseleave", hideTooltip);
+
+        grid.appendChild(btn);
+      });
+
+      content.appendChild(grid);
+    }
+
+    folderEl.appendChild(content);
+    compositeFoldersContainer.appendChild(folderEl);
   });
 }
 
@@ -412,6 +696,97 @@ export function changeMode(mode) {
 const saveAsCompositeBtn = document.getElementById("btn-save-gate");
 const clearBtn = document.getElementById("btn-clear-canvas");
 const settingsBtn = document.getElementById("btn-settings");
+
+// ─── Folder selection elements in save modal ─────────────────────
+const folderSelect = document.getElementById("gate-folder-select");
+const modalNewFolderBtn = document.getElementById("modal-new-folder-btn");
+const modalNewFolderInline = document.getElementById("modal-new-folder-inline");
+const modalNewFolderInput = document.getElementById("modal-new-folder-input");
+const modalNewFolderCancel = document.getElementById("modal-new-folder-cancel");
+const modalNewFolderSave = document.getElementById("modal-new-folder-save");
+
+// ─── Standalone new folder modal (sidebar button) ────────────────
+const newFolderModal = document.getElementById("new-folder-modal");
+const newFolderNameInput = document.getElementById("new-folder-name-input");
+const newFolderSaveBtn = document.getElementById("new-folder-save-btn");
+const newFolderCancelBtn = document.getElementById("new-folder-cancel-btn");
+const newFolderBtn = document.getElementById("btn-new-folder");
+
+function populateFolderSelect() {
+  folderSelect.innerHTML = "";
+  const folders = listCompositeFolders();
+  folders.forEach(name => {
+    const opt = document.createElement("option");
+    opt.value = name;
+    opt.textContent = name;
+    folderSelect.appendChild(opt);
+  });
+}
+
+function showInlineNewFolder() {
+  modalNewFolderInline.style.display = "";
+  modalNewFolderInput.value = "";
+  modalNewFolderInput.focus();
+}
+
+function hideInlineNewFolder() {
+  modalNewFolderInline.style.display = "none";
+  modalNewFolderInput.value = "";
+}
+
+function createInlineFolder() {
+  const name = modalNewFolderInput.value.trim();
+  if (!name) { modalNewFolderInput.focus(); return; }
+  createCompositeFolder(name);
+  populateFolderSelect();
+  folderSelect.value = name;
+  hideInlineNewFolder();
+}
+
+modalNewFolderBtn.addEventListener("click", showInlineNewFolder);
+modalNewFolderCancel.addEventListener("click", hideInlineNewFolder);
+modalNewFolderSave.addEventListener("click", createInlineFolder);
+modalNewFolderInput.addEventListener("keydown", e => {
+  if (e.key === "Enter") createInlineFolder();
+  if (e.key === "Escape") hideInlineNewFolder();
+});
+
+// ─── Standalone new folder modal logic ───────────────────────────
+function openNewFolderModal() {
+  newFolderModal.classList.add("open");
+  newFolderNameInput.value = "";
+  newFolderNameInput.focus();
+  state.isAnyModalOpen = true;
+}
+
+function closeNewFolderModal() {
+  newFolderModal.classList.remove("open");
+  state.isAnyModalOpen = false;
+}
+
+function confirmNewFolder() {
+  const name = newFolderNameInput.value.trim();
+  if (!name) { newFolderNameInput.focus(); return; }
+  if (createCompositeFolder(name)) {
+    refreshCompositeSection();
+  }
+  closeNewFolderModal();
+}
+
+newFolderBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  openNewFolderModal();
+});
+newFolderCancelBtn.addEventListener("click", closeNewFolderModal);
+newFolderSaveBtn.addEventListener("click", confirmNewFolder);
+newFolderNameInput.addEventListener("keydown", e => {
+  if (e.key === "Enter") confirmNewFolder();
+  if (e.key === "Escape") closeNewFolderModal();
+});
+newFolderModal.addEventListener("click", e => {
+  if (e.target === newFolderModal) closeNewFolderModal();
+});
+
 // ─── Main init ──────────────────────────────────────────────────
 export function initToolbar(p, circuit, renderNodes, wires, busNodes) {
   _renderNodes = renderNodes;
@@ -432,11 +807,17 @@ export function initToolbar(p, circuit, renderNodes, wires, busNodes) {
     onConfirm: () => {
       const name = modalInput.value.trim();
       if (!name) { modalInput.focus(); return false; };
-      saveCompositeGate(name, _renderNodes, _wires, _busNodes);
+      const folder = folderSelect.value || DEFAULT_FOLDER;
+      saveCompositeGate(name, _renderNodes, _wires, _busNodes, folder);
       clearCanvas(circuit);
       refreshCompositeSection();
     },
-    onOpen: () => { modalInput.value = ""; p.noLoop() },
+    onOpen: () => {
+      modalInput.value = "";
+      hideInlineNewFolder();
+      populateFolderSelect();
+      p.noLoop();
+    },
     onClose: () => p.loop(),
   });
 
@@ -522,6 +903,6 @@ export function initToolbar(p, circuit, renderNodes, wires, busNodes) {
     openSaveModal: () => saveModal.open(),
     openWarningModal: () => warningModal.open(),
     openSettings: () => settingsModal.open(),
-    closeAllModals: () => { saveModal.close(); warningModal.close(); settingsModal.close(); closeSignalColorsPanel(); },
+    closeAllModals: () => { saveModal.close(); warningModal.close(); settingsModal.close(); closeSignalColorsPanel(); closeNewFolderModal(); },
   }
 }

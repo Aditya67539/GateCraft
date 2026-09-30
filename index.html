@@ -167,6 +167,14 @@
             </svg>
           </span>
           <span class="sidebar-section-label">Composite</span>
+          <span class="composite-new-folder-icon" id="btn-new-folder" title="Create new folder">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+              <line x1="12" y1="11" x2="12" y2="17" />
+              <line x1="9" y1="14" x2="15" y2="14" />
+            </svg>
+          </span>
           <span class="sidebar-section-chevron">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
               stroke-linecap="round" stroke-linejoin="round">
@@ -175,7 +183,7 @@
           </span>
         </button>
         <div class="sidebar-section-content scrollable" id="section-composite">
-          <div class="sidebar-btn-grid" id="composite-btn-grid">
+          <div id="composite-folders-container">
             <!-- Populated dynamically -->
           </div>
         </div>
@@ -195,9 +203,35 @@
   <div class="modal-overlay" id="save-gate-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <div class="modal-card">
       <h3 class="modal-title" id="modal-title">Save as Composite Gate</h3>
-      <p class="modal-desc">Give this circuit a name. It will appear in the sidebar as a reusable gate.</p>
+      <p class="modal-desc">Give this circuit a name and choose a folder.</p>
       <input class="modal-input" id="gate-name-input" type="text" placeholder="e.g. Half Adder" maxlength="32"
         autocomplete="off" />
+
+      <!-- Folder selector -->
+      <label class="modal-label" for="gate-folder-select">Folder</label>
+      <div class="modal-folder-row">
+        <select class="modal-select" id="gate-folder-select">
+          <!-- Populated dynamically -->
+        </select>
+        <button class="modal-new-folder-btn" id="modal-new-folder-btn" title="Create new folder" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Inline new folder input (hidden by default) -->
+      <div class="modal-new-folder-inline" id="modal-new-folder-inline" style="display: none;">
+        <input class="modal-input modal-new-folder-input" id="modal-new-folder-input" type="text"
+          placeholder="New folder name" maxlength="32" autocomplete="off" />
+        <div class="modal-new-folder-actions">
+          <button class="modal-btn cancel modal-btn-sm" id="modal-new-folder-cancel" type="button">Cancel</button>
+          <button class="modal-btn confirm modal-btn-sm" id="modal-new-folder-save" type="button">Create</button>
+        </div>
+      </div>
+
       <div class="modal-actions">
         <button class="modal-btn cancel" id="modal-cancel-btn">Cancel</button>
         <button class="modal-btn confirm" id="modal-save-btn">Save Gate</button>
@@ -213,6 +247,18 @@
       <div class="modal-actions">
         <button class="modal-btn cancel" id="clear-cancel-btn">Cancel</button>
         <button class="modal-btn confirm" id="clear-confirm-btn">Clear canvas</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete folder modal -->
+  <div class="modal-overlay" id="delete-folder-warning-modal" role="dialog" aria-modal="true" aria-labelledby="delete-folder-modal-title">
+    <div class="modal-card">
+      <h3 class="modal-title" id="delete-folder-modal-title">Delete Folder</h3>
+      <p class="modal-desc">Are you sure you want to delete this folder and all of its composite gates?</p>
+      <div class="modal-actions">
+        <button class="modal-btn cancel" id="delete-folder-cancel-btn">Cancel</button>
+        <button class="modal-btn confirm" id="delete-folder-confirm-btn">Delete folder</button>
       </div>
     </div>
   </div>
@@ -307,6 +353,18 @@
       Rename
     </button>
     <div class="ctx-menu-divider"></div>
+    <div class="ctx-menu-item ctx-menu-submenu-trigger" id="ctx-move-to-folder">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+      </svg>
+      Move to Folder
+      <svg class="ctx-submenu-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+        stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="9 18 15 12 9 6" />
+      </svg>
+    </div>
+    <div class="ctx-menu-divider"></div>
     <button class="ctx-menu-item ctx-menu-danger" id="ctx-delete">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
         stroke-linecap="round" stroke-linejoin="round">
@@ -316,6 +374,10 @@
       </svg>
       Delete
     </button>
+  </div>
+  
+  <div class="ctx-submenu" id="ctx-folder-submenu">
+    <!-- Populated dynamically -->
   </div>
 
   <!-- ── Rename Modal ──────────────────────────────────────────── -->
@@ -328,6 +390,56 @@
       <div class="modal-actions">
         <button class="modal-btn cancel" id="rename-cancel-btn">Cancel</button>
         <button class="modal-btn confirm" id="rename-save-btn">Rename</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── New Folder Modal ──────────────────────────────────────── -->
+  <div class="modal-overlay" id="new-folder-modal" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <h3 class="modal-title">Create New Folder</h3>
+      <p class="modal-desc">Enter a name for the new folder.</p>
+      <input class="modal-input" id="new-folder-name-input" type="text" placeholder="e.g. Arithmetic" maxlength="32"
+        autocomplete="off" />
+      <div class="modal-actions">
+        <button class="modal-btn cancel" id="new-folder-cancel-btn">Cancel</button>
+        <button class="modal-btn confirm" id="new-folder-save-btn">Create Folder</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Folder Context Menu ─────────────────────────────────── -->
+  <div class="ctx-menu" id="folder-context-menu">
+    <button class="ctx-menu-item" id="ctx-folder-rename">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+      </svg>
+      Rename Folder
+    </button>
+    <div class="ctx-menu-divider"></div>
+    <button class="ctx-menu-item ctx-menu-danger" id="ctx-folder-delete">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="3 6 5 6 21 6" />
+        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+        <path d="M10 11v6" /><path d="M14 11v6" />
+      </svg>
+      Delete Folder
+    </button>
+  </div>
+
+  <!-- ── Rename Folder Modal ─────────────────────────────────── -->
+  <div class="modal-overlay" id="rename-folder-modal" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <h3 class="modal-title">Rename Folder</h3>
+      <p class="modal-desc">Enter a new name for this folder.</p>
+      <input class="modal-input" id="rename-folder-input" type="text" placeholder="New folder name" maxlength="32"
+        autocomplete="off" />
+      <div class="modal-actions">
+        <button class="modal-btn cancel" id="rename-folder-cancel-btn">Cancel</button>
+        <button class="modal-btn confirm" id="rename-folder-save-btn">Rename</button>
       </div>
     </div>
   </div>
