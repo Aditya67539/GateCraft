@@ -525,6 +525,293 @@ body {
   grid-column: 1 / -1;
 }
 
+/* ─── Composite Section: Inline New-Folder Icon ───────────────── */
+.composite-new-folder-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  padding: 2px;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.composite-new-folder-icon:hover {
+  color: var(--accent);
+  background: rgba(var(--theme-accent-rgb, 99, 102, 241), 0.12);
+}
+
+/* ─── Composite Folder Subsections ─────────────────────────────── */
+#composite-folders-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.composite-folder {
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.composite-folder-header {
+  cursor: pointer;
+  border: none;
+  outline: none;
+  background: rgba(var(--theme-surface-bg-rgb, 30, 41, 59), 0.30);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-family: inherit;
+  transition: background 0.15s;
+  width: 100%;
+  text-align: left;
+}
+
+.composite-folder-header:hover {
+  background: rgba(var(--theme-surface-bg-rgb, 30, 41, 59), 0.55);
+}
+
+.composite-folder-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f59e0b;
+  flex-shrink: 0;
+}
+
+.composite-folder-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.composite-folder-chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.composite-folder.collapsed .composite-folder-chevron {
+  transform: rotate(-90deg);
+}
+
+.composite-folder-content {
+  overflow: hidden;
+  max-height: 500px;
+  opacity: 1;
+  transition: max-height 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.2s ease,
+    padding 0.25s ease;
+  padding: 5px 4px 4px;
+}
+
+.composite-folder.collapsed .composite-folder-content {
+  max-height: 0;
+  opacity: 0;
+  padding: 0 4px;
+}
+
+.composite-folder-empty {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  padding: 4px 6px;
+  font-style: italic;
+  opacity: 0.7;
+}
+
+/* ─── Modal Folder Selector ────────────────────────────────────── */
+.modal-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.modal-folder-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.modal-select {
+  flex: 1;
+  padding: 9px 13px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--overlay);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 32px;
+}
+
+.modal-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(var(--theme-accent-rgb, 99, 102, 241), 0.25);
+}
+
+.modal-select option {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.modal-new-folder-btn {
+  cursor: pointer;
+  border: 1px solid var(--border);
+  outline: none;
+  background: var(--overlay);
+  color: var(--text-muted);
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.modal-new-folder-btn:hover {
+  background: var(--overlay-hov);
+  color: var(--accent);
+  border-color: rgba(var(--theme-accent-rgb, 99, 102, 241), 0.45);
+}
+
+.modal-new-folder-inline {
+  margin-bottom: 14px;
+  animation: modal-in 0.15s ease;
+}
+
+.modal-new-folder-input {
+  margin-bottom: 8px !important;
+}
+
+.modal-new-folder-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.modal-btn-sm {
+  padding: 5px 12px !important;
+  font-size: 12px !important;
+}
+
+/* ─── Context Menu Submenu ─────────────────────────────────────── */
+.ctx-menu-submenu-trigger {
+  cursor: pointer;
+  border: none;
+  outline: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 7px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text);
+  transition: background 0.12s;
+  width: 100%;
+  text-align: left;
+  position: relative;
+}
+
+.ctx-menu-submenu-trigger:hover {
+  background: var(--overlay-hov);
+}
+
+.ctx-submenu-chevron {
+  margin-left: auto;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.ctx-submenu {
+  display: none;
+  flex-direction: column;
+  padding: 2px 4px;
+  margin: 0 4px;
+  border-radius: 6px;
+  background: rgba(var(--theme-surface-bg-rgb, 30, 41, 59), 0.40);
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.ctx-submenu.open {
+  display: flex;
+}
+
+.ctx-submenu::-webkit-scrollbar {
+  width: 3px;
+}
+
+.ctx-submenu::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
+
+.ctx-submenu-item {
+  cursor: pointer;
+  border: none;
+  outline: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 5px;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text);
+  transition: background 0.12s;
+  width: 100%;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ctx-submenu-item:hover {
+  background: var(--overlay-hov);
+}
+
+.ctx-submenu-item.active {
+  color: var(--accent);
+}
+
+.ctx-submenu-item .folder-icon {
+  color: #f59e0b;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
 /* ─── Right-Click Context Menu ─────────────────────────────────── */
 .ctx-menu {
   position: fixed;
