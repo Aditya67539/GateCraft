@@ -7,6 +7,14 @@ import {
   deleteCompositeGate,
   renameCompositeGate,
   buildCircuitFromData,
+  listCompositeFolders,
+  createCompositeFolder,
+  deleteCompositeFolder,
+  renameCompositeFolder,
+  getGateFolder,
+  setGateFolder,
+  listGatesInFolder,
+  DEFAULT_FOLDER,
 } from "../persistence.js";
 import {
   themes,
@@ -221,7 +229,10 @@ document.querySelectorAll(".sidebar-section-header").forEach(header => {
 
 // ─── Sidebar composite section ──────────────────────────────────
 const compositeSection = document.getElementById("composite-section");
-const compositeBtnGrid = document.getElementById("composite-btn-grid");
+const compositeFoldersContainer = document.getElementById("composite-folders-container");
+
+// Track collapsed state of folders across refreshes
+const _collapsedFolders = new Set();
 
 // ─── Custom context menu ───────────────────────────────────────
 const ctxMenu = document.getElementById("composite-context-menu");
@@ -231,6 +242,10 @@ function showContextMenu(e, name) {
   e.preventDefault();
   e.stopPropagation();
   _ctxTargetName = name;
+
+  // Populate folder submenu
+  populateFolderSubmenu(name);
+  ctxFolderSubmenu.classList.remove("open");
 
   // Position the menu near the cursor, clamped to viewport
   const x = Math.min(e.clientX, window.innerWidth - 170);
@@ -247,6 +262,7 @@ function hideContextMenu() {
   if (!ctxMenu.classList.contains("open")) return;
 
   ctxMenu.classList.remove("open");
+  ctxFolderSubmenu.classList.remove("open");
   _ctxTargetName = null;
 
   state.isAnyModalOpen = false;
@@ -331,6 +347,38 @@ document.getElementById("ctx-delete").addEventListener("click", () => {
   refreshCompositeSection();
 });
 
+// ─── Move to Folder submenu ─────────────────────────────────────
+const ctxMoveToFolder = document.getElementById("ctx-move-to-folder");
+const ctxFolderSubmenu = document.getElementById("ctx-folder-submenu");
+
+ctxMoveToFolder.addEventListener("click", (e) => {
+  e.stopPropagation();
+  ctxFolderSubmenu.classList.toggle("open");
+});
+
+function populateFolderSubmenu(gateName) {
+  ctxFolderSubmenu.innerHTML = "";
+  const folders = listCompositeFolders();
+  const currentFolder = getGateFolder(gateName);
+
+  const folderIconSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`;
+
+  folders.forEach(folder => {
+    const btn = document.createElement("button");
+    btn.className = `ctx-submenu-item${folder === currentFolder ? " active" : ""}`;
+    btn.innerHTML = `<span class="folder-icon">${folderIconSvg}</span>${folder}`;
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (folder !== currentFolder) {
+        setGateFolder(gateName, folder);
+        refreshCompositeSection();
+      }
+      hideContextMenu();
+    });
+    ctxFolderSubmenu.appendChild(btn);
+  });
+}
+
 // ─── Custom tooltip ───────────────────────────────────────────
 const tooltip = document.getElementById("sidebar-tooltip");
 let _tooltipTimeout = null;
@@ -356,48 +404,104 @@ function hideTooltip() {
 }
 
 function refreshCompositeSection(p = null) {
-  compositeBtnGrid.innerHTML = "";
+  compositeFoldersContainer.innerHTML = "";
 
-  const names = listCompositeGates();
+  const folders = listCompositeFolders();
+  const allGates = listCompositeGates();
 
-  if (names.length === 0) {
+  if (allGates.length === 0 && folders.length <= 1) {
     const empty = document.createElement("p");
     empty.className = "composite-empty";
     empty.textContent = "No saved gates";
-    compositeBtnGrid.appendChild(empty);
+    compositeFoldersContainer.appendChild(empty);
     return;
   }
 
-  names.forEach(name => {
-    const btn = document.createElement("button");
-    btn.className = "addComponent composite-btn";
-    btn.textContent = name;
+  const folderIconSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`;
+  const chevronSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
 
-    // Left-click: place the gate
-    btn.addEventListener("click", () => {
-      const circuit = loadCompositeGate(name);
-      if (!circuit) return;
-      const compositeGate = buildCircuitFromData(circuit.circuitData, circuit.renderData);
-      state.justPlacedFromToolbar = true;
-      const { x: worldMouseX, y: worldMouseY } = p ? screenToWorld(p.mouseX, p.mouseY) : { x: 0, y: 0 };
-      spawnCompositeNode(name, compositeGate, worldMouseX, worldMouseY);
-    });
+  folders.forEach(folderName => {
+    const gates = listGatesInFolder(folderName);
 
-    // Right-click: show context menu
-    btn.addEventListener("contextmenu", (e) => showContextMenu(e, name));
+    // Skip empty non-default folders (but always show Unsorted)
+    if (gates.length === 0 && folderName !== DEFAULT_FOLDER && folders.length > 1) {
+      // Still render the folder header even if empty, so user can see it
+    }
 
-    // Custom tooltip on hover (only if text is truncated)
-    btn.addEventListener("mouseenter", (e) => {
-      if (btn.scrollWidth > btn.clientWidth) {
-        showTooltip(e, name);
+    const folderEl = document.createElement("div");
+    folderEl.className = "composite-folder";
+    if (_collapsedFolders.has(folderName)) {
+      folderEl.classList.add("collapsed");
+    }
+
+    // Folder header
+    const header = document.createElement("button");
+    header.className = "composite-folder-header";
+    header.innerHTML = `
+      <span class="composite-folder-icon">${folderIconSvg}</span>
+      <span class="composite-folder-label">${folderName}</span>
+      <span class="composite-folder-chevron">${chevronSvg}</span>
+    `;
+    header.addEventListener("click", () => {
+      folderEl.classList.toggle("collapsed");
+      if (folderEl.classList.contains("collapsed")) {
+        _collapsedFolders.add(folderName);
+      } else {
+        _collapsedFolders.delete(folderName);
       }
     });
-    btn.addEventListener("mousemove", (e) => {
-      if (tooltip.classList.contains("visible")) positionTooltip(e);
-    });
-    btn.addEventListener("mouseleave", hideTooltip);
+    folderEl.appendChild(header);
 
-    compositeBtnGrid.appendChild(btn);
+    // Folder content
+    const content = document.createElement("div");
+    content.className = "composite-folder-content";
+
+    if (gates.length === 0) {
+      const emptyMsg = document.createElement("p");
+      emptyMsg.className = "composite-folder-empty";
+      emptyMsg.textContent = "Empty folder";
+      content.appendChild(emptyMsg);
+    } else {
+      const grid = document.createElement("div");
+      grid.className = "sidebar-btn-grid";
+
+      gates.forEach(name => {
+        const btn = document.createElement("button");
+        btn.className = "addComponent composite-btn";
+        btn.textContent = name;
+
+        // Left-click: place the gate
+        btn.addEventListener("click", () => {
+          const circuit = loadCompositeGate(name);
+          if (!circuit) return;
+          const compositeGate = buildCircuitFromData(circuit.circuitData, circuit.renderData);
+          state.justPlacedFromToolbar = true;
+          const { x: worldMouseX, y: worldMouseY } = p ? screenToWorld(p.mouseX, p.mouseY) : { x: 0, y: 0 };
+          spawnCompositeNode(name, compositeGate, worldMouseX, worldMouseY);
+        });
+
+        // Right-click: show context menu
+        btn.addEventListener("contextmenu", (e) => showContextMenu(e, name));
+
+        // Custom tooltip on hover (only if text is truncated)
+        btn.addEventListener("mouseenter", (e) => {
+          if (btn.scrollWidth > btn.clientWidth) {
+            showTooltip(e, name);
+          }
+        });
+        btn.addEventListener("mousemove", (e) => {
+          if (tooltip.classList.contains("visible")) positionTooltip(e);
+        });
+        btn.addEventListener("mouseleave", hideTooltip);
+
+        grid.appendChild(btn);
+      });
+
+      content.appendChild(grid);
+    }
+
+    folderEl.appendChild(content);
+    compositeFoldersContainer.appendChild(folderEl);
   });
 }
 
@@ -412,6 +516,97 @@ export function changeMode(mode) {
 const saveAsCompositeBtn = document.getElementById("btn-save-gate");
 const clearBtn = document.getElementById("btn-clear-canvas");
 const settingsBtn = document.getElementById("btn-settings");
+
+// ─── Folder selection elements in save modal ─────────────────────
+const folderSelect = document.getElementById("gate-folder-select");
+const modalNewFolderBtn = document.getElementById("modal-new-folder-btn");
+const modalNewFolderInline = document.getElementById("modal-new-folder-inline");
+const modalNewFolderInput = document.getElementById("modal-new-folder-input");
+const modalNewFolderCancel = document.getElementById("modal-new-folder-cancel");
+const modalNewFolderSave = document.getElementById("modal-new-folder-save");
+
+// ─── Standalone new folder modal (sidebar button) ────────────────
+const newFolderModal = document.getElementById("new-folder-modal");
+const newFolderNameInput = document.getElementById("new-folder-name-input");
+const newFolderSaveBtn = document.getElementById("new-folder-save-btn");
+const newFolderCancelBtn = document.getElementById("new-folder-cancel-btn");
+const newFolderBtn = document.getElementById("btn-new-folder");
+
+function populateFolderSelect() {
+  folderSelect.innerHTML = "";
+  const folders = listCompositeFolders();
+  folders.forEach(name => {
+    const opt = document.createElement("option");
+    opt.value = name;
+    opt.textContent = name;
+    folderSelect.appendChild(opt);
+  });
+}
+
+function showInlineNewFolder() {
+  modalNewFolderInline.style.display = "";
+  modalNewFolderInput.value = "";
+  modalNewFolderInput.focus();
+}
+
+function hideInlineNewFolder() {
+  modalNewFolderInline.style.display = "none";
+  modalNewFolderInput.value = "";
+}
+
+function createInlineFolder() {
+  const name = modalNewFolderInput.value.trim();
+  if (!name) { modalNewFolderInput.focus(); return; }
+  createCompositeFolder(name);
+  populateFolderSelect();
+  folderSelect.value = name;
+  hideInlineNewFolder();
+}
+
+modalNewFolderBtn.addEventListener("click", showInlineNewFolder);
+modalNewFolderCancel.addEventListener("click", hideInlineNewFolder);
+modalNewFolderSave.addEventListener("click", createInlineFolder);
+modalNewFolderInput.addEventListener("keydown", e => {
+  if (e.key === "Enter") createInlineFolder();
+  if (e.key === "Escape") hideInlineNewFolder();
+});
+
+// ─── Standalone new folder modal logic ───────────────────────────
+function openNewFolderModal() {
+  newFolderModal.classList.add("open");
+  newFolderNameInput.value = "";
+  newFolderNameInput.focus();
+  state.isAnyModalOpen = true;
+}
+
+function closeNewFolderModal() {
+  newFolderModal.classList.remove("open");
+  state.isAnyModalOpen = false;
+}
+
+function confirmNewFolder() {
+  const name = newFolderNameInput.value.trim();
+  if (!name) { newFolderNameInput.focus(); return; }
+  if (createCompositeFolder(name)) {
+    refreshCompositeSection();
+  }
+  closeNewFolderModal();
+}
+
+newFolderBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  openNewFolderModal();
+});
+newFolderCancelBtn.addEventListener("click", closeNewFolderModal);
+newFolderSaveBtn.addEventListener("click", confirmNewFolder);
+newFolderNameInput.addEventListener("keydown", e => {
+  if (e.key === "Enter") confirmNewFolder();
+  if (e.key === "Escape") closeNewFolderModal();
+});
+newFolderModal.addEventListener("click", e => {
+  if (e.target === newFolderModal) closeNewFolderModal();
+});
+
 // ─── Main init ──────────────────────────────────────────────────
 export function initToolbar(p, circuit, renderNodes, wires, busNodes) {
   _renderNodes = renderNodes;
@@ -432,11 +627,17 @@ export function initToolbar(p, circuit, renderNodes, wires, busNodes) {
     onConfirm: () => {
       const name = modalInput.value.trim();
       if (!name) { modalInput.focus(); return false; };
-      saveCompositeGate(name, _renderNodes, _wires, _busNodes);
+      const folder = folderSelect.value || DEFAULT_FOLDER;
+      saveCompositeGate(name, _renderNodes, _wires, _busNodes, folder);
       clearCanvas(circuit);
       refreshCompositeSection();
     },
-    onOpen: () => { modalInput.value = ""; p.noLoop() },
+    onOpen: () => {
+      modalInput.value = "";
+      hideInlineNewFolder();
+      populateFolderSelect();
+      p.noLoop();
+    },
     onClose: () => p.loop(),
   });
 
@@ -522,6 +723,6 @@ export function initToolbar(p, circuit, renderNodes, wires, busNodes) {
     openSaveModal: () => saveModal.open(),
     openWarningModal: () => warningModal.open(),
     openSettings: () => settingsModal.open(),
-    closeAllModals: () => { saveModal.close(); warningModal.close(); settingsModal.close(); closeSignalColorsPanel(); },
+    closeAllModals: () => { saveModal.close(); warningModal.close(); settingsModal.close(); closeSignalColorsPanel(); closeNewFolderModal(); },
   }
 }
