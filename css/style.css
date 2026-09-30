@@ -752,14 +752,23 @@ body {
 }
 
 .ctx-submenu {
+  position: fixed;
+  z-index: 310;
   display: none;
   flex-direction: column;
-  padding: 2px 4px;
-  margin: 0 4px;
-  border-radius: 6px;
-  background: rgba(var(--theme-surface-bg-rgb, 30, 41, 59), 0.40);
-  max-height: 180px;
+  min-width: 140px;
+  padding: 5px;
+  border-radius: 10px;
+  background: rgba(var(--theme-panel-bg-rgb, 22, 32, 54), 0.75);
+  backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+  max-height: 250px;
   overflow-y: auto;
+  margin: 0;
+  animation: ctx-in 0.12s ease;
 }
 
 .ctx-submenu.open {
