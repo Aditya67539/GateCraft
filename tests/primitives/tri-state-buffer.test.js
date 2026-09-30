@@ -167,4 +167,35 @@ describe("Tri-state Buffer", () => {
     // Enable=LOW -> output should be Z regardless of data
     expect(gate.output).toBe(Z);
   });
+
+  it("determines Enable and Data based on port index, regardless of connection order", () => {
+    const builder = new CircuitBuilder();
+
+    const data = builder.addBasicGate("input");
+    const enable = builder.addBasicGate("input");
+    const gate = builder.addBasicGate("Tri-state Buffer");
+    const out = builder.addBasicGate("output");
+
+    builder.connectToGate(gate, out, 0);
+
+    // Connect Data (port 1) FIRST
+    builder.connectToGate(data, gate, 1);
+    
+    // Connect Enable (port 0) SECOND
+    builder.connectToGate(enable, gate, 0);
+
+    data.setValue(HIGH);
+    enable.setValue(HIGH);
+    builder.settle();
+
+    expect(out.output).toBe(HIGH);
+
+    data.setValue(LOW);
+    builder.settle();
+    expect(out.output).toBe(LOW);
+
+    enable.setValue(LOW);
+    builder.settle();
+    expect(out.output).toBe(Z);
+  });
 });

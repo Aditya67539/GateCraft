@@ -350,9 +350,11 @@ export function flatten(circuit, acc, inputOrder = [], outputOrder = [], gateCou
     }
 
     let toIndex;
+    let actualToInputIndex = wire.toInputIndex;
     if (indexMap[wire.to.id].isComposite) {
       const portIndex = wire.toInputIndex;
       toIndex = indexMap[wire.to.id].inputBoundary[portIndex];
+      actualToInputIndex = 0;
     } else {
       toIndex = indexMap[wire.to.id];
     }
@@ -360,7 +362,7 @@ export function flatten(circuit, acc, inputOrder = [], outputOrder = [], gateCou
     // Track which input slot this wire fills on the destination gate
     if (typeof toIndex === 'number') {
       if (!connectedSlots[toIndex]) connectedSlots[toIndex] = new Set();
-      connectedSlots[toIndex].add(wire.toInputIndex);
+      connectedSlots[toIndex].add(actualToInputIndex);
     }
 
     const wireIndex = acc.wireSignal.length;
@@ -378,7 +380,7 @@ export function flatten(circuit, acc, inputOrder = [], outputOrder = [], gateCou
     if (!acc.fanin.has(toIndex)) {
       acc.fanin.set(toIndex, []);
     }
-    acc.fanin.get(toIndex).push(wireIndex);
+    acc.fanin.get(toIndex)[actualToInputIndex] = wireIndex;
   }
 
   // --- Pass 4: inject phantom wires for disconnected inputs ---
@@ -423,7 +425,7 @@ export function flatten(circuit, acc, inputOrder = [], outputOrder = [], gateCou
       if (!acc.fanin.has(gateIndex)) {
         acc.fanin.set(gateIndex, []);
       }
-      acc.fanin.get(gateIndex).push(wireIndex);
+      acc.fanin.get(gateIndex)[slot] = wireIndex;
     }
   }
 
