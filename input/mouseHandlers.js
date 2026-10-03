@@ -5,6 +5,7 @@ import { createBasicNode, createCompositeNode, snapPointToGrid, wouldOverlap, wo
 import { showToast } from "../ui/toast.js";
 import { ConnectGateCommand, MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand, PlaceBusCommand, RemoveBusCommand, BusConnectionCommand } from "../history/commands.js";
 import { performCommand } from "../history/history.js";
+import { loadCompositeGate, buildCircuitFromData } from "../persistence.js";
 
 const { LOW, HIGH, X, Z, E } = SIGNAL;
 
@@ -208,9 +209,12 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
           if (gateType !== "composite") {
             state.ghostNode = createBasicNode(gateType, x, y);
           } else {
-            const circuitData = state.ghostNode.gate.circuitData;
             const name = state.ghostNode.gate.label;
-            state.ghostNode = createCompositeNode(name, circuitData, x, y);
+            const saved = loadCompositeGate(name);
+            if (saved) {
+              const freshCircuit = buildCircuitFromData(saved.circuitData, saved.renderData);
+              state.ghostNode = createCompositeNode(name, freshCircuit, x, y);
+            }
           }
         } else {
           state.mode = "edit";

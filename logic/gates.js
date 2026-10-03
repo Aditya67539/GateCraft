@@ -191,6 +191,10 @@ export class CompositeGate extends ConnectableGate {
       wire.signal = X;
     }
 
+    for (const input of this.internalInputs) {
+      input.output = X;
+    }
+
     // Recursively collect all embedded seven-segment displays
     this.embeddedDisplays = collectDisplays(gates, this.circuitData.positionMap);
   }

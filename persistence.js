@@ -72,9 +72,6 @@ function getCircuitData(renderNodes, wireInfos, busNodes) {
       id: node.gate.id,
       type: node.gate.type === "clock" ? "input" : node.gate.type,
     };
-    if (node.gate.type === "input") {
-      data.signal = node.gate.output;
-    }
     if (node.gate.label) {
       data.label = node.gate.label;
     }
@@ -241,7 +238,6 @@ export function buildCircuitFromData(circuitData, renderData = null) {
     }
 
     idMap[gateSpec.id] = gate.id;
-    if (gateSpec.signal !== undefined) gate.output = gateSpec.signal;
     if (gateSpec.label) gate.label = gateSpec.label;
   }
 
