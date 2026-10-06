@@ -1,5 +1,6 @@
 import { isNearWaypoint } from "../input/mouseHandlers.js";
 import { screenToWorld } from "../state.js";
+import { BusNode } from "./BusNode.js";
 
 class Connection {
   constructor({ wire, waypoints, isCustomRouted }) {
@@ -182,10 +183,17 @@ export function projectPointOntoSegment(A, B, O) {
 }
 
 
-export function getPointRef(busNode, clickX, clickY) {
-  const { start, waypoints, end } = busNode.getPoints();
-  const points = [start, ...waypoints, end];
+export function getPointRefFromElement(element, clickX, clickY, nodeMap, busMap) {
+  const { start, waypoints, end } = element instanceof BusNode 
+    ? element.getPoints()
+    : element.getPoints(nodeMap, busMap);
 
+  const points = [ start, ...waypoints, end ];
+  return getPointRef(points, clickX, clickY);
+}
+
+
+function getPointRef(points, clickX, clickY) {
   let best = { segmentIndex: null, t: null };
   let bestDist = Infinity;
 

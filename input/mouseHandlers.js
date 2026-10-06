@@ -1,6 +1,6 @@
 import { state, screenToWorld, worldToScreen } from "../state.js";
 import { CLOCK_TIMER, FREQUENCY, SIGNAL } from "../constants.js";
-import { setCustomWaypoints, getPointRef, projectPointOntoSegment, dist } from "../render/wireGeometry.js";
+import { setCustomWaypoints, getPointRefFromElement, projectPointOntoSegment, dist } from "../render/wireGeometry.js";
 import { createBasicNode, createCompositeNode, snapPointToGrid, wouldOverlap, wouldBusOverlap } from "../render/RenderPoint.js";
 import { showToast } from "../ui/toast.js";
 import { ConnectGateCommand, MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand, PlaceBusCommand, RemoveBusCommand, BusConnectionCommand } from "../history/commands.js";
@@ -41,7 +41,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
     if (state.mode === "edit") {
       // Check input ports
       if (state.drawingWire) {
-        const connInfo = findWireDestination(world.x, world.y, renderNodes, busNodes);
+        const connInfo = findWireDestination(world.x, world.y, renderNodes, busNodes, nodeMap, busMap);
         if (state.drawingWire.originType === "gate") {
           if (connInfo?.destinationType === "gate") {
             const connection = connInfo.connection;
@@ -162,7 +162,8 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
             state.ghostWireCleanup = cleanup;
           } else if (state.drawingWire.originType === "bus") {
             const fromBus = connection.busNode;
-            const startPoint = fromBus.getTapPoint(getPointRef(fromBus, world.x, world.y));
+            const tapRef = getPointRefFromElement(fromBus, world.x, world.y, nodeMap, busMap);
+            const startPoint = fromBus.getTapPoint(tapRef);
             const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
             state.ghostWire = waypoints;
             state.ghostWireCleanup = cleanup;
@@ -450,23 +451,26 @@ function findNearInput(mx, my, renderNodes) {
   return null;
 }
 
-function findNearBus(mx, my, busNodes) {
+function findNearBus(mx, my, busNodes, nodeMap, busMap) {
   for (let i = 0; i < busNodes.length; i++) {
     const { start, waypoints, end } = busNodes[i].getPoints();
     const points = [start, ...waypoints, end];
 
     for (let j = 0; j < points.length - 1; j++) {
       if (isOnLineSegment(points[j], points[j + 1], { x: mx, y: my }, 15)) {
-        return { busNode: busNodes[i], tapRef: getPointRef(busNodes[i], mx, my) };
+        return {
+          busNode: busNodes[i],
+          tapRef: getPointRefFromElement(busNodes[i], mx, my, nodeMap, busMap),
+        };
       }
     }
   }
   return null;
 }
 
-function findWireOrigin(mx, my, renderNodes, busNodes) {
+function findWireOrigin(mx, my, renderNodes, busNodes, nodeMap, busMap) {
   const nodeConn = findNearOutput(mx, my, renderNodes);
-  const busConn = findNearBus(mx, my, busNodes);
+  const busConn = findNearBus(mx, my, busNodes, nodeMap, busMap);
   
   if (nodeConn) {
     return {
@@ -482,9 +486,9 @@ function findWireOrigin(mx, my, renderNodes, busNodes) {
   return null;
 }
 
-function findWireDestination(mx, my, renderNodes, busNodes) {
+function findWireDestination(mx, my, renderNodes, busNodes, nodeMap, busMap) {
   const nodeConn = findNearInput(mx, my, renderNodes);
-  const busConn = findNearBus(mx, my, busNodes);
+  const busConn = findNearBus(mx, my, busNodes, nodeMap, busMap);
 
   if (nodeConn) {
     return {
