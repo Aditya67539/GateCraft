@@ -156,7 +156,7 @@ export class RemoveBusCommand {
 
 
 /** @implements {Command} */
-export class ConnectGateCommand {
+export class GateConnectionCommand {
   constructor(circuit, fromGate, toGate, inputIndex, outputIndex, ghostWire, wires) {
     this.circuit = circuit;
     this.fromGate = fromGate;
