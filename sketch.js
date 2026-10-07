@@ -191,29 +191,19 @@ const sketch = (p) => {
     }
     if (state.drawingWire) {
       const connection = state.drawingWire.connection;
+      let startPoint;
       if (state.drawingWire.originType === "gate") {
 
         const outputIndex = connection.fromOutputIndex;
         const totalOutputs = connection.fromNode.gate.outputCount;
 
-        const startPort = outputIndex !== null
+        startPoint = outputIndex !== null
           ? connection.fromNode.getOutputPortByIndex(outputIndex, totalOutputs)
-          : connection.fromNode.getOutputPort();
-        
-        if (state.ghostWire?.length) {
-          drawGhostPath(startPort, state.ghostWire, mouse, p);
-        } else {
-          drawGhostPath(startPort, null, mouse, p);
-        }
+          : connection.fromNode.getOutputPort();        
       } else if (state.drawingWire.originType === "bus") {
-        const startPoint = connection.busNode.getTapPoint(connection.tapRef);
-        
-        if (state.ghostWire?.length) {
-          drawGhostPath(startPoint, state.ghostWire, mouse, p);
-        } else {
-          drawGhostPath(startPoint, null, mouse, p);
-        }
-      }
+        startPoint = connection.busNode.getTapPoint(connection.tapRef);
+      } 
+      drawGhostPath(startPoint, state.ghostWire, mouse, p);
     }
 
     // ── Draw tooltip last so it renders on top of everything ──
