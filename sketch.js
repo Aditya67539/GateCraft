@@ -202,6 +202,9 @@ const sketch = (p) => {
           : connection.fromNode.getOutputPort();        
       } else if (state.drawingWire.originType === "bus") {
         startPoint = getTapPointFromElement(connection.busNode, connection.tapRef, nodeMap, busMap);
+      } else if (state.drawingWire.originType === "wire") {
+        const conn = connection.conn;
+        startPoint = getTapPointFromElement(conn, connection.tapRef, nodeMap, busMap);
       }
       drawGhostPath(startPoint, state.ghostWire, mouse, p);
     }

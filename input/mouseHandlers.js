@@ -106,7 +106,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
         state.drawingWire = null;
         cleanupGhostWire();
       } else {
-        state.drawingWire = findWireOrigin(world.x, world.y, renderNodes, busNodes);
+        state.drawingWire = findWireOrigin(world.x, world.y, renderNodes, busNodes, wires, nodeMap, busMap);
         state.changingWaypoint = findNearWaypoint(world.x, world.y, wires);
 
         // ── Update persistent selection ──────────────────────────
@@ -165,6 +165,14 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
             const tapRef = getPointRefFromElement(fromBus, world.x, world.y, nodeMap, busMap);
             const startPoint = getTapPointFromElement(fromBus, tapRef, nodeMap, busMap);
             const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
+            state.ghostWire = waypoints;
+            state.ghostWireCleanup = cleanup;
+          } else if (state.drawingWire.originType === "wire") {
+            const conn = connection.conn;
+
+            const startPoint = getTapPointFromElement(conn, connection.tapRef, nodeMap, busMap);
+            const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
+
             state.ghostWire = waypoints;
             state.ghostWireCleanup = cleanup;
           }
@@ -468,9 +476,10 @@ function findNearBus(mx, my, busNodes, nodeMap, busMap) {
   return null;
 }
 
-function findWireOrigin(mx, my, renderNodes, busNodes, nodeMap, busMap) {
+function findWireOrigin(mx, my, renderNodes, busNodes, wires, nodeMap, busMap) {
   const nodeConn = findNearOutput(mx, my, renderNodes);
   const busConn = findNearBus(mx, my, busNodes, nodeMap, busMap);
+  const wireConn = getWireAtPoint(mx, my, wires, nodeMap, busMap);
   
   if (nodeConn) {
     return {
@@ -481,6 +490,11 @@ function findWireOrigin(mx, my, renderNodes, busNodes, nodeMap, busMap) {
     return {
       originType: "bus",
       connection: busConn,
+    }
+  } else if (wireConn) {
+    return {
+      originType: "wire",
+      connection: wireConn,
     }
   }
   return null;
