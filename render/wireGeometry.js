@@ -30,7 +30,7 @@ export class GateConnectionView extends Connection {
   }
 }
 
-export class BusConnection extends Connection {
+export class BusConnectionView extends Connection {
   constructor(data, busId, gateId, portIndex, direction) {
     super(data);
     this.tapRef = data.tapRef;

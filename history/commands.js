@@ -1,6 +1,6 @@
 import { rebuildBusMap } from "../render/BusNode.js";
 import { rebuildNodeMap } from "../render/RenderPoint.js";
-import { BusConnection, initWire, GateConnectionView } from "../render/wireGeometry.js";
+import { BusConnectionView, initWire, GateConnectionView } from "../render/wireGeometry.js";
 import { showToast } from "../ui/toast.js";
 
 /**
@@ -224,7 +224,7 @@ export class BusConnectionCommand {
     } else {
       const wireInfo = initWire(wire, this.ghostWire);
       wireInfo.tapRef = this.tapRef;
-      this.connection = new BusConnection(
+      this.connection = new BusConnectionView(
         wireInfo,
         this.bus.id,
         this.gate.id,
