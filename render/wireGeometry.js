@@ -15,7 +15,7 @@ class Connection {
   }
 }
 
-export class GateConnection extends Connection {
+export class GateConnectionView extends Connection {
   constructor(data) {
     super(data);
   }
