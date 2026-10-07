@@ -1,6 +1,6 @@
 import { state, screenToWorld, worldToScreen } from "../state.js";
 import { CLOCK_TIMER, FREQUENCY, SIGNAL } from "../constants.js";
-import { setCustomWaypoints, getPointRefFromElement, projectPointOntoSegment, dist } from "../render/wireGeometry.js";
+import { setCustomWaypoints, getPointRefFromElement, projectPointOntoSegment, dist, getTapPointFromElement } from "../render/wireGeometry.js";
 import { createBasicNode, createCompositeNode, snapPointToGrid, wouldOverlap, wouldBusOverlap } from "../render/RenderPoint.js";
 import { showToast } from "../ui/toast.js";
 import { ConnectGateCommand, MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand, PlaceBusCommand, RemoveBusCommand, BusConnectionCommand } from "../history/commands.js";
@@ -163,7 +163,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
           } else if (state.drawingWire.originType === "bus") {
             const fromBus = connection.busNode;
             const tapRef = getPointRefFromElement(fromBus, world.x, world.y, nodeMap, busMap);
-            const startPoint = fromBus.getTapPoint(tapRef);
+            const startPoint = getTapPointFromElement(fromBus, tapRef, nodeMap, busMap);
             const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
             state.ghostWire = waypoints;
             state.ghostWireCleanup = cleanup;

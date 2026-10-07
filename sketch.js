@@ -8,7 +8,7 @@ import { CircuitBuilder } from "./logic/CircuitBuilder.js";
 import { snapPointToGrid, wouldBusOverlap, wouldOverlap } from "./render/RenderPoint.js";
 import { registerKeyboardHandlers } from "./input/keyboardHandlers.js";
 import { drawMinimap } from "./render/minimap.js";
-import { getOctilinearSnap } from "./render/wireGeometry.js";
+import { getOctilinearSnap, getTapPointFromElement } from "./render/wireGeometry.js";
 
 applyTheme(getActiveTheme());
 
@@ -201,8 +201,8 @@ const sketch = (p) => {
           ? connection.fromNode.getOutputPortByIndex(outputIndex, totalOutputs)
           : connection.fromNode.getOutputPort();        
       } else if (state.drawingWire.originType === "bus") {
-        startPoint = connection.busNode.getTapPoint(connection.tapRef);
-      } 
+        startPoint = getTapPointFromElement(connection.busNode, connection.tapRef, nodeMap, busMap);
+      }
       drawGhostPath(startPoint, state.ghostWire, mouse, p);
     }
 

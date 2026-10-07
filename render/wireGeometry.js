@@ -43,7 +43,7 @@ export class BusConnection extends Connection {
   getPoints(nodeMap, busMap) {
     const bus = busMap.get(this.busId);
     const node = nodeMap.get(this.gateId);
-    const tapPoint = bus.getTapPoint(this.tapRef);
+    const tapPoint = getTapPointFromElement(bus, this.tapRef, nodeMap, busMap);
 
     if (this.direction === "in") {
       // Gate output is the start, and tap on the bus is end
@@ -208,6 +208,26 @@ function getPointRef(points, clickX, clickY) {
     }
   }
   return best;
+}
+
+
+export function getTapPointFromElement(element, tapRef, nodeMap, busMap) {
+  const { start, waypoints, end } = element instanceof BusNode
+    ? element.getPoints()
+    : element.getPoints(nodeMap, busMap);
+  
+  const points = [ start, ...waypoints, end ];
+  return getTapPoint(points, tapRef);
+}
+
+
+function getTapPoint(points, tapRef) {
+  const A = points[tapRef.segmentIndex];
+  const B = points[tapRef.segmentIndex + 1];
+  return {
+    x: A.x + tapRef.t * (B.x - A.x),
+    y: A.y + tapRef.t * (B.y - A.y),
+  };
 }
 
 
