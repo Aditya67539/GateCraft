@@ -261,7 +261,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
         const busInfo = getBusAtPoint(world.x, world.y, busNodes, nodeMap, busMap);
         
         if (wireInfo) {
-          const removeWireCommand = new RemoveWireCommand(circuit, wires, wireInfo);
+          const removeWireCommand = new RemoveWireCommand(circuit, wires, wireInfo.conn);
           performCommand(removeWireCommand);
         } else if (busInfo) {
           const removeBusCommand = new RemoveBusCommand(busNodes, wires, circuit, busInfo, busMap);
@@ -515,7 +515,10 @@ function getWireAtPoint(mx, my, wires, nodeMap, busMap) {
     const points = [ start, ...waypoints, end ];
     for (let i = 0; i < points.length - 1; i++) {
       if (isOnLineSegment(points[i], points[i + 1], { x: mx, y: my }, 15)) {
-        return conn;
+        return {
+          conn: conn,
+          tapRef: getPointRefFromElement(conn, mx, my, nodeMap, busMap), 
+        };
       }
     }
   }
