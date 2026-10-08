@@ -46,13 +46,13 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
           if (connInfo?.destinationType === "gate") {
             const connection = connInfo.connection;
             
-            const outputIndex = state.drawingWire.connection.fromOutputIndex;
+            const outputIndex = state.drawingWire.source.fromOutputIndex;
             const inputIndex = connection.index;
             if (inputIndex < 0 || inputIndex >= connection.toNode.internalInputs) {
               showToast("Invalid input index!", { type: "error" });
               return;
             }
-            const fromGate = state.drawingWire.connection.fromNode.gate;
+            const fromGate = state.drawingWire.source.fromNode.gate;
             const toGate = connection.toNode.gate;
 
             const connectGateCommand = new GateConnectionCommand(
@@ -68,8 +68,8 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
           } else if (connInfo?.destinationType === "bus") {
             const connection = connInfo.connection;
 
-            const outputIndex = state.drawingWire.connection.fromOutputIndex;
-            const fromGate = state.drawingWire.connection.fromNode.gate;
+            const outputIndex = state.drawingWire.source.fromOutputIndex;
+            const fromGate = state.drawingWire.source.fromNode.gate;
             const bus = connection.busNode.bus;
 
             const busConnectionCommand = new BusConnectionCommand(
@@ -87,7 +87,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
         } else if (state.drawingWire.originType === "bus") {
           if (connInfo?.destinationType === "gate") {
             const toGate = connInfo.connection.toNode.gate;
-            const fromBus = state.drawingWire.connection.busNode.bus;
+            const fromBus = state.drawingWire.source.busNode.bus;
             const inputIndex = connInfo.connection.index;
 
             const busConnectionCommand = new BusConnectionCommand(
@@ -98,7 +98,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
               wires,
               "out",
               inputIndex,
-              state.drawingWire.connection.tapRef,
+              state.drawingWire.source.tapRef,
             );
             performCommand(busConnectionCommand);
           }
@@ -151,7 +151,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
             }
           }
         } else if (state.drawingWire && !state.changingWaypoint && !state.dragging) {
-          const connection = state.drawingWire.connection;
+          const connection = state.drawingWire.source;
           if (state.drawingWire.originType === "gate") {
             const fromNode = connection.fromNode;
             const startPoint = fromNode.gate.type === "composite"
@@ -484,17 +484,17 @@ function findWireOrigin(mx, my, renderNodes, busNodes, wires, nodeMap, busMap) {
   if (nodeConn) {
     return {
       originType: "gate",
-      connection: nodeConn,
+      source: nodeConn,
     }
   } else if (busConn) {
     return {
       originType: "bus",
-      connection: busConn,
+      source: busConn,
     }
   } else if (wireConn) {
     return {
       originType: "wire",
-      connection: wireConn,
+      source: wireConn,
     }
   }
   return null;

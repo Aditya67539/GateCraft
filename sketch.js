@@ -190,7 +190,7 @@ const sketch = (p) => {
       }
     }
     if (state.drawingWire) {
-      const connection = state.drawingWire.connection;
+      const connection = state.drawingWire.source;
       let startPoint;
       if (state.drawingWire.originType === "gate") {
 
