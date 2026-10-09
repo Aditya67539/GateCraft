@@ -44,7 +44,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
         const connInfo = findWireDestination(world.x, world.y, renderNodes, busNodes, nodeMap, busMap);
         if (state.drawingWire.originType === "gate") {
           if (connInfo?.destinationType === "gate") {
-            const connection = connInfo.connection;
+            const connection = connInfo.destination;
             
             const outputIndex = state.drawingWire.source.fromOutputIndex;
             const inputIndex = connection.index;
@@ -66,7 +66,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
             );
             performCommand(connectGateCommand);
           } else if (connInfo?.destinationType === "bus") {
-            const connection = connInfo.connection;
+            const connection = connInfo.destination;
 
             const outputIndex = state.drawingWire.source.fromOutputIndex;
             const fromGate = state.drawingWire.source.fromNode.gate;
@@ -80,15 +80,15 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
               wires,
               "in",
               outputIndex,
-              connInfo.connection.tapRef,
+              connInfo.destination.tapRef,
             );
             performCommand(busConnectionCommand);
           }
         } else if (state.drawingWire.originType === "bus") {
           if (connInfo?.destinationType === "gate") {
-            const toGate = connInfo.connection.toNode.gate;
+            const toGate = connInfo.destination.toNode.gate;
             const fromBus = state.drawingWire.source.busNode.bus;
-            const inputIndex = connInfo.connection.index;
+            const inputIndex = connInfo.destination.index;
 
             const busConnectionCommand = new BusConnectionCommand(
               circuit,
@@ -507,12 +507,12 @@ function findWireDestination(mx, my, renderNodes, busNodes, nodeMap, busMap) {
   if (nodeConn) {
     return {
       destinationType: "gate",
-      connection: nodeConn,
+      destination: nodeConn,
     }
   } else if (busConn) {
     return {
       destinationType: "bus",
-      connection: busConn,
+      destination: busConn,
     }
   }
   return null;
