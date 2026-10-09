@@ -1,6 +1,6 @@
 import { rebuildBusMap } from "../render/BusNode.js";
 import { rebuildNodeMap } from "../render/RenderPoint.js";
-import { BusConnectionView, initWire, GateConnectionView } from "../render/wireGeometry.js";
+import { BusConnectionView, GateConnectionView } from "../render/wireGeometry.js";
 import { showToast } from "../ui/toast.js";
 
 /**
@@ -157,7 +157,7 @@ export class RemoveBusCommand {
 
 /** @implements {Command} */
 export class GateConnectionCommand {
-  constructor(circuit, fromGate, toGate, inputIndex, outputIndex, ghostWire, wires) {
+  constructor(circuit, fromGate, toGate, inputIndex, outputIndex, ghostWire, wires, isWireBranch = false) {
     this.circuit = circuit;
     this.fromGate = fromGate;
     this.toGate = toGate;
@@ -165,6 +165,7 @@ export class GateConnectionCommand {
     this.outputIndex = outputIndex;
     this.ghostWire = ghostWire;
     this.wires = wires;
+    this.isWireBranch = isWireBranch;
     this.connection = null;
   }
 
@@ -179,7 +180,7 @@ export class GateConnectionCommand {
     if (this.connection !== null) {
       this.connection.wire = result.wire;
     } else {
-      this.connection = new GateConnectionView(initWire(wire, this.ghostWire));
+      this.connection = new GateConnectionView({ wire, waypoints: this.ghostWire, isWireBranch: this.isWireBranch });
     }
     this.wires.push(this.connection);
     return true;
@@ -194,7 +195,7 @@ export class GateConnectionCommand {
 
 /** @implements {Command} */
 export class BusConnectionCommand {
-  constructor(circuit, gate, bus, ghostWire, wires, direction, index, tapRef) {
+  constructor(circuit, gate, bus, ghostWire, wires, direction, index, tapRef, isWireBranch = false) {
     this.circuit = circuit;
     this.gate = gate;
     this.bus = bus;
@@ -203,6 +204,7 @@ export class BusConnectionCommand {
     this.direction = direction;
     this.index = index;
     this.tapRef = tapRef;
+    this.isWireBranch = isWireBranch;
     this.connection = null;
   }
 
@@ -222,8 +224,12 @@ export class BusConnectionCommand {
     if (this.connection !== null) {
       this.connection.wire = result.wire;
     } else {
-      const wireInfo = initWire(wire, this.ghostWire);
-      wireInfo.tapRef = this.tapRef;
+      const wireInfo = {
+        wire,
+        waypoints: this.ghostWire,
+        isWireBranch: this.isWireBranch,
+        tapRef: this.tapRef,
+      };
       this.connection = new BusConnectionView(
         wireInfo,
         this.bus.id,

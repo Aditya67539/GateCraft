@@ -3,10 +3,10 @@ import { screenToWorld } from "../state.js";
 import { BusNode } from "./BusNode.js";
 
 class Connection {
-  constructor({ wire, waypoints, isCustomRouted }) {
+  constructor({ wire, waypoints, isWireBranch }) {
     this.wire = wire;
     this.waypoints = waypoints;
-    this.isCustomRouted = isCustomRouted;
+    this.isWireBranch = isWireBranch;
   }
 
   /** @returns {{ start: Point, waypoints: Array<Point>, end: Point }} */
@@ -55,16 +55,6 @@ export class BusConnectionView extends Connection {
       return { start: tapPoint, waypoints: this.waypoints, end: endPoint };
     }
   }
-}
-
-export function initWire(wire, customWaypoints) {
-  let waypoints = [];
-  let isCustomRouted = false;
-  if (customWaypoints && customWaypoints.length !== 0) {
-    waypoints = customWaypoints;
-    isCustomRouted = true;
-  }
-  return { wire: wire, waypoints: waypoints, isCustomRouted: isCustomRouted };
 }
 
 export function getWirePorts(wire, nodeMap) {
