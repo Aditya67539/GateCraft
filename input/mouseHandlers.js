@@ -141,35 +141,6 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
           const { x, y } = snapPointToGrid(world.x, world.y);
           state.offsetX = x - state.dragging.x;
           state.offsetY = y - state.dragging.y;
-
-          let connectedInputWires = wires.filter(n => n.wire.to.id === state.dragging.gate.id);
-          let connectedOutputWires = wires.filter(n => n.wire.from.id === state.dragging.gate.id);
-
-          if (connectedInputWires || connectedOutputWires) {
-            state.connectedWires = [];
-            for (let i = 0; i < connectedInputWires.length; i++) {
-              if (connectedInputWires[i].waypoints && connectedInputWires[i].waypoints.length !== 0) {
-                const lastWaypoint = connectedInputWires[i].waypoints.length - 1;
-                state.connectedWires.push({
-                  wire: connectedInputWires[i],
-                  offsetX: x - connectedInputWires[i].waypoints[lastWaypoint].x,
-                  offsetY: y - connectedInputWires[i].waypoints[lastWaypoint].y,
-                  type: "input",
-                });
-              }
-            }
-
-            for (let i = 0; i < connectedOutputWires.length; i++) {
-              if (connectedOutputWires[i].waypoints && connectedOutputWires[i].waypoints.length !== 0) {
-                state.connectedWires.push({
-                  wire: connectedOutputWires[i],
-                  offsetX: x - connectedOutputWires[i].waypoints[0].x,
-                  offsetY: y - connectedOutputWires[i].waypoints[0].y,
-                  type: "output",
-                });
-              }
-            }
-          }
         } else if (state.drawingWire && !state.changingWaypoint && !state.dragging) {
           const connection = state.drawingWire.source;
           if (state.drawingWire.originType === "gate") {
@@ -307,29 +278,10 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
           state.currentX = state.dragging.x;
           state.currentY = state.dragging.y;
           state.changingPos = true;
-          if (state.connectedWires) {
-            state.connectedWireSnapshots = {};
-            state.connectedWireSnapshots.fromWaypoints = state.connectedWires.map(cw =>
-              cw.wire.waypoints.map(wp => ({ ...wp }))
-            );
-          }
-
         }
         const { x, y } = snapPointToGrid(worldDrag.x, worldDrag.y);
         state.dragging.x = x - state.offsetX;
         state.dragging.y = y - state.offsetY;
-
-        if (state.connectedWires) {
-          for (let i = 0; i < state.connectedWires.length; i++) {
-            const lastWaypoint = state.connectedWires[i].wire.waypoints.length - 1;
-            const firstWaypoint = 0;
-            if (state.connectedWires[i].type === "input") {
-              state.connectedWires[i].wire.waypoints[lastWaypoint].y = y - state.connectedWires[i].offsetY;
-            } else if (state.connectedWires[i].type === "output") {
-              state.connectedWires[i].wire.waypoints[firstWaypoint].y = y - state.connectedWires[i].offsetY;
-            }
-          }
-        }
       } else if (state.changingWaypoint) {
         state.changingWaypoint.x = worldDrag.x;
         state.changingWaypoint.y = worldDrag.y;
@@ -345,25 +297,13 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
       if (wouldOverlap(state.dragging, renderNodes, busNodes, state.dragging.gate.id)) {
         state.dragging.x = state.currentX;
         state.dragging.y = state.currentY;
-        if (state.connectedWires && state.connectedWireSnapshots) {
-          for (let i = 0; i < state.connectedWires.length; i++) {
-            state.connectedWires[i].wire.waypoints = state.connectedWireSnapshots.fromWaypoints[i].map(wp => ({ ...wp }));
-          }
-        }
       } else if (state.changingPos) {
-        if (state.connectedWires) {
-          state.connectedWireSnapshots.toWaypoints = state.connectedWires.map(cw =>
-            cw.wire.waypoints.map(wp => ({ ...wp }))
-          );
-        }
         const moveNodeCommand = new MoveNodeCommand(
           state.dragging,
           state.currentX,
           state.currentY,
           state.dragging.x,
           state.dragging.y,
-          state.connectedWires,
-          state.connectedWireSnapshots,
         );
         performCommand(moveNodeCommand);
       }
@@ -378,11 +318,9 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
     state.dragging = null;
     state.offsetX = 0;
     state.offsetY = 0;
-    state.connectedWires = null;
     state.currentX = 0;
     state.currentY = 0;
     state.changingPos = false;
-    state.connectedWireSnapshots = null;
     state.isPanning = false;
     state.waypointSnapshot = null;
   }
