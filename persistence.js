@@ -151,7 +151,7 @@ function getRenderData(renderNodes, wireInfos, busNodes) {
       fromId: w.wire.from.id,
       toId: w.wire.to.id,
       waypoints: w.waypoints,
-      isCustomRouted: w.isCustomRouted,
+      isWireBranch: w.isWireBranch,
     };
     if (w instanceof GateConnectionView) {
       data.isBusConnection = false;
