@@ -18,12 +18,21 @@ class Connection {
 export class GateConnectionView extends Connection {
   constructor(data) {
     super(data);
+    this.source = data.source;
   }
 
   getPoints(nodeMap, busMap) {
     const ports = getWirePorts(this.wire, nodeMap);
+    let startPos = ports.start;
+
+    if (this.isWireBranch && this.source) {
+      const { start, waypoints, end } = this.source.conn.getPoints(nodeMap, busMap);
+      const points = [ start, ...waypoints, end ];
+
+      startPos = getTapPoint(points, this.source.tapRef);
+    }
     return {
-      start: ports.start,
+      start: startPos,
       waypoints: this.waypoints,
       end: ports.end,
     }

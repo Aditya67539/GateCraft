@@ -157,7 +157,7 @@ export class RemoveBusCommand {
 
 /** @implements {Command} */
 export class GateConnectionCommand {
-  constructor(circuit, fromGate, toGate, inputIndex, outputIndex, ghostWire, wires, isWireBranch = false) {
+  constructor(circuit, fromGate, toGate, inputIndex, outputIndex, ghostWire, wires, isWireBranch = false, source = null) {
     this.circuit = circuit;
     this.fromGate = fromGate;
     this.toGate = toGate;
@@ -166,6 +166,7 @@ export class GateConnectionCommand {
     this.ghostWire = ghostWire;
     this.wires = wires;
     this.isWireBranch = isWireBranch;
+    this.source = source;
     this.connection = null;
   }
 
@@ -180,7 +181,7 @@ export class GateConnectionCommand {
     if (this.connection !== null) {
       this.connection.wire = result.wire;
     } else {
-      this.connection = new GateConnectionView({ wire, waypoints: this.ghostWire, isWireBranch: this.isWireBranch });
+      this.connection = new GateConnectionView({ wire, waypoints: this.ghostWire, isWireBranch: this.isWireBranch, source: this.source });
     }
     this.wires.push(this.connection);
     return true;
