@@ -1,6 +1,6 @@
 import { state, screenToWorld, worldToScreen } from "../state.js";
 import { CLOCK_TIMER, FREQUENCY, SIGNAL } from "../constants.js";
-import { setCustomWaypoints, getPointRefFromElement, projectPointOntoSegment, dist, getTapPointFromElement } from "../render/wireGeometry.js";
+import { setCustomWaypoints, getPointRefFromElement, projectPointOntoSegment, dist, getTapPointFromElement, GateConnectionView } from "../render/wireGeometry.js";
 import { createBasicNode, createCompositeNode, snapPointToGrid, wouldOverlap, wouldBusOverlap } from "../render/RenderPoint.js";
 import { showToast } from "../ui/toast.js";
 import { GateConnectionCommand, MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand, PlaceBusCommand, RemoveBusCommand, BusConnectionCommand } from "../history/commands.js";
@@ -97,6 +97,30 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
               state.drawingWire.source.tapRef,
             );
             performCommand(busConnectionCommand);
+          }
+        } else if (state.drawingWire.originType === "wire") {
+          if (state.drawingWire.source.conn instanceof GateConnectionView) {
+            if (connInfo?.destinationType === "gate") {
+              const connection = connInfo.destination;
+
+              const outputIndex = state.drawingWire.source.conn.wire.fromOutputIndex;
+              const inputIndex = connection.index;
+              const fromGate = state.drawingWire.source.conn.wire.from;
+              const toGate = connection.toNode.gate;
+
+              const connectGateCommand = new GateConnectionCommand(
+                circuit,
+                fromGate,
+                toGate,
+                inputIndex,
+                outputIndex,
+                state.ghostWire,
+                wires,
+                true,
+                state.drawingWire.source,
+              );
+              performCommand(connectGateCommand);
+            }
           }
         }
         state.drawingWire = null;
