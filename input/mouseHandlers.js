@@ -48,10 +48,6 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
             
             const outputIndex = state.drawingWire.source.fromOutputIndex;
             const inputIndex = connection.index;
-            if (inputIndex < 0 || inputIndex >= connection.toNode.internalInputs) {
-              showToast("Invalid input index!", { type: "error" });
-              return;
-            }
             const fromGate = state.drawingWire.source.fromNode.gate;
             const toGate = connection.toNode.gate;
 
