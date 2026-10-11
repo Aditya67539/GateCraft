@@ -43,6 +43,7 @@ export class BusConnectionView extends Connection {
   constructor(data, busId, gateId, portIndex, direction) {
     super(data);
     this.tapRef = data.tapRef;
+    this.source = data.source;
     this.busId = busId;
     this.gateId = gateId;
     this.portIndex = portIndex;
@@ -56,7 +57,13 @@ export class BusConnectionView extends Connection {
 
     if (this.direction === "in") {
       // Gate output is the start, and tap on the bus is end
-      const startPoint = node.getOutputPortByIndex(this.portIndex, node.gate.outputCount);
+      let startPoint = node.getOutputPortByIndex(this.portIndex, node.gate.outputCount);
+      if (this.isWireBranch && this.source) {
+        const { start, waypoints, end } = this.source.conn.getPoints(nodeMap, busMap);
+        const points = [ start, ...waypoints, end ];
+        
+        startPoint = getTapPoint(points, this.source.tapRef);
+      }
       return { start: startPoint, waypoints: this.waypoints, end: tapPoint };
     } else if (this.direction === "out") {
       // Tap on the bus is start, and gate input is the end

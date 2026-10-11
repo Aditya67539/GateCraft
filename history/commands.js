@@ -196,7 +196,7 @@ export class GateConnectionCommand {
 
 /** @implements {Command} */
 export class BusConnectionCommand {
-  constructor(circuit, gate, bus, ghostWire, wires, direction, index, tapRef, isWireBranch = false) {
+  constructor(circuit, gate, bus, ghostWire, wires, direction, index, tapRef, isWireBranch = false, source = null) {
     this.circuit = circuit;
     this.gate = gate;
     this.bus = bus;
@@ -206,6 +206,7 @@ export class BusConnectionCommand {
     this.index = index;
     this.tapRef = tapRef;
     this.isWireBranch = isWireBranch;
+    this.source = source;
     this.connection = null;
   }
 
@@ -230,6 +231,7 @@ export class BusConnectionCommand {
         waypoints: this.ghostWire,
         isWireBranch: this.isWireBranch,
         tapRef: this.tapRef,
+        source: this.source,
       };
       this.connection = new BusConnectionView(
         wireInfo,
