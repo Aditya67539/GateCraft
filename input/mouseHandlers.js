@@ -120,6 +120,26 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
                 state.drawingWire.source,
               );
               performCommand(connectGateCommand);
+            } else if (connInfo?.destinationType === "bus") {
+              const connection = connInfo.destination;
+
+              const outputIndex = state.drawingWire.source.conn.wire.fromOutputIndex;
+              const fromGate = state.drawingWire.source.conn.wire.from;
+              const bus = connection.busNode.bus;
+
+              const busConnectionCommand = new BusConnectionCommand(
+                circuit,
+                fromGate,
+                bus,
+                state.ghostWire,
+                wires,
+                "in",
+                outputIndex,
+                connInfo.destination.tapRef,
+                true,
+                state.drawingWire.source,
+              );
+              performCommand(busConnectionCommand);
             }
           }
         }
