@@ -1,6 +1,6 @@
 import { state, screenToWorld, worldToScreen } from "../state.js";
 import { CLOCK_TIMER, FREQUENCY, SIGNAL } from "../constants.js";
-import { setCustomWaypoints, getPointRefFromElement, projectPointOntoSegment, dist, getTapPointFromElement, GateConnectionView } from "../render/wireGeometry.js";
+import { setCustomWaypoints, getPointRefFromElement, projectPointOntoSegment, dist, getTapPointFromElement, GateConnectionView, BusConnectionView } from "../render/wireGeometry.js";
 import { createBasicNode, createCompositeNode, snapPointToGrid, wouldOverlap, wouldBusOverlap } from "../render/RenderPoint.js";
 import { showToast } from "../ui/toast.js";
 import { GateConnectionCommand, MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand, PlaceBusCommand, RemoveBusCommand, BusConnectionCommand } from "../history/commands.js";
@@ -136,6 +136,28 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
                 "in",
                 outputIndex,
                 connInfo.destination.tapRef,
+                true,
+                state.drawingWire.source,
+              );
+              performCommand(busConnectionCommand);
+            }
+          } else if (state.drawingWire.source.conn instanceof BusConnectionView) {
+            if (connInfo?.destinationType === "gate") {
+              const connection = connInfo.destination;
+
+              const toGate = connection.toNode.gate;
+              const fromBus = state.drawingWire.source.conn.wire.from;
+              const inputIndex = connection.index;
+
+              const busConnectionCommand = new BusConnectionCommand(
+                circuit,
+                toGate,
+                fromBus,
+                state.ghostWire,
+                wires,
+                "out",
+                inputIndex,
+                state.drawingWire.source.tapRef,
                 true,
                 state.drawingWire.source,
               );
