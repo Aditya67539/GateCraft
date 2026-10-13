@@ -29,6 +29,11 @@ export const nodeMap = new Map();
 export const busMap = new Map();
 
 export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) {
+  const canvasHost = document.querySelector(".canvas-host");
+  const canvas = canvasHost.querySelector("canvas");
+  const wireCtxMenu = document.getElementById("wire-context-menu");
+  let wireCtxTarget = null; // { type: "wire"|"bus", wire?, bus?, wireInfo?, busInfo? }
+
   p.mousePressed = function (event) {
     if (state.labelEditing) return;
     if (state.justPlacedFromToolbar) {
@@ -315,11 +320,35 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
 
     else if (p.mouseButton.right) {
       if (state.mode !== "edit" || state.labelEditing) return;
+      
+      const rect = canvas.getBoundingClientRect();
+      const clientX = rect.left + (p.mouseX / p.width) * rect.width;
+      const clientY = rect.top + (p.mouseY / p.height) * rect.height;
+      const { x: mx, y: my } = screenToWorld(clientX, clientY);
+
+      // 1. Check for input/output gates (label editing)
+      // TODO: Add a context menu instead of the direct label editor
       const target = renderNodes.find(n => n.containsPoint(world.x, world.y));
-      if (!target) return;
-      const gateType = target.gate.type;
-      if (gateType !== "input" && gateType !== "output") return;
-      openLabelEditor(target, p);
+      if (target) {
+        const gateType = target.gate.type;
+        if (gateType === "input" || gateType === "output") {
+          openLabelEditor(target, p);
+          return;
+        }
+      }
+
+      // 2. Check for wires and buses
+      const wireInfo = getWireAtPoint(world.x, world.y, wires, nodeMap, busMap);
+      if (wireInfo) {
+        showWireContextMenu(clientX, clientY, { type: "wire", conn: wireInfo.conn });
+        return;
+      }
+
+      const busInfo = getBusAtPoint(world.x, world.y, busNodes, nodeMap, busMap);
+      if (busInfo) {
+        showWireContextMenu(clientX, clientY, { type: "bus", busNode: busInfo });
+        return;
+      }
     }
   }
 
@@ -404,6 +433,59 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
     // Return false to prevent the entire web page from scrolling
     return false; 
   }
+
+
+  function showWireContextMenu(clientX, clientY, target) {
+    wireCtxTarget = target;
+    wireCtxMenu.classList.add("open");
+    wireCtxMenu.style.left = `${clientX}px`;
+    wireCtxMenu.style.top = `${clientY}px`;
+
+    const rect = wireCtxMenu.getBoundingClientRect();
+    if (rect.bottom > window.innerHeight) {
+      wireCtxMenu.style.top = `${Math.max(0, clientY - rect.height)}px`;
+    }
+    if (rect.right > window.innerWidth) {
+      wireCtxMenu.style.left = `${Math.max(0, clientX - rect.width)}px`;
+    }
+    state.isAnyModal = true;
+  }
+
+  function hideWireContextMenu() {
+    if (!wireCtxMenu.classList.contains("open")) return;
+    wireCtxMenu.classList.remove("open");
+    wireCtxTarget = null;
+    state.isAnyModalOpen = false;
+  }
+
+  // Edit button - placeholder for waypoint editor (coming soon)
+  document.getElementById("ctx-wire-edit").addEventListener("click", () => {
+    const target = wireCtxTarget;
+    hideWireContextMenu();
+    if (!target) return;
+    // TODO: open waypoint editor for target
+  });
+
+  // Delete button - remove the wire or bus
+  document.getElementById("ctx-wire-delete").addEventListener("click", () => {
+    const target = wireCtxTarget;
+    hideWireContextMenu();
+    if (!target) return;
+
+    if (target.type === "wire") {
+      const removeWireCommand = new RemoveWireCommand(circuit, wires, target.conn);
+      performCommand(removeWireCommand);
+    } else if (target.type === "bus") {
+      const removeBusCommand = new RemoveBusCommand(busNodes, wires, circuit, target.busNode, busMap);
+      performCommand(removeBusCommand);
+    }
+  });
+
+  // Close wire context meny on any click or Escape
+  document.addEventListener("click", () => hideWireContextMenu());
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") hideWireContextMenu();
+  });
 }
 
 
