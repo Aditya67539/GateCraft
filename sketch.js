@@ -40,6 +40,8 @@ const sketch = (p) => {
     cnv.parent(canvasHost);
     const toolbarActions = initToolbar(p, circuit, renderNodes, wires, busNodes);
 
+    canvasHost.addEventListener("contextmenu", (e) => { e.preventDefault(); });
+
     registerMouseHandlers(p, circuit, renderNodes, wires, busNodes);
     registerKeyboardHandlers(p, circuit, renderNodes, wires, toolbarActions);
 

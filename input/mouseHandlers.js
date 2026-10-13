@@ -312,6 +312,15 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
         }
       }
     }
+
+    else if (p.mouseButton.right) {
+      if (state.mode !== "edit" || state.labelEditing) return;
+      const target = renderNodes.find(n => n.containsPoint(world.x, world.y));
+      if (!target) return;
+      const gateType = target.gate.type;
+      if (gateType !== "input" && gateType !== "output") return;
+      openLabelEditor(target, p);
+    }
   }
 
   p.mouseDragged = function () {
@@ -395,24 +404,6 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
     // Return false to prevent the entire web page from scrolling
     return false; 
   }
-
-  // Right-click on an input/output gate to edit its label
-  const canvasHost = document.querySelector(".canvas-host");
-  canvasHost.addEventListener("contextmenu", function (e) {
-    e.preventDefault();
-    if (state.mode !== "edit" || state.labelEditing) return;
-    // Convert page coords to p5 canvas coords
-    const canvas = canvasHost.querySelector("canvas");
-    const rect = canvas.getBoundingClientRect();
-    const screenX = (e.clientX - rect.left) * (p.width / rect.width);
-    const screenY = (e.clientY - rect.top) * (p.height / rect.height);
-    const { x: mx, y: my } = screenToWorld(screenX, screenY);
-    const target = renderNodes.find(n => n.containsPoint(mx, my));
-    if (!target) return;
-    const gateType = target.gate.type;
-    if (gateType !== "input" && gateType !== "output") return;
-    openLabelEditor(target, p);
-  });
 }
 
 
