@@ -36,6 +36,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
 
   p.mousePressed = function (event) {
     if (state.labelEditing) return;
+    if (state.isAnyModalOpen) return;
     if (state.justPlacedFromToolbar) {
       state.justPlacedFromToolbar = false;
     }
@@ -448,7 +449,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
     if (rect.right > window.innerWidth) {
       wireCtxMenu.style.left = `${Math.max(0, clientX - rect.width)}px`;
     }
-    state.isAnyModal = true;
+    state.isAnyModalOpen = true;
   }
 
   function hideWireContextMenu() {
