@@ -32,7 +32,6 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
   const canvasHost = document.querySelector(".canvas-host");
   const canvas = canvasHost.querySelector("canvas");
   const wireCtxMenu = document.getElementById("wire-context-menu");
-  let wireCtxTarget = null; // { type: "wire"|"bus", wire?, bus?, wireInfo?, busInfo? }
 
   p.mousePressed = function (event) {
     if (state.labelEditing) return;
@@ -325,7 +324,6 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
       const rect = canvas.getBoundingClientRect();
       const clientX = rect.left + (p.mouseX / p.width) * rect.width;
       const clientY = rect.top + (p.mouseY / p.height) * rect.height;
-      const { x: mx, y: my } = screenToWorld(clientX, clientY);
 
       // 1. Check for input/output gates (label editing)
       // TODO: Add a context menu instead of the direct label editor
@@ -437,7 +435,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
 
 
   function showWireContextMenu(clientX, clientY, target) {
-    wireCtxTarget = target;
+    state.contextMenuTarget = target;
     wireCtxMenu.classList.add("open");
     wireCtxMenu.style.left = `${clientX}px`;
     wireCtxMenu.style.top = `${clientY}px`;
@@ -455,13 +453,13 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
   function hideWireContextMenu() {
     if (!wireCtxMenu.classList.contains("open")) return;
     wireCtxMenu.classList.remove("open");
-    wireCtxTarget = null;
+    state.contextMenuTarget = null;
     state.isAnyModalOpen = false;
   }
 
   // Edit button - placeholder for waypoint editor (coming soon)
   document.getElementById("ctx-wire-edit").addEventListener("click", () => {
-    const target = wireCtxTarget;
+    const target = state.contextMenuTarget;
     hideWireContextMenu();
     if (!target) return;
     // TODO: open waypoint editor for target
@@ -469,7 +467,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
 
   // Delete button - remove the wire or bus
   document.getElementById("ctx-wire-delete").addEventListener("click", () => {
-    const target = wireCtxTarget;
+    const target = state.contextMenuTarget;
     hideWireContextMenu();
     if (!target) return;
 

@@ -8,6 +8,7 @@ const _state = {
   ghostWireCleanup: null,
   dragging: null,
   selectedNode: null,
+  contextMenuTarget: null, // { type: "wire"|"bus", wire?, bus?, wireInfo?, busInfo? }
   offsetX: 0,
   offsetY: 0,
   currentX: 0,
