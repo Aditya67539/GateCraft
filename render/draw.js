@@ -34,6 +34,7 @@ import {
   TOOLTIP_GAP,
   TOOLTIP_SLIDE_OFFSET,
   TOOLTIP_PORT_CLEARANCE,
+  HOVERED_WIRE_THICKNESS,
 } from "../constants.js";
 import { getActiveTheme } from "./theme.js";
 import { screenToWorld } from "../state.js";
@@ -619,13 +620,13 @@ export function drawGhostPath(start, waypoints, end, p) {
   p.strokeWeight(DEFAULT_STROKE_WEIGHT);
 }
 
-export function drawWire(connection, nodeMap, busMap, p) {
+export function drawWire(connection, nodeMap, busMap, p, hovered = false) {
   const theme = getActiveTheme();
   const stateKey = SIGNAL_KEYS[connection.wire.signal] || "x";
 
   const { start, waypoints, end } = connection.getPoints(nodeMap, busMap);
 
-  p.strokeWeight(WIRE_THICKNESS);
+  p.strokeWeight(hovered ? HOVERED_WIRE_THICKNESS : WIRE_THICKNESS);
   p.stroke(theme.wires[stateKey].hex);
   drawPolylineSegments(start, waypoints, end, p);
   p.stroke(0);

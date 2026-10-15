@@ -599,7 +599,7 @@ function isOnLineSegment(A, B, O, threshold) {
   return distSq <= Math.pow(threshold, 2);
 }
 
-function getWireAtPoint(mx, my, wires, nodeMap, busMap) {
+export function getWireAtPoint(mx, my, wires, nodeMap, busMap) {
   for (const conn of wires) {
     const { start, waypoints, end } = conn.getPoints(nodeMap, busMap);
     const points = [ start, ...waypoints, end ];
