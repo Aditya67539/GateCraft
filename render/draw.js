@@ -1,4 +1,40 @@
-import { FONT_SIZE, GRID_SIZE, PORT_RADIUS } from "../constants.js";
+import {
+  FONT_SIZE,
+  GRID_SIZE,
+  PORT_RADIUS,
+  DEFAULT_STROKE_WEIGHT,
+  WIRE_THICKNESS,
+  BUS_THICKNESS,
+  GATE_STROKE_WEIGHT,
+  PORT_STROKE_WEIGHT,
+  DISPLAY_BORDER_STROKE_WEIGHT,
+  TOOLTIP_STROKE_WEIGHT,
+  GATE_CORNER_RADIUS,
+  DISPLAY_CORNER_RADIUS,
+  WAYPOINT_RADIUS,
+  BUS_POINT_RADIUS,
+  BUS_BOUNDS_PADDING,
+  SEVEN_SEG_GRID_HEIGHT,
+  DISPLAY_SIGN_WIDTH_FACTOR,
+  DISPLAY_SIGN_GAP_FACTOR,
+  DISPLAY_BEVEL_FACTOR,
+  DISPLAY_LED_GAP_FACTOR,
+  PIN_THICK_AT_GATE,
+  PIN_THICK_AT_PORT,
+  PIN_TENSION_BASE_FACTOR,
+  PIN_TENSION_PORT_FACTOR,
+  GRID_MIN_SPACING,
+  GRID_DOT_SIZE,
+  TOOLTIP_FONT_SIZE,
+  TOOLTIP_PADDING_X,
+  TOOLTIP_PADDING_Y,
+  TOOLTIP_HEIGHT,
+  TOOLTIP_CORNER_RADIUS,
+  TOOLTIP_ARROW_SIZE,
+  TOOLTIP_GAP,
+  TOOLTIP_SLIDE_OFFSET,
+  TOOLTIP_PORT_CLEARANCE,
+} from "../constants.js";
 import { getActiveTheme } from "./theme.js";
 import { screenToWorld } from "../state.js";
 import { getOctilinearSnap } from "./wireGeometry.js";
@@ -30,7 +66,7 @@ export function drawGate(renderNode, p, status = null) {
 
     p.fill(0);
     p.stroke(0);
-    p.strokeWeight(1);
+    p.strokeWeight(DEFAULT_STROKE_WEIGHT);
     return;
   }
 
@@ -61,7 +97,7 @@ export function drawGate(renderNode, p, status = null) {
     ctx.save();
     ctx.fillStyle = grad;
     // Draw rounded rect via Canvas API (matches p5's rect with corner radius)
-    const r = 8;
+    const r = GATE_CORNER_RADIUS;
     const x = renderNode.x, y = renderNode.y;
     const w = renderNode.width, h = renderNode.height;
     ctx.beginPath();
@@ -75,19 +111,19 @@ export function drawGate(renderNode, p, status = null) {
     // Border stroke
     if (theme.gates.logic.stroke) {
       ctx.strokeStyle = theme.gates.logic.stroke;
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = GATE_STROKE_WEIGHT;
       ctx.stroke();
     }
     ctx.restore();
   } else {
     if (theme.gates.logic.stroke) {
       p.stroke(theme.gates.logic.stroke);
-      p.strokeWeight(1.5);
+      p.strokeWeight(GATE_STROKE_WEIGHT);
     } else {
       p.noStroke();
     }
     p.fill(color);
-    p.rect(renderNode.x, renderNode.y, renderNode.width, renderNode.height, 8);
+    p.rect(renderNode.x, renderNode.y, renderNode.width, renderNode.height, GATE_CORNER_RADIUS);
   }
 
   // Compute label color with good contrast against the gate fill
@@ -127,12 +163,12 @@ export function drawGate(renderNode, p, status = null) {
 
   p.fill(0);
   p.stroke(0);
-  p.strokeWeight(1);
+  p.strokeWeight(DEFAULT_STROKE_WEIGHT);
 }
 
 export function drawBus(busNode, p) {
   const theme = getActiveTheme();
-  p.strokeWeight(5);
+  p.strokeWeight(BUS_THICKNESS);
 
   const stateKey = SIGNAL_KEYS[busNode.bus.output] || "x";
   const color = theme.wires[stateKey].hex;
@@ -144,12 +180,12 @@ export function drawBus(busNode, p) {
   drawPolylineSegments(busNode.startPoint, busNode.waypoints, busNode.endPoint, p);
 
   p.stroke(0);
-  p.strokeWeight(1);
+  p.strokeWeight(DEFAULT_STROKE_WEIGHT);
 }
 
 export function drawGhostBus(busNode, p, status = null) {
   const theme = getActiveTheme();
-  p.strokeWeight(5);
+  p.strokeWeight(BUS_THICKNESS);
 
   const stateKey = SIGNAL_KEYS[busNode.bus.output] || "x";
   const color = theme.wires[stateKey].hex;
@@ -211,14 +247,14 @@ export function drawGhostBus(busNode, p, status = null) {
   }
 
   if (status) {
-    let bounds = busNode.startPointPlaced ? busNode.getEndPointBounds(8) : busNode.getStartPointBounds(8);
+    let bounds = busNode.startPointPlaced ? busNode.getEndPointBounds(BUS_BOUNDS_PADDING) : busNode.getStartPointBounds(BUS_BOUNDS_PADDING);
     drawOverlay(bounds, status, p);
   };
 }
 
 function drawPoint(x, y, color, p) {
   p.fill(color);
-  p.circle(x, y, 16);
+  p.circle(x, y, BUS_POINT_RADIUS);
 }
 
 function drawOverlay(bounds, status, p) {
@@ -233,9 +269,9 @@ function drawOverlay(bounds, status, p) {
 }
 
 function drawDisplayBorder(x, y, w, h, p) {
-  p.strokeWeight(4);
+  p.strokeWeight(DISPLAY_BORDER_STROKE_WEIGHT);
   p.stroke(62, 63, 73);
-  p.rect(x, y, w, h, 8);
+  p.rect(x, y, w, h, DISPLAY_CORNER_RADIUS);
   p.noStroke();
 }
 
@@ -272,8 +308,8 @@ function drawDisplay(renderNode, p) {
   const padding = GRID_SIZE;
   const thickness = GRID_SIZE;
 
-  const signWidth = thickness * 2;
-  const signGap = padding * 0.5;
+  const signWidth = thickness * DISPLAY_SIGN_WIDTH_FACTOR;
+  const signGap = padding * DISPLAY_SIGN_GAP_FACTOR;
 
   // 1. Define the core bounding box for the '8' figure
   const digitX = x + padding + signWidth + signGap;
@@ -283,17 +319,17 @@ function drawDisplay(renderNode, p) {
 
   // 2. Setup interlocking geometry variables
   const T = thickness;
-  const bevel = T / 2;
-  const gap = T * 0.125; // Creates the tiny separation between LEDs
+  const bevel = T * DISPLAY_BEVEL_FACTOR;
+  const gap = T * DISPLAY_LED_GAP_FACTOR; // Creates the tiny separation between LEDs
 
   const midY = digitY + digitH / 2;
   const hSegW = digitW - T;            // Width of horizontal segments
   const vSegH = digitH / 2 - T / 2;    // Height of vertical segments
 
-  p.strokeWeight(4);
+  p.strokeWeight(DISPLAY_BORDER_STROKE_WEIGHT);
   p.stroke(62, 63, 73);
   p.fill("#090808");
-  p.rect(x, y, width, height, 8);
+  p.rect(x, y, width, height, DISPLAY_CORNER_RADIUS);
   p.noStroke();
 
   let colors = gate.output.map(segment => {
@@ -351,12 +387,12 @@ function drawEmbeddedDisplay(displayGate, x, y, width, height, p) {
   const theme = getActiveTheme();
 
   // Scale padding and thickness proportionally to the display size
-  const scale = height / (11 * GRID_SIZE); // ratio vs standalone display
+  const scale = height / (SEVEN_SEG_GRID_HEIGHT * GRID_SIZE); // ratio vs standalone display
   const padding = GRID_SIZE * scale;
   const thickness = GRID_SIZE * scale;
 
-  const signWidth = thickness * 2;
-  const signGap = padding * 0.5;
+  const signWidth = thickness * DISPLAY_SIGN_WIDTH_FACTOR;
+  const signGap = padding * DISPLAY_SIGN_GAP_FACTOR;
 
   const digitX = x + padding + signWidth + signGap;
   const digitY = y + padding;
@@ -364,8 +400,8 @@ function drawEmbeddedDisplay(displayGate, x, y, width, height, p) {
   const digitH = height - padding * 2;
 
   const T = thickness;
-  const bevel = T / 2;
-  const gap = T * 0.125;
+  const bevel = T * DISPLAY_BEVEL_FACTOR;
+  const gap = T * DISPLAY_LED_GAP_FACTOR;
 
   const midY = digitY + digitH / 2;
   const hSegW = digitW - T;
@@ -373,7 +409,7 @@ function drawEmbeddedDisplay(displayGate, x, y, width, height, p) {
 
   // Background
   p.fill("#090808");
-  p.rect(x, y, width, height, 8);
+  p.rect(x, y, width, height, DISPLAY_CORNER_RADIUS);
 
   let colors = displayGate.output.map(segment => {
     if (segment === 0 || segment === 3) return "#2a1a1a";
@@ -414,17 +450,7 @@ function drawEmbeddedDisplay(displayGate, x, y, width, height, p) {
   drawHorizontalSegment(x + padding, midY - T / 2, signWidth, T, bevel, colors[7], p);
 }
 
-// Pin thickness at the gate end vs. the port end, scaled relative to the
-// port circle so it stays proportional across gate sizes / zoom levels.
-const PIN_THICK_AT_GATE = PORT_RADIUS * 0.5;
-const PIN_THICK_AT_PORT = PORT_RADIUS * 0.16;
 
-// The pin is drawn as three segments along its length: a short thick
-// stub at the gate, a tapered mid-section, then a thin stub at the port.
-// Fractions must sum to 1.
-const PIN_THICK_STUB_FRAC = 0.3;
-const PIN_TAPER_FRAC = 0.4;
-const PIN_THIN_STUB_FRAC = 0.3;
 
 /**
  * Lightens (percent > 0) or darkens (percent < 0) a hex color by mixing
@@ -494,8 +520,8 @@ function drawPin(p, x1, y1, x2, y2, baseColor) {
   // ASYMMETRIC TENSION: The secret to the flanged shape.
   // A small base tension forces a quick flare at the gate.
   // A large port tension forces the curve to stay thin/straight for most of its length.
-  const tensionBase = len * 0.15;
-  const tensionPort = len * 0.85;
+  const tensionBase = len * PIN_TENSION_BASE_FACTOR;
+  const tensionPort = len * PIN_TENSION_PORT_FACTOR;
 
   const topCp1 = { x: top0.x + ux * tensionBase, y: top0.y + uy * tensionBase };
   const topCp2 = { x: top3.x - ux * tensionPort, y: top3.y - uy * tensionPort };
@@ -542,7 +568,7 @@ function drawOutputPort(renderNode, theme, p) {
     drawPin(p, gateEdgeX, port.y, port.x, port.y, pinColor);
     p.fill(theme.accent.hex);
     p.stroke(theme.text.primary.hex);
-    p.strokeWeight(1.5);
+    p.strokeWeight(PORT_STROKE_WEIGHT);
     p.circle(port.x, port.y, PORT_RADIUS);
   }
 }
@@ -559,7 +585,7 @@ function drawInputPort(renderNode, theme, p) {
     drawPin(p, gateEdgeX, port.y, port.x, port.y, pinColor);
     p.fill(theme.accent.hex);
     p.stroke(theme.text.primary.hex);
-    p.strokeWeight(1.5);
+    p.strokeWeight(PORT_STROKE_WEIGHT);
     p.circle(port.x, port.y, PORT_RADIUS);
   }
 }
@@ -580,7 +606,7 @@ function drawPolylineSegments(start, waypoints, end, p) {
 export function drawGhostPath(start, waypoints, end, p) {
   const theme = getActiveTheme();
   p.stroke(theme.wires.ghost.hex);
-  p.strokeWeight(3);
+  p.strokeWeight(WIRE_THICKNESS);
 
   const applySnap = p.keyIsDown(p.SHIFT);
 
@@ -590,7 +616,7 @@ export function drawGhostPath(start, waypoints, end, p) {
   drawPolylineSegments(start, waypoints, target, p);
 
   p.stroke(0);
-  p.strokeWeight(1);
+  p.strokeWeight(DEFAULT_STROKE_WEIGHT);
 }
 
 export function drawWire(connection, nodeMap, busMap, p) {
@@ -599,11 +625,11 @@ export function drawWire(connection, nodeMap, busMap, p) {
 
   const { start, waypoints, end } = connection.getPoints(nodeMap, busMap);
 
-  p.strokeWeight(3);
+  p.strokeWeight(WIRE_THICKNESS);
   p.stroke(theme.wires[stateKey].hex);
   drawPolylineSegments(start, waypoints, end, p);
   p.stroke(0);
-  p.strokeWeight(1);
+  p.strokeWeight(DEFAULT_STROKE_WEIGHT);
 }
 
 export function drawWaypoint(wireInfo, waypoint, p) {
@@ -611,7 +637,7 @@ export function drawWaypoint(wireInfo, waypoint, p) {
   const stateKey = SIGNAL_KEYS[wireInfo.wire.signal] || "x";
   let color = theme.wires[stateKey].hex;
   p.fill(color);
-  p.circle(waypoint.x, waypoint.y, 12);
+  p.circle(waypoint.x, waypoint.y, WAYPOINT_RADIUS);
 }
 
 export function drawDynamicGrid(p, theme, cameraX, cameraY, zoom) {
@@ -620,8 +646,8 @@ export function drawDynamicGrid(p, theme, cameraX, cameraY, zoom) {
   let scaledSpacing = currentGridSize * zoom;
 
   // 2. LEVEL OF DETAIL
-  // If the user zooms out and the dots get closer than 15 pixels on screen, we double the grid size
-  while (scaledSpacing < 15) {
+  // If the user zooms out and the dots get closer than min spacing on screen, we double the grid size
+  while (scaledSpacing < GRID_MIN_SPACING) {
     currentGridSize *= 2;
     scaledSpacing = currentGridSize * zoom;
   }
@@ -636,9 +662,9 @@ export function drawDynamicGrid(p, theme, cameraX, cameraY, zoom) {
 
   p.stroke(theme.canvas.grid.hex);
 
-  // By drawing this BEFORE p.scale(), the dots stay exactly 3px wide
+  // By drawing this BEFORE p.scale(), the dots stay exactly fixed stroke weight
   // regardless of how far in or out the user zooms
-  p.strokeWeight(3);
+  p.strokeWeight(GRID_DOT_SIZE);
 
   for (let x = shiftX; x < p.width; x += scaledSpacing) {
     for (let y = shiftY; y < p.height; y += scaledSpacing) {
@@ -661,22 +687,22 @@ export function drawPortTooltip(label, port, opacity, portType, p) {
   const theme = getActiveTheme();
 
   // Measure text
-  p.textSize(12);
+  p.textSize(TOOLTIP_FONT_SIZE);
   p.textAlign(p.CENTER, p.CENTER);
   const textW = p.textWidth(label);
 
   // Tooltip geometry
-  const padX = 12;
-  const padY = 7;
+  const padX = TOOLTIP_PADDING_X;
+  const padY = TOOLTIP_PADDING_Y;
   const tooltipW = textW + padX * 2;
-  const tooltipH = 26;
-  const cornerR = 7;
-  const arrowSize = 5;
-  const gap = 10; // distance above the port
+  const tooltipH = TOOLTIP_HEIGHT;
+  const cornerR = TOOLTIP_CORNER_RADIUS;
+  const arrowSize = TOOLTIP_ARROW_SIZE;
+  const gap = TOOLTIP_GAP; // distance above the port
 
-  // Animate: slide horizontally from the port (6px closer) + fade in
-  const slideOffset = (1 - opacity) * 6;
-  const portGap = PORT_RADIUS / 2 + arrowSize + 2; // clearance from port circle edge
+  // Animate: slide horizontally from the port (closer) + fade in
+  const slideOffset = (1 - opacity) * TOOLTIP_SLIDE_OFFSET;
+  const portGap = PORT_RADIUS / 2 + arrowSize + TOOLTIP_PORT_CLEARANCE; // clearance from port circle edge
   let tooltipX;
   if (portType === "input") {
     tooltipX = port.x - tooltipW - portGap - arrowSize + slideOffset;
@@ -697,7 +723,7 @@ export function drawPortTooltip(label, port, opacity, portType, p) {
   const borderColor = p.color(theme.accent.hex);
   borderColor.setAlpha(easedAlpha * 180);
   p.stroke(borderColor);
-  p.strokeWeight(1.2);
+  p.strokeWeight(TOOLTIP_STROKE_WEIGHT);
 
   p.rect(tooltipX, tooltipY, tooltipW, tooltipH, cornerR);
 
@@ -717,7 +743,7 @@ export function drawPortTooltip(label, port, opacity, portType, p) {
     );
 
     p.stroke(borderColor);
-    p.strokeWeight(1.2);
+    p.strokeWeight(TOOLTIP_STROKE_WEIGHT);
     p.line(baseX, arrowY - arrowSize, baseX - arrowSize, arrowY);
     p.line(baseX, arrowY + arrowSize, baseX - arrowSize, arrowY);
 
@@ -731,7 +757,7 @@ export function drawPortTooltip(label, port, opacity, portType, p) {
     );
 
     p.stroke(borderColor);
-    p.strokeWeight(1.2);
+    p.strokeWeight(TOOLTIP_STROKE_WEIGHT);
     p.line(baseX, arrowY - arrowSize, baseX + arrowSize, arrowY);
     p.line(baseX, arrowY + arrowSize, baseX + arrowSize, arrowY);
   }
@@ -741,7 +767,7 @@ export function drawPortTooltip(label, port, opacity, portType, p) {
   textColor.setAlpha(easedAlpha * 255);
   p.noStroke();
   p.fill(textColor);
-  p.textSize(12);
+  p.textSize(TOOLTIP_FONT_SIZE);
   p.textStyle(p.BOLD);
   p.textAlign(p.CENTER, p.CENTER);
   p.text(label, tooltipX + tooltipW / 2, tooltipY + tooltipH / 2);
@@ -753,7 +779,7 @@ export function drawPortTooltip(label, port, opacity, portType, p) {
   p.textSize(FONT_SIZE);
   p.fill(0);
   p.stroke(0);
-  p.strokeWeight(1);
+  p.strokeWeight(DEFAULT_STROKE_WEIGHT);
 }
 
 export function setFont(theme, p) {
