@@ -305,7 +305,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
           state.dragging = null;
         } else {
           const wireInfo = getWireAtPoint(world.x, world.y, wires, nodeMap, busMap);
-          const busInfo = getBusAtPoint(world.x, world.y, busNodes, nodeMap, busMap);
+          const busInfo = getBusAtPoint(world.x, world.y, busNodes);
           
           if (wireInfo) {
             const removeWireCommand = new RemoveWireCommand(circuit, wires, wireInfo.conn);
@@ -343,7 +343,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
         return;
       }
 
-      const busInfo = getBusAtPoint(world.x, world.y, busNodes, nodeMap, busMap);
+      const busInfo = getBusAtPoint(world.x, world.y, busNodes);
       if (busInfo) {
         showWireContextMenu(clientX, clientY, { type: "bus", busNode: busInfo });
         return;
@@ -613,7 +613,7 @@ export function getWireAtPoint(mx, my, wires, nodeMap, busMap) {
   return null;
 }
 
-function getBusAtPoint(mx, my, busNodes, nodeMap, busMap) {
+export function getBusAtPoint(mx, my, busNodes) {
   for (const busNode of busNodes) {
     const { start, waypoints, end } = busNode.getPoints();
     const points = [ start, ...waypoints, end ];
