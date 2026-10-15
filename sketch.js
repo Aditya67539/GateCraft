@@ -153,19 +153,18 @@ const sketch = (p) => {
     const hoveredWire = getWireAtPoint(mouse.x, mouse.y, wires, nodeMap, busMap);
 
     for (let i = 0; i < wires.length; i++) {
-      if (hoveredWire?.conn.wire.id === wires[i].wire.id) {
-        drawWire(wires[i], nodeMap, busMap, p, true);
-      } else {
-        drawWire(wires[i], nodeMap, busMap, p);
-      }
-      if (state.mode === "edit") {
-        for (const waypoint of wires[i].waypoints) {
-          if (isNearWaypoint(mouse.x, mouse.y, waypoint)) {
-            drawWaypoint(wires[i], waypoint, p);
-          }
+      if (state.contextMenuTarget?.type === "wire") {
+        if (state.contextMenuTarget.conn.wire.id === wires[i].wire.id) {
+          drawWire(wires[i], nodeMap, busMap, p, true);
+          continue;
         }
+      } else if (hoveredWire?.conn.wire.id === wires[i].wire.id) {
+        drawWire(wires[i], nodeMap, busMap, p, true);
+        continue;
       }
+      drawWire(wires[i], nodeMap, busMap, p);
     }
+    
     if (state.ghostNode) {
       let status = wouldOverlap(state.ghostNode, renderNodes, busNodes, null) ? "invalid" : "valid";
       drawGate(state.ghostNode, p, status);
