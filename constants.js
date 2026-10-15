@@ -31,6 +31,7 @@ export const DEFAULT_STROKE_WEIGHT = 1;
 export const WIRE_THICKNESS = 4;
 export const HOVERED_WIRE_THICKNESS = 6;
 export const BUS_THICKNESS = 5;
+export const HOVERED_BUS_THICKNESS = 7;
 export const GATE_STROKE_WEIGHT = 1.5;
 export const PORT_STROKE_WEIGHT = 1.5;
 export const DISPLAY_BORDER_STROKE_WEIGHT = 4;

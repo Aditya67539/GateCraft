@@ -1,7 +1,7 @@
 import p5 from "p5";
 import { state, screenToWorld } from "./state.js";
 import { drawGate, drawWaypoint, drawWire, drawPortTooltip, setFont, drawDynamicGrid, drawGhostPath, drawBus, drawGhostBus } from "./render/draw.js";
-import { registerMouseHandlers, isNearWaypoint, isNearPort, busMap, nodeMap, getWireAtPoint } from "./input/mouseHandlers.js";
+import { registerMouseHandlers, isNearWaypoint, isNearPort, busMap, nodeMap, getWireAtPoint, getBusAtPoint } from "./input/mouseHandlers.js";
 import { initToolbar } from "./ui/toolbar.js";
 import { getActiveTheme, applyTheme } from "./render/theme.js";
 import { CircuitBuilder } from "./logic/CircuitBuilder.js";
@@ -77,7 +77,18 @@ const sketch = (p) => {
       drawGate(renderNodes[i], p, nodeStatus);
     }
 
+    const hoveredBus = getBusAtPoint(mouse.x, mouse.y, busNodes);
+
     for (let i = 0; i < busNodes.length; i++) {
+      if (state.contextMenuTarget?.type === "bus") {
+        if (state.contextMenuTarget.busNode.bus.id === busNodes[i].bus.id) {
+          drawBus(busNodes[i], p, true);
+          continue;
+        }
+      } else if (hoveredBus?.bus.id === busNodes[i].bus.id) {
+        drawBus(busNodes[i], p, true);
+        continue;
+      }
       drawBus(busNodes[i], p);
     }
 

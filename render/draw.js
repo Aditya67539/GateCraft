@@ -35,6 +35,7 @@ import {
   TOOLTIP_SLIDE_OFFSET,
   TOOLTIP_PORT_CLEARANCE,
   HOVERED_WIRE_THICKNESS,
+  HOVERED_BUS_THICKNESS,
 } from "../constants.js";
 import { getActiveTheme } from "./theme.js";
 import { screenToWorld } from "../state.js";
@@ -167,9 +168,9 @@ export function drawGate(renderNode, p, status = null) {
   p.strokeWeight(DEFAULT_STROKE_WEIGHT);
 }
 
-export function drawBus(busNode, p) {
+export function drawBus(busNode, p, hovered = false) {
   const theme = getActiveTheme();
-  p.strokeWeight(BUS_THICKNESS);
+  p.strokeWeight(hovered ? HOVERED_BUS_THICKNESS : BUS_THICKNESS);
 
   const stateKey = SIGNAL_KEYS[busNode.bus.output] || "x";
   const color = theme.wires[stateKey].hex;
