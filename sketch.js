@@ -169,7 +169,13 @@ const sketch = (p) => {
           drawWire(wires[i], nodeMap, busMap, p, true);
           continue;
         }
-      } else if (hoveredWire?.conn.wire.id === wires[i].wire.id) {
+      } else if (
+        !state.drawingWire &&
+        !state.ghostNode &&
+        !state.ghostBus &&
+        !state.dragging &&
+        hoveredWire?.conn.wire.id === wires[i].wire.id
+      ) {
         drawWire(wires[i], nodeMap, busMap, p, true);
         continue;
       }
