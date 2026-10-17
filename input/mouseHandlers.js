@@ -148,26 +148,70 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
                 performCommand(busConnectionCommand);
               }
             } else if (state.drawingWire.source.conn instanceof BusConnectionView) {
-              if (connInfo?.destinationType === "gate") {
-                const connection = connInfo.destination;
+              if (state.drawingWire.source.conn.direction === "in") {
+                if (connInfo?.destinationType === "gate") {
+                  const connection = connInfo.destination;
 
-                const toGate = connection.toNode.gate;
-                const fromBus = state.drawingWire.source.conn.wire.from;
-                const inputIndex = connection.index;
+                  const outputIndex = state.drawingWire.source.conn.wire.fromOutputIndex;
+                  const inputIndex = connection.index;
+                  const fromGate = state.drawingWire.source.conn.wire.from;
+                  const toGate = connection.toNode.gate;
 
-                const busConnectionCommand = new BusConnectionCommand(
-                  circuit,
-                  toGate,
-                  fromBus,
-                  state.ghostWire,
-                  wires,
-                  "out",
-                  inputIndex,
-                  state.drawingWire.source.tapRef,
-                  true,
-                  state.drawingWire.source,
-                );
-                performCommand(busConnectionCommand);
+                  const connectGateCommand = new GateConnectionCommand(
+                    circuit,
+                    fromGate,
+                    toGate,
+                    inputIndex,
+                    outputIndex,
+                    state.ghostWire,
+                    wires,
+                    true,
+                    state.drawingWire.source,
+                  );
+                  performCommand(connectGateCommand);
+                } else if (connInfo?.destinationType === "bus") {
+                  const connection = connInfo.destination;
+
+                  const outputIndex = state.drawingWire.source.conn.wire.fromOutputIndex;
+                  const fromGate = state.drawingWire.source.conn.wire.from;
+                  const bus = connection.busNode.bus;
+
+                  const busConnectionCommand = new BusConnectionCommand(
+                    circuit,
+                    fromGate,
+                    bus,
+                    state.ghostWire,
+                    wires,
+                    "in",
+                    outputIndex,
+                    connInfo.destination.tapRef,
+                    true,
+                    state.drawingWire.source,
+                  );
+                  performCommand(busConnectionCommand);
+                }
+              } else if (state.drawingWire.source.conn.direction === "out") {
+                if (connInfo?.destinationType === "gate") {
+                  const connection = connInfo.destination;
+
+                  const toGate = connection.toNode.gate;
+                  const fromBus = state.drawingWire.source.conn.wire.from;
+                  const inputIndex = connection.index;
+
+                  const busConnectionCommand = new BusConnectionCommand(
+                    circuit,
+                    toGate,
+                    fromBus,
+                    state.ghostWire,
+                    wires,
+                    "out",
+                    inputIndex,
+                    state.drawingWire.source.tapRef,
+                    true,
+                    state.drawingWire.source,
+                  );
+                  performCommand(busConnectionCommand);
+                }
               }
             }
           }
