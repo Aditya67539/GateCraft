@@ -670,6 +670,34 @@ export function getBusAtPoint(mx, my, busNodes) {
   return null;
 }
 
+export function canWireConnectToBus(drawingWire, bus, wires) {
+  if (!drawingWire) return true;
+  if (drawingWire.originType === "bus") return false;
+  if (
+    drawingWire.originType === "wire" &&
+    drawingWire.source.conn instanceof BusConnectionView &&
+    drawingWire.source.conn.direction === "out"
+  ) return false;
+
+  const fromGateId = drawingWire.originType === "gate"
+    ? drawingWire.source.fromNode.gate.id
+    : drawingWire.source.conn.wire.from.id;
+
+  const fromOutputIndex = drawingWire.originType === "gate"
+    ? drawingWire.source.fromOutputIndex
+    : drawingWire.source.conn.wire.fromOutputIndex;
+
+  const alreadyConnected = wires.some(
+    n => (
+      n.wire.to.type === "bus" &&
+      n.wire.to.id === bus?.id &&
+      n.wire.from.id === fromGateId &&
+      n.wire.fromOutputIndex === fromOutputIndex
+    )
+  );
+  return !alreadyConnected;
+}
+
 function findNearWaypoint(mx, my, wires) {
   for (let i = 0; i < wires.length; i++) {
     const waypointCount = wires[i].waypoints.length;
