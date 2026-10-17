@@ -78,6 +78,7 @@ const sketch = (p) => {
     }
 
     const hoveredBus = getBusAtPoint(mouse.x, mouse.y, busNodes);
+    const isIdle = !state.ghostNode && !state.ghostBus && !state.dragging;
 
     for (let i = 0; i < busNodes.length; i++) {
       if (state.contextMenuTarget?.type === "bus") {
@@ -171,9 +172,7 @@ const sketch = (p) => {
         }
       } else if (
         !state.drawingWire &&
-        !state.ghostNode &&
-        !state.ghostBus &&
-        !state.dragging &&
+        isIdle &&
         hoveredWire?.conn.wire.id === wires[i].wire.id
       ) {
         drawWire(wires[i], nodeMap, busMap, p, true);
