@@ -40,7 +40,8 @@ export const TOOLTIP_STROKE_WEIGHT = 1.2;
 // Radii and dimensions
 export const GATE_CORNER_RADIUS = 8;
 export const DISPLAY_CORNER_RADIUS = 8;
-export const WAYPOINT_RADIUS = 12;
+export const WAYPOINT_RADIUS = 16;
+export const HOVERED_WAYPOINT_RADIUS = 20;
 export const BUS_POINT_RADIUS = 16;
 export const BUS_BOUNDS_PADDING = 8;
 export const SEVEN_SEG_GRID_HEIGHT = 11;
