@@ -82,7 +82,7 @@ const sketch = (p) => {
 
     for (let i = 0; i < busNodes.length; i++) {
       if (state.contextMenuTarget?.type === "bus") {
-        if (state.contextMenuTarget.busNode.bus.id === busNodes[i].bus.id) {
+        if (state.contextMenuTarget.source.bus.id === busNodes[i].bus.id) {
           drawBus(busNodes[i], p, true);
           continue;
         }
@@ -170,7 +170,7 @@ const sketch = (p) => {
 
     for (let i = 0; i < wires.length; i++) {
       if (state.contextMenuTarget?.type === "wire") {
-        if (state.contextMenuTarget.conn.wire.id === wires[i].wire.id) {
+        if (state.contextMenuTarget.source.wire.id === wires[i].wire.id) {
           drawWire(wires[i], nodeMap, busMap, p, true);
           continue;
         }

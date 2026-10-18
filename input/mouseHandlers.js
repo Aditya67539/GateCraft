@@ -383,13 +383,13 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
       // 2. Check for wires and buses
       const wireInfo = getWireAtPoint(world.x, world.y, wires, nodeMap, busMap);
       if (wireInfo) {
-        showWireContextMenu(clientX, clientY, { type: "wire", conn: wireInfo.conn });
+        showWireContextMenu(clientX, clientY, { type: "wire", source: wireInfo.conn });
         return;
       }
 
       const busInfo = getBusAtPoint(world.x, world.y, busNodes);
       if (busInfo) {
-        showWireContextMenu(clientX, clientY, { type: "bus", busNode: busInfo });
+        showWireContextMenu(clientX, clientY, { type: "bus", source: busInfo });
         return;
       }
     }
