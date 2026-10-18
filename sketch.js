@@ -202,7 +202,17 @@ const sketch = (p) => {
       }
       drawWire(wires[i], nodeMap, busMap, p);
     }
-    
+
+    if (state.wireEditing) {
+      const signal = state.editorTarget.type === "wire"
+        ? state.editorTarget.source.wire.signal
+        : state.editorTarget.source.bus.output;
+      for (const waypoint of state.editorTarget.source.waypoints) {
+        const hovered = isNearWaypoint(mouse.x, mouse.y, waypoint) 
+        drawWaypoint(signal, waypoint, p, hovered);
+      }
+    }
+
     if (state.ghostNode) {
       let status = wouldOverlap(state.ghostNode, renderNodes, busNodes, null) ? "invalid" : "valid";
       drawGate(state.ghostNode, p, status);

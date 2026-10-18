@@ -36,6 +36,7 @@ import {
   TOOLTIP_PORT_CLEARANCE,
   HOVERED_WIRE_THICKNESS,
   HOVERED_BUS_THICKNESS,
+  HOVERED_WAYPOINT_RADIUS,
 } from "../constants.js";
 import { getActiveTheme } from "./theme.js";
 import { screenToWorld } from "../state.js";
@@ -634,12 +635,12 @@ export function drawWire(connection, nodeMap, busMap, p, hovered = false) {
   p.strokeWeight(DEFAULT_STROKE_WEIGHT);
 }
 
-export function drawWaypoint(wireInfo, waypoint, p) {
+export function drawWaypoint(signal, waypoint, p, hovered = false) {
   const theme = getActiveTheme();
-  const stateKey = SIGNAL_KEYS[wireInfo.wire.signal] || "x";
+  const stateKey = SIGNAL_KEYS[signal] || "x";
   let color = theme.wires[stateKey].hex;
   p.fill(color);
-  p.circle(waypoint.x, waypoint.y, WAYPOINT_RADIUS);
+  p.circle(waypoint.x, waypoint.y, hovered ? HOVERED_WAYPOINT_RADIUS : WAYPOINT_RADIUS);
 }
 
 export function drawDynamicGrid(p, theme, cameraX, cameraY, zoom) {
