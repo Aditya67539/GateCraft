@@ -81,6 +81,11 @@ const sketch = (p) => {
     const isIdle = !state.ghostNode && !state.ghostBus && !state.dragging;
 
     for (let i = 0; i < busNodes.length; i++) {
+      const isHovered = hoveredBus?.bus.id === busNodes[i].bus.id;
+      const isEditorTarget = 
+        state.editorTarget?.type === "bus" &&
+        state.editorTarget.source.bus.id === busNodes[i].bus.id;
+
       if (state.contextMenuTarget?.type === "bus") {
         if (state.contextMenuTarget.source.bus.id === busNodes[i].bus.id) {
           drawBus(busNodes[i], p, true);
@@ -88,7 +93,11 @@ const sketch = (p) => {
         }
       } else if (
         isIdle &&
-        hoveredBus?.bus.id === busNodes[i].bus.id &&
+        (
+          state.wireEditing ?
+          isEditorTarget :
+          isHovered
+        ) &&
         canWireConnectToBus(state.drawingWire, hoveredBus?.bus, wires)
       ) {
         drawBus(busNodes[i], p, true);
@@ -169,6 +178,11 @@ const sketch = (p) => {
     const hoveredWire = getWireAtPoint(mouse.x, mouse.y, wires, nodeMap, busMap);
 
     for (let i = 0; i < wires.length; i++) {
+      const isHovered = hoveredWire?.conn.wire.id === wires[i].wire.id;
+      const isEditorTarget = 
+        state.editorTarget?.type === "wire" &&
+        state.editorTarget.source.wire.id === wires[i].wire.id;
+
       if (state.contextMenuTarget?.type === "wire") {
         if (state.contextMenuTarget.source.wire.id === wires[i].wire.id) {
           drawWire(wires[i], nodeMap, busMap, p, true);
@@ -177,7 +191,11 @@ const sketch = (p) => {
       } else if (
         !state.drawingWire &&
         isIdle &&
-        hoveredWire?.conn.wire.id === wires[i].wire.id
+        (
+          state.wireEditing ?
+          isEditorTarget :
+          isHovered
+        )
       ) {
         drawWire(wires[i], nodeMap, busMap, p, true);
         continue;
