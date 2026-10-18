@@ -9,6 +9,7 @@ const _state = {
   dragging: null,
   selectedNode: null,
   contextMenuTarget: null, // { type: "wire"|"bus", wire?, bus?, wireInfo?, busInfo? }
+  editorTarget: null,
   offsetX: 0,
   offsetY: 0,
   currentX: 0,

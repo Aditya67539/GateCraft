@@ -503,9 +503,9 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
 
   // Edit button - placeholder for waypoint editor (coming soon)
   document.getElementById("ctx-wire-edit").addEventListener("click", () => {
-    const target = state.contextMenuTarget;
+    state.editorTarget = structuredClone(state.contextMenuTarget);
     hideWireContextMenu();
-    if (!target) return;
+    if (!state.editorTarget) return;
     // TODO: open waypoint editor for target
   });
 
