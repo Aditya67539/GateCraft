@@ -19,6 +19,8 @@ const _state = {
   changingWayPoint: null,
   waypointSnapshot: null,
   labelEditing: false,
+  wireEditing: false,
+  wireEditorCleanup: null,
   isAnyModalOpen: false,
   cameraX: 0,
   cameraY: 0,
