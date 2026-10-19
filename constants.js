@@ -28,6 +28,7 @@ export const PORT_RADIUS = 11;
 
 // Stroke weights and thicknesses
 export const DEFAULT_STROKE_WEIGHT = 1;
+export const WAYPOINT_STROKE_WEIGHT = 2;
 export const WIRE_THICKNESS = 5;
 export const HOVERED_WIRE_THICKNESS = 7;
 export const BUS_THICKNESS = 5;

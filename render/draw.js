@@ -37,6 +37,7 @@ import {
   HOVERED_WIRE_THICKNESS,
   HOVERED_BUS_THICKNESS,
   HOVERED_WAYPOINT_RADIUS,
+  WAYPOINT_STROKE_WEIGHT,
 } from "../constants.js";
 import { getActiveTheme } from "./theme.js";
 import { screenToWorld } from "../state.js";
@@ -640,7 +641,11 @@ export function drawWaypoint(signal, waypoint, p, hovered = false) {
   const stateKey = SIGNAL_KEYS[signal] || "x";
   let color = theme.wires[stateKey].hex;
   p.fill(color);
+  p.strokeWeight(WAYPOINT_STROKE_WEIGHT);
+  p.stroke(theme.text.primary.hex);
   p.circle(waypoint.x, waypoint.y, hovered ? HOVERED_WAYPOINT_RADIUS : WAYPOINT_RADIUS);
+  p.stroke(0);
+  p.strokeWeight(DEFAULT_STROKE_WEIGHT);
 }
 
 export function drawDynamicGrid(p, theme, cameraX, cameraY, zoom) {
