@@ -16,7 +16,7 @@ const _state = {
   currentY: 0,
   changingPos: false,
   drawingWire: null,
-  changingWayPoint: null,
+  changingWaypoint: null,
   waypointSnapshot: null,
   labelEditing: false,
   wireEditing: false,
