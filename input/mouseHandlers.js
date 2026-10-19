@@ -46,10 +46,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
     if (state.justPlacedFromToolbar) {
       state.justPlacedFromToolbar = false;
     }
-    if (state.wireEditing) {
-      cleanupWireEditor();
-      return;
-    }
+
     const world = screenToWorld(p.mouseX, p.mouseY);
     state.dragging = renderNodes.find(n => n.containsPoint(world.x, world.y));
     bringToFront(renderNodes, state.dragging);
@@ -229,8 +226,12 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
           state.drawingWire = null;
           cleanupGhostWire();
         } else {
-          state.drawingWire = findWireOrigin(world.x, world.y, renderNodes, busNodes, wires, nodeMap, busMap);
-          state.changingWaypoint = findNearWaypoint(world.x, world.y, wires);
+          if (state.wireEditing) {
+            state.changingWaypoint = findNearWaypoint(world.x, world.y, wires);
+            if (!state.changingWaypoint) {
+              cleanupWireEditor();
+            }
+          } else state.drawingWire = findWireOrigin(world.x, world.y, renderNodes, busNodes, wires, nodeMap, busMap);
 
           // ── Update persistent selection ──────────────────────────
           if (state.dragging) {
