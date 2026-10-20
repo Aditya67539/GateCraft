@@ -26,9 +26,7 @@ function cleanupGhostBus() {
 }
 
 function cleanupWireEditor() {
-  if (state.wireEditorCleanup) {
-    state.wireEditorCleanup();
-  }
+  state.wireEditing = false;
   state.editorTarget = null;
 }
 
@@ -519,7 +517,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
     state.editorTarget = structuredClone(state.contextMenuTarget);
     hideWireContextMenu();
     if (!state.editorTarget) return;
-    state.wireEditorCleanup = openWireEditor(state.editorTarget, p);
+    state.wireEditing = true;
   });
 
   // Delete button - remove the wire or bus
@@ -813,16 +811,4 @@ function openLabelEditor(renderNode, p) {
   }
   input.addEventListener("keydown", onKeyDown);
   input.addEventListener("blur", onBlur);
-}
-
-
-function openWireEditor(wire, p) {
-  // TODO: What to do if it is zoomed out too far
-  state.wireEditing = true;
-
-  function cleanup() {
-    state.wireEditing = false;
-  }
-
-  return cleanup;
 }
