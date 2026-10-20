@@ -211,9 +211,11 @@ const sketch = (p) => {
         ? wires.find(n => n.wire.id === state.editorTarget.source.wire.id)
         : busNodes.find(n => n.bus.id === state.editorTarget.source.bus.id);
 
-      for (const waypoint of target.waypoints) {
-        const hovered = isNearWaypoint(mouse.x, mouse.y, waypoint);
-        drawWaypoint(signal, waypoint, p, hovered);
+      if (target) {
+        for (const waypoint of target.waypoints) {
+          const hovered = isNearWaypoint(mouse.x, mouse.y, waypoint);
+          drawWaypoint(signal, waypoint, p, hovered);
+        }
       }
     }
 
