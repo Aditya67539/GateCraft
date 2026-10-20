@@ -1,14 +1,14 @@
 import p5 from "p5";
 import { state, screenToWorld } from "./state.js";
 import { drawGate, drawWaypoint, drawWire, drawPortTooltip, setFont, drawDynamicGrid, drawGhostPath, drawBus, drawGhostBus } from "./render/draw.js";
-import { registerMouseHandlers, isNearWaypoint, isNearPort, busMap, nodeMap } from "./input/mouseHandlers.js";
+import { registerMouseHandlers, isNearWaypoint, isNearPort, busMap, nodeMap, getWireAtPoint, getBusAtPoint, canWireConnectToBus } from "./input/mouseHandlers.js";
 import { initToolbar } from "./ui/toolbar.js";
 import { getActiveTheme, applyTheme } from "./render/theme.js";
 import { CircuitBuilder } from "./logic/CircuitBuilder.js";
 import { snapPointToGrid, wouldBusOverlap, wouldOverlap } from "./render/RenderPoint.js";
 import { registerKeyboardHandlers } from "./input/keyboardHandlers.js";
 import { drawMinimap } from "./render/minimap.js";
-import { getOctilinearSnap } from "./render/wireGeometry.js";
+import { getOctilinearSnap, getTapPointFromElement } from "./render/wireGeometry.js";
 
 applyTheme(getActiveTheme());
 
@@ -39,6 +39,11 @@ const sketch = (p) => {
     const cnv = p.createCanvas(WIDTH, HEIGHT);
     cnv.parent(canvasHost);
     const toolbarActions = initToolbar(p, circuit, renderNodes, wires, busNodes);
+
+    canvasHost.addEventListener("contextmenu", (e) => { 
+      e.preventDefault();
+      e.stopPropagation();
+    });
 
     registerMouseHandlers(p, circuit, renderNodes, wires, busNodes);
     registerKeyboardHandlers(p, circuit, renderNodes, wires, toolbarActions);
@@ -72,7 +77,32 @@ const sketch = (p) => {
       drawGate(renderNodes[i], p, nodeStatus);
     }
 
+    const hoveredBus = getBusAtPoint(mouse.x, mouse.y, busNodes);
+    const isIdle = !state.ghostNode && !state.ghostBus && !state.dragging;
+
     for (let i = 0; i < busNodes.length; i++) {
+      const isHovered = hoveredBus?.bus.id === busNodes[i].bus.id;
+      const isEditorTarget = 
+        state.editorTarget?.type === "bus" &&
+        state.editorTarget.source.bus.id === busNodes[i].bus.id;
+
+      if (state.contextMenuTarget?.type === "bus") {
+        if (state.contextMenuTarget.source.bus.id === busNodes[i].bus.id) {
+          drawBus(busNodes[i], p, true);
+          continue;
+        }
+      } else if (
+        isIdle &&
+        (
+          state.wireEditing ?
+          isEditorTarget :
+          isHovered
+        ) &&
+        canWireConnectToBus(state.drawingWire, hoveredBus?.bus, wires)
+      ) {
+        drawBus(busNodes[i], p, true);
+        continue;
+      }
       drawBus(busNodes[i], p);
     }
 
@@ -145,16 +175,50 @@ const sketch = (p) => {
       }
     }
 
+    const hoveredWire = getWireAtPoint(mouse.x, mouse.y, wires, nodeMap, busMap);
+
     for (let i = 0; i < wires.length; i++) {
+      const isHovered = hoveredWire?.conn.wire.id === wires[i].wire.id;
+      const isEditorTarget = 
+        state.editorTarget?.type === "wire" &&
+        state.editorTarget.source.wire.id === wires[i].wire.id;
+
+      if (state.contextMenuTarget?.type === "wire") {
+        if (state.contextMenuTarget.source.wire.id === wires[i].wire.id) {
+          drawWire(wires[i], nodeMap, busMap, p, true);
+          continue;
+        }
+      } else if (
+        !state.drawingWire &&
+        isIdle &&
+        (
+          state.wireEditing ?
+          isEditorTarget :
+          isHovered
+        )
+      ) {
+        drawWire(wires[i], nodeMap, busMap, p, true);
+        continue;
+      }
       drawWire(wires[i], nodeMap, busMap, p);
-      if (state.mode === "edit") {
-        for (const waypoint of wires[i].waypoints) {
-          if (isNearWaypoint(mouse.x, mouse.y, waypoint)) {
-            drawWaypoint(wires[i], waypoint, p);
-          }
+    }
+
+    if (state.wireEditing) {
+      const signal = state.editorTarget.type === "wire"
+        ? state.editorTarget.source.wire.signal
+        : state.editorTarget.source.bus.output;
+      const target = state.editorTarget.type === "wire"
+        ? wires.find(n => n.wire.id === state.editorTarget.source.wire.id)
+        : busNodes.find(n => n.bus.id === state.editorTarget.source.bus.id);
+
+      if (target) {
+        for (const waypoint of target.waypoints) {
+          const hovered = isNearWaypoint(mouse.x, mouse.y, waypoint);
+          drawWaypoint(signal, waypoint, p, hovered);
         }
       }
     }
+
     if (state.ghostNode) {
       let status = wouldOverlap(state.ghostNode, renderNodes, busNodes, null) ? "invalid" : "valid";
       drawGate(state.ghostNode, p, status);
@@ -190,30 +254,23 @@ const sketch = (p) => {
       }
     }
     if (state.drawingWire) {
-      const connection = state.drawingWire.connection;
+      const connection = state.drawingWire.source;
+      let startPoint;
       if (state.drawingWire.originType === "gate") {
 
         const outputIndex = connection.fromOutputIndex;
         const totalOutputs = connection.fromNode.gate.outputCount;
 
-        const startPort = outputIndex !== null
+        startPoint = outputIndex !== null
           ? connection.fromNode.getOutputPortByIndex(outputIndex, totalOutputs)
-          : connection.fromNode.getOutputPort();
-        
-        if (state.ghostWire?.length) {
-          drawGhostPath(startPort, state.ghostWire, mouse, p);
-        } else {
-          drawGhostPath(startPort, null, mouse, p);
-        }
+          : connection.fromNode.getOutputPort();        
       } else if (state.drawingWire.originType === "bus") {
-        const startPoint = connection.busNode.getTapPoint(connection.tapRef);
-        
-        if (state.ghostWire?.length) {
-          drawGhostPath(startPoint, state.ghostWire, mouse, p);
-        } else {
-          drawGhostPath(startPoint, null, mouse, p);
-        }
+        startPoint = getTapPointFromElement(connection.busNode, connection.tapRef, nodeMap, busMap);
+      } else if (state.drawingWire.originType === "wire") {
+        const conn = connection.conn;
+        startPoint = getTapPointFromElement(conn, connection.tapRef, nodeMap, busMap);
       }
+      drawGhostPath(startPoint, state.ghostWire, mouse, p);
     }
 
     // ── Draw tooltip last so it renders on top of everything ──

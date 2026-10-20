@@ -1,6 +1,6 @@
 import { CircuitBuilder } from "./logic/CircuitBuilder.js";
 import { RenderPoint } from "./render/RenderPoint.js";
-import { BusConnection, WireConnection } from "./render/wireGeometry.js";
+import { BusConnectionView, GateConnectionView } from "./render/wireGeometry.js";
 
 const STORAGE_KEY = "compositeGates";
 const FOLDERS_KEY = "compositeGateFolders";
@@ -89,9 +89,9 @@ function getCircuitData(renderNodes, wireInfos, busNodes) {
       toInputIndex: w.wire.toInputIndex,
       fromOutputIndex: w.wire.fromOutputIndex,
     }
-    if (w instanceof WireConnection) {
+    if (w instanceof GateConnectionView) {
       data.isBusConnection = false;
-    } else if (w instanceof BusConnection) {
+    } else if (w instanceof BusConnectionView) {
       data.isBusConnection = true;
       data.direction = w.direction;
     }
@@ -151,11 +151,11 @@ function getRenderData(renderNodes, wireInfos, busNodes) {
       fromId: w.wire.from.id,
       toId: w.wire.to.id,
       waypoints: w.waypoints,
-      isCustomRouted: w.isCustomRouted,
+      isWireBranch: w.isWireBranch,
     };
-    if (w instanceof WireConnection) {
+    if (w instanceof GateConnectionView) {
       data.isBusConnection = false;
-    } else if (w instanceof BusConnection) {
+    } else if (w instanceof BusConnectionView) {
       data.isBusConnection = true;
       data.direction = w.direction;
     }

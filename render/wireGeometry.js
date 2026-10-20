@@ -1,11 +1,12 @@
 import { isNearWaypoint } from "../input/mouseHandlers.js";
 import { screenToWorld } from "../state.js";
+import { BusNode } from "./BusNode.js";
 
 class Connection {
-  constructor({ wire, waypoints, isCustomRouted }) {
+  constructor({ wire, waypoints, isWireBranch }) {
     this.wire = wire;
     this.waypoints = waypoints;
-    this.isCustomRouted = isCustomRouted;
+    this.isWireBranch = isWireBranch;
   }
 
   /** @returns {{ start: Point, waypoints: Array<Point>, end: Point }} */
@@ -14,25 +15,35 @@ class Connection {
   }
 }
 
-export class WireConnection extends Connection {
+export class GateConnectionView extends Connection {
   constructor(data) {
     super(data);
+    this.source = data.source;
   }
 
   getPoints(nodeMap, busMap) {
     const ports = getWirePorts(this.wire, nodeMap);
+    let startPos = ports.start;
+
+    if (this.isWireBranch && this.source) {
+      const { start, waypoints, end } = this.source.conn.getPoints(nodeMap, busMap);
+      const points = [ start, ...waypoints, end ];
+
+      startPos = getTapPoint(points, this.source.tapRef);
+    }
     return {
-      start: ports.start,
+      start: startPos,
       waypoints: this.waypoints,
       end: ports.end,
     }
   }
 }
 
-export class BusConnection extends Connection {
+export class BusConnectionView extends Connection {
   constructor(data, busId, gateId, portIndex, direction) {
     super(data);
     this.tapRef = data.tapRef;
+    this.source = data.source;
     this.busId = busId;
     this.gateId = gateId;
     this.portIndex = portIndex;
@@ -42,28 +53,31 @@ export class BusConnection extends Connection {
   getPoints(nodeMap, busMap) {
     const bus = busMap.get(this.busId);
     const node = nodeMap.get(this.gateId);
-    const tapPoint = bus.getTapPoint(this.tapRef);
+    const tapPoint = getTapPointFromElement(bus, this.tapRef, nodeMap, busMap);
 
     if (this.direction === "in") {
       // Gate output is the start, and tap on the bus is end
-      const startPoint = node.getOutputPortByIndex(this.portIndex, node.gate.outputCount);
+      let startPoint = node.getOutputPortByIndex(this.portIndex, node.gate.outputCount);
+      if (this.isWireBranch && this.source) {
+        const { start, waypoints, end } = this.source.conn.getPoints(nodeMap, busMap);
+        const points = [ start, ...waypoints, end ];
+        
+        startPoint = getTapPoint(points, this.source.tapRef);
+      }
       return { start: startPoint, waypoints: this.waypoints, end: tapPoint };
     } else if (this.direction === "out") {
       // Tap on the bus is start, and gate input is the end
       const endPoint = node.getInputPortByIndex(this.portIndex, node.gate.inputCount);
-      return { start: tapPoint, waypoints: this.waypoints, end: endPoint };
+      let startPoint = tapPoint;
+      if (this.isWireBranch && this.source) {
+        const { start, waypoints, end } = this.source.conn.getPoints(nodeMap, busMap);
+        const points = [ start, ...waypoints, end ];
+
+        startPoint = getTapPoint(points, this.source.tapRef);
+      }
+      return { start: startPoint, waypoints: this.waypoints, end: endPoint };
     }
   }
-}
-
-export function initWire(wire, customWaypoints) {
-  let waypoints = [];
-  let isCustomRouted = false;
-  if (customWaypoints && customWaypoints.length !== 0) {
-    waypoints = customWaypoints;
-    isCustomRouted = true;
-  }
-  return { wire: wire, waypoints: waypoints, isCustomRouted: isCustomRouted };
 }
 
 export function getWirePorts(wire, nodeMap) {
@@ -182,10 +196,17 @@ export function projectPointOntoSegment(A, B, O) {
 }
 
 
-export function getPointRef(busNode, clickX, clickY) {
-  const { start, waypoints, end } = busNode.getPoints();
-  const points = [start, ...waypoints, end];
+export function getPointRefFromElement(element, clickX, clickY, nodeMap, busMap) {
+  const { start, waypoints, end } = element instanceof BusNode 
+    ? element.getPoints()
+    : element.getPoints(nodeMap, busMap);
 
+  const points = [ start, ...waypoints, end ];
+  return getPointRef(points, clickX, clickY);
+}
+
+
+function getPointRef(points, clickX, clickY) {
   let best = { segmentIndex: null, t: null };
   let bestDist = Infinity;
 
@@ -200,6 +221,26 @@ export function getPointRef(busNode, clickX, clickY) {
     }
   }
   return best;
+}
+
+
+export function getTapPointFromElement(element, tapRef, nodeMap, busMap) {
+  const { start, waypoints, end } = element instanceof BusNode
+    ? element.getPoints()
+    : element.getPoints(nodeMap, busMap);
+  
+  const points = [ start, ...waypoints, end ];
+  return getTapPoint(points, tapRef);
+}
+
+
+function getTapPoint(points, tapRef) {
+  const A = points[tapRef.segmentIndex];
+  const B = points[tapRef.segmentIndex + 1];
+  return {
+    x: A.x + tapRef.t * (B.x - A.x),
+    y: A.y + tapRef.t * (B.y - A.y),
+  };
 }
 
 

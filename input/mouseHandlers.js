@@ -1,9 +1,9 @@
 import { state, screenToWorld, worldToScreen } from "../state.js";
 import { CLOCK_TIMER, FREQUENCY, SIGNAL } from "../constants.js";
-import { setCustomWaypoints, getPointRef, projectPointOntoSegment, dist } from "../render/wireGeometry.js";
+import { setCustomWaypoints, getPointRefFromElement, projectPointOntoSegment, dist, getTapPointFromElement, GateConnectionView, BusConnectionView } from "../render/wireGeometry.js";
 import { createBasicNode, createCompositeNode, snapPointToGrid, wouldOverlap, wouldBusOverlap } from "../render/RenderPoint.js";
 import { showToast } from "../ui/toast.js";
-import { ConnectGateCommand, MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand, PlaceBusCommand, RemoveBusCommand, BusConnectionCommand } from "../history/commands.js";
+import { GateConnectionCommand, MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand, PlaceBusCommand, RemoveBusCommand, BusConnectionCommand } from "../history/commands.js";
 import { performCommand } from "../history/history.js";
 import { loadCompositeGate, buildCircuitFromData } from "../persistence.js";
 
@@ -25,247 +25,382 @@ function cleanupGhostBus() {
   state.ghostBus = null;
 }
 
+function cleanupWireEditor() {
+  state.wireEditing = false;
+  state.editorTarget = null;
+}
+
 export const nodeMap = new Map();
 export const busMap = new Map();
 
 export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) {
+  const canvasHost = document.querySelector(".canvas-host");
+  const canvas = canvasHost.querySelector("canvas");
+  const wireCtxMenu = document.getElementById("wire-context-menu");
+
   p.mousePressed = function (event) {
     if (state.labelEditing) return;
+    if (state.isAnyModalOpen) return;
     if (state.justPlacedFromToolbar) {
       state.justPlacedFromToolbar = false;
     }
+
     const world = screenToWorld(p.mouseX, p.mouseY);
     state.dragging = renderNodes.find(n => n.containsPoint(world.x, world.y));
     bringToFront(renderNodes, state.dragging);
 
-    if (state.mode === "edit") {
-      // Check input ports
-      if (state.drawingWire) {
-        const connInfo = findWireDestination(world.x, world.y, renderNodes, busNodes);
-        if (state.drawingWire.originType === "gate") {
-          if (connInfo?.destinationType === "gate") {
-            const connection = connInfo.connection;
-            
-            const outputIndex = state.drawingWire.connection.fromOutputIndex;
-            const inputIndex = connection.index;
-            if (inputIndex < 0 || inputIndex >= connection.toNode.internalInputs) {
-              showToast("Invalid input index!", { type: "error" });
-              return;
-            }
-            const fromGate = state.drawingWire.connection.fromNode.gate;
-            const toGate = connection.toNode.gate;
-
-            const connectGateCommand = new ConnectGateCommand(
-              circuit,
-              fromGate,
-              toGate,
-              inputIndex,
-              outputIndex,
-              state.ghostWire,
-              wires,
-            );
-            performCommand(connectGateCommand);
-          } else if (connInfo?.destinationType === "bus") {
-            const connection = connInfo.connection;
-
-            const outputIndex = state.drawingWire.connection.fromOutputIndex;
-            const fromGate = state.drawingWire.connection.fromNode.gate;
-            const bus = connection.busNode.bus;
-
-            const busConnectionCommand = new BusConnectionCommand(
-              circuit,
-              fromGate,
-              bus,
-              state.ghostWire,
-              wires,
-              "in",
-              outputIndex,
-              connInfo.connection.tapRef,
-            );
-            performCommand(busConnectionCommand);
-          }
-        } else if (state.drawingWire.originType === "bus") {
-          if (connInfo?.destinationType === "gate") {
-            const toGate = connInfo.connection.toNode.gate;
-            const fromBus = state.drawingWire.connection.busNode.bus;
-            const inputIndex = connInfo.connection.index;
-
-            const busConnectionCommand = new BusConnectionCommand(
-              circuit,
-              toGate,
-              fromBus,
-              state.ghostWire,
-              wires,
-              "out",
-              inputIndex,
-              state.drawingWire.connection.tapRef,
-            );
-            performCommand(busConnectionCommand);
-          }
-        }
-        state.drawingWire = null;
-        cleanupGhostWire();
-      } else {
-        state.drawingWire = findWireOrigin(world.x, world.y, renderNodes, busNodes);
-        state.changingWaypoint = findNearWaypoint(world.x, world.y, wires);
-
-        // ── Update persistent selection ──────────────────────────
-        if (state.dragging) {
-          state.selectedNode = state.dragging;
-        } else if (!state.drawingWire && !state.changingWaypoint) {
-          // Clicked empty space or a wire — deselect
-          state.selectedNode = null;
-        }
-
-        if (!state.drawingWire && !state.changingWaypoint && state.dragging) {
-          const { x, y } = snapPointToGrid(world.x, world.y);
-          state.offsetX = x - state.dragging.x;
-          state.offsetY = y - state.dragging.y;
-
-          let connectedInputWires = wires.filter(n => n.wire.to.id === state.dragging.gate.id);
-          let connectedOutputWires = wires.filter(n => n.wire.from.id === state.dragging.gate.id);
-
-          if (connectedInputWires || connectedOutputWires) {
-            state.connectedWires = [];
-            for (let i = 0; i < connectedInputWires.length; i++) {
-              if (connectedInputWires[i].waypoints && connectedInputWires[i].waypoints.length !== 0) {
-                const lastWaypoint = connectedInputWires[i].waypoints.length - 1;
-                state.connectedWires.push({
-                  wire: connectedInputWires[i],
-                  offsetX: x - connectedInputWires[i].waypoints[lastWaypoint].x,
-                  offsetY: y - connectedInputWires[i].waypoints[lastWaypoint].y,
-                  type: "input",
-                });
-              }
-            }
-
-            for (let i = 0; i < connectedOutputWires.length; i++) {
-              if (connectedOutputWires[i].waypoints && connectedOutputWires[i].waypoints.length !== 0) {
-                state.connectedWires.push({
-                  wire: connectedOutputWires[i],
-                  offsetX: x - connectedOutputWires[i].waypoints[0].x,
-                  offsetY: y - connectedOutputWires[i].waypoints[0].y,
-                  type: "output",
-                });
-              }
-            }
-          }
-        } else if (state.drawingWire && !state.changingWaypoint && !state.dragging) {
-          const connection = state.drawingWire.connection;
+    if (p.mouseButton.left) {
+      if (state.mode === "edit") {
+        // Check input ports
+        if (state.drawingWire) {
+          const connInfo = findWireDestination(world.x, world.y, renderNodes, busNodes, nodeMap, busMap);
           if (state.drawingWire.originType === "gate") {
-            const fromNode = connection.fromNode;
-            const startPoint = fromNode.gate.type === "composite"
-              ? fromNode.getOutputPortByIndex(connection.fromOutputIndex, fromNode.gate.outputCount)
-              : fromNode.getOutputPort();
-            const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
-            state.ghostWire = waypoints;
-            state.ghostWireCleanup = cleanup;
+            if (connInfo?.destinationType === "gate") {
+              const connection = connInfo.destination;
+              
+              const outputIndex = state.drawingWire.source.fromOutputIndex;
+              const inputIndex = connection.index;
+              const fromGate = state.drawingWire.source.fromNode.gate;
+              const toGate = connection.toNode.gate;
+
+              const connectGateCommand = new GateConnectionCommand(
+                circuit,
+                fromGate,
+                toGate,
+                inputIndex,
+                outputIndex,
+                state.ghostWire,
+                wires,
+              );
+              performCommand(connectGateCommand);
+            } else if (connInfo?.destinationType === "bus") {
+              const connection = connInfo.destination;
+
+              const outputIndex = state.drawingWire.source.fromOutputIndex;
+              const fromGate = state.drawingWire.source.fromNode.gate;
+              const bus = connection.busNode.bus;
+
+              const busConnectionCommand = new BusConnectionCommand(
+                circuit,
+                fromGate,
+                bus,
+                state.ghostWire,
+                wires,
+                "in",
+                outputIndex,
+                connInfo.destination.tapRef,
+              );
+              performCommand(busConnectionCommand);
+            }
           } else if (state.drawingWire.originType === "bus") {
-            const fromBus = connection.busNode;
-            const startPoint = fromBus.getTapPoint(getPointRef(fromBus, world.x, world.y));
-            const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
-            state.ghostWire = waypoints;
-            state.ghostWireCleanup = cleanup;
+            if (connInfo?.destinationType === "gate") {
+              const toGate = connInfo.destination.toNode.gate;
+              const fromBus = state.drawingWire.source.busNode.bus;
+              const inputIndex = connInfo.destination.index;
+
+              const busConnectionCommand = new BusConnectionCommand(
+                circuit,
+                toGate,
+                fromBus,
+                state.ghostWire,
+                wires,
+                "out",
+                inputIndex,
+                state.drawingWire.source.tapRef,
+              );
+              performCommand(busConnectionCommand);
+            }
+          } else if (state.drawingWire.originType === "wire") {
+            if (state.drawingWire.source.conn instanceof GateConnectionView) {
+              if (connInfo?.destinationType === "gate") {
+                const connection = connInfo.destination;
+
+                const outputIndex = state.drawingWire.source.conn.wire.fromOutputIndex;
+                const inputIndex = connection.index;
+                const fromGate = state.drawingWire.source.conn.wire.from;
+                const toGate = connection.toNode.gate;
+
+                const connectGateCommand = new GateConnectionCommand(
+                  circuit,
+                  fromGate,
+                  toGate,
+                  inputIndex,
+                  outputIndex,
+                  state.ghostWire,
+                  wires,
+                  true,
+                  state.drawingWire.source,
+                );
+                performCommand(connectGateCommand);
+              } else if (connInfo?.destinationType === "bus") {
+                const connection = connInfo.destination;
+
+                const outputIndex = state.drawingWire.source.conn.wire.fromOutputIndex;
+                const fromGate = state.drawingWire.source.conn.wire.from;
+                const bus = connection.busNode.bus;
+
+                const busConnectionCommand = new BusConnectionCommand(
+                  circuit,
+                  fromGate,
+                  bus,
+                  state.ghostWire,
+                  wires,
+                  "in",
+                  outputIndex,
+                  connInfo.destination.tapRef,
+                  true,
+                  state.drawingWire.source,
+                );
+                performCommand(busConnectionCommand);
+              }
+            } else if (state.drawingWire.source.conn instanceof BusConnectionView) {
+              if (state.drawingWire.source.conn.direction === "in") {
+                if (connInfo?.destinationType === "gate") {
+                  const connection = connInfo.destination;
+
+                  const outputIndex = state.drawingWire.source.conn.wire.fromOutputIndex;
+                  const inputIndex = connection.index;
+                  const fromGate = state.drawingWire.source.conn.wire.from;
+                  const toGate = connection.toNode.gate;
+
+                  const connectGateCommand = new GateConnectionCommand(
+                    circuit,
+                    fromGate,
+                    toGate,
+                    inputIndex,
+                    outputIndex,
+                    state.ghostWire,
+                    wires,
+                    true,
+                    state.drawingWire.source,
+                  );
+                  performCommand(connectGateCommand);
+                } else if (connInfo?.destinationType === "bus") {
+                  const connection = connInfo.destination;
+
+                  const outputIndex = state.drawingWire.source.conn.wire.fromOutputIndex;
+                  const fromGate = state.drawingWire.source.conn.wire.from;
+                  const bus = connection.busNode.bus;
+
+                  const busConnectionCommand = new BusConnectionCommand(
+                    circuit,
+                    fromGate,
+                    bus,
+                    state.ghostWire,
+                    wires,
+                    "in",
+                    outputIndex,
+                    connInfo.destination.tapRef,
+                    true,
+                    state.drawingWire.source,
+                  );
+                  performCommand(busConnectionCommand);
+                }
+              } else if (state.drawingWire.source.conn.direction === "out") {
+                if (connInfo?.destinationType === "gate") {
+                  const connection = connInfo.destination;
+
+                  const toGate = connection.toNode.gate;
+                  const fromBus = state.drawingWire.source.conn.wire.from;
+                  const inputIndex = connection.index;
+
+                  const busConnectionCommand = new BusConnectionCommand(
+                    circuit,
+                    toGate,
+                    fromBus,
+                    state.ghostWire,
+                    wires,
+                    "out",
+                    inputIndex,
+                    state.drawingWire.source.tapRef,
+                    true,
+                    state.drawingWire.source,
+                  );
+                  performCommand(busConnectionCommand);
+                }
+              }
+            }
           }
-        } else if (!state.drawingWire && !state.changingWaypoint && !state.dragging) {
-          state.isPanning = true;
-        } else if (state.changingWaypoint) {
-          state.waypointSnapshot = {};
-          state.waypointSnapshot.fromWaypoint = structuredClone(state.changingWaypoint);
+          state.drawingWire = null;
+          cleanupGhostWire();
+        } else {
+          if (state.wireEditing) {
+            state.changingWaypoint = findNearWaypoint(world.x, world.y, wires, busNodes);
+            if (!state.changingWaypoint) {
+              cleanupWireEditor();
+            }
+          } else state.drawingWire = findWireOrigin(world.x, world.y, renderNodes, busNodes, wires, nodeMap, busMap);
+
+          // ── Update persistent selection ──────────────────────────
+          if (state.dragging) {
+            state.selectedNode = state.dragging;
+          } else if (!state.drawingWire && !state.changingWaypoint) {
+            // Clicked empty space or a wire — deselect
+            state.selectedNode = null;
+          }
+
+          if (!state.drawingWire && !state.changingWaypoint && state.dragging) {
+            const { x, y } = snapPointToGrid(world.x, world.y);
+            state.offsetX = x - state.dragging.x;
+            state.offsetY = y - state.dragging.y;
+          } else if (state.drawingWire && !state.changingWaypoint && !state.dragging) {
+            const connection = state.drawingWire.source;
+            if (state.drawingWire.originType === "gate") {
+              const fromNode = connection.fromNode;
+              const startPoint = fromNode.gate.type === "composite"
+                ? fromNode.getOutputPortByIndex(connection.fromOutputIndex, fromNode.gate.outputCount)
+                : fromNode.getOutputPort();
+              const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
+              state.ghostWire = waypoints;
+              state.ghostWireCleanup = cleanup;
+            } else if (state.drawingWire.originType === "bus") {
+              const fromBus = connection.busNode;
+              const tapRef = getPointRefFromElement(fromBus, world.x, world.y, nodeMap, busMap);
+              const startPoint = getTapPointFromElement(fromBus, tapRef, nodeMap, busMap);
+              const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
+              state.ghostWire = waypoints;
+              state.ghostWireCleanup = cleanup;
+            } else if (state.drawingWire.originType === "wire") {
+              const conn = connection.conn;
+
+              const startPoint = getTapPointFromElement(conn, connection.tapRef, nodeMap, busMap);
+              const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
+
+              state.ghostWire = waypoints;
+              state.ghostWireCleanup = cleanup;
+            }
+          } else if (!state.drawingWire && !state.changingWaypoint && !state.dragging) {
+            state.isPanning = true;
+          } else if (state.changingWaypoint) {
+            state.waypointSnapshot = {};
+            state.waypointSnapshot.fromWaypoint = structuredClone(state.changingWaypoint);
+          }
+        }
+      } else if (state.mode === "run") {
+        if (state.dragging && state.dragging.gate.type === "input") {
+          const signal = state.dragging.gate.output === LOW ? HIGH : LOW;
+          state.dragging.gate.setValue(signal);
+          circuit.evaluate();
+        } else if (state.dragging && state.dragging.gate.type === "clock") {
+          if (state.dragging.intervalId != null) {
+            clearInterval(state.dragging.intervalId);
+            state.dragging.intervalId = null;
+            return;
+          }
+          const clockNode = state.dragging;
+          const timeInterval = 1000 / (2 * FREQUENCY);
+          state.dragging.intervalId = setInterval(() => {
+            clockNode.gate.tick();
+            circuit.evaluate();
+          }, timeInterval);
+
+          setTimeout(() => {
+            clearInterval(state.dragging.intervalId);
+            state.dragging.intervalId = null;
+          }, CLOCK_TIMER);
+        }
+      } else if (state.mode === "placing") {
+        if (state.ghostNode) {
+          if (wouldOverlap(state.ghostNode, renderNodes, busNodes, null)) return;
+          const placeGateCommand = new PlaceGateCommand(circuit, renderNodes, state.ghostNode, nodeMap);
+          performCommand(placeGateCommand);
+
+          if (event.shiftKey) {
+            const gateType = state.ghostNode.gate.type;
+            const { x, y } = snapPointToGrid(world.x, world.y);
+            if (gateType !== "composite") {
+              state.ghostNode = createBasicNode(gateType, x, y);
+            } else {
+              const name = state.ghostNode.gate.label;
+              const saved = loadCompositeGate(name);
+              if (saved) {
+                const freshCircuit = buildCircuitFromData(saved.circuitData, saved.renderData);
+                state.ghostNode = createCompositeNode(name, freshCircuit, x, y);
+              }
+            }
+          } else {
+            state.mode = "edit";
+            state.ghostNode = null;
+            document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
+            document.getElementById("btn-edit").classList.add("active");
+          }
+        } else if (state.ghostBus) {
+          if (!state.ghostBus.startPointPlaced && !state.ghostBus.endPointPlaced) {
+            if (wouldBusOverlap(state.ghostBus, renderNodes, busNodes)) return;
+            state.ghostBus.startPointPlaced = true;
+            const startPoint = state.ghostBus.startPoint;
+            const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
+            state.ghostBus.waypoints = waypoints;
+            state.ghostBusCleanup = cleanup;
+          } else if (state.ghostBus.startPointPlaced && !state.ghostBus.endPointPlaced) {
+            if (wouldBusOverlap(state.ghostBus, renderNodes, busNodes)) return;
+            const placeBusCommand = new PlaceBusCommand(circuit, busNodes, state.ghostBus, busMap);
+            performCommand(placeBusCommand);
+
+            state.mode = "edit";
+            state.ghostBus = null;
+            document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
+            document.getElementById("btn-edit").classList.add("active");
+            cleanupGhostBus();
+          }
+        }
+      } else if (state.mode === "delete") {
+        if (state.dragging) {
+          const removeGateCommand = new RemoveGateCommand(
+            renderNodes,
+            wires,
+            circuit,
+            state.dragging,
+            nodeMap,
+          );
+          performCommand(removeGateCommand);
+
+          if (state.selectedNode === state.dragging) state.selectedNode = null;
+          state.dragging = null;
+        } else {
+          const wireInfo = getWireAtPoint(world.x, world.y, wires, nodeMap, busMap);
+          const busInfo = getBusAtPoint(world.x, world.y, busNodes);
+          
+          if (wireInfo) {
+            const removeWireCommand = new RemoveWireCommand(circuit, wires, wireInfo.conn);
+            performCommand(removeWireCommand);
+          } else if (busInfo) {
+            const removeBusCommand = new RemoveBusCommand(busNodes, wires, circuit, busInfo, busMap);
+            performCommand(removeBusCommand);
+          }
         }
       }
-    } else if (state.mode === "run") {
-      if (state.dragging && state.dragging.gate.type === "input") {
-        const signal = state.dragging.gate.output === LOW ? HIGH : LOW;
-        state.dragging.gate.setValue(signal);
-        circuit.evaluate();
-      } else if (state.dragging && state.dragging.gate.type === "clock") {
-        if (state.dragging.intervalId != null) {
-          clearInterval(state.dragging.intervalId);
-          state.dragging.intervalId = null;
+    }
+
+    else if (p.mouseButton.right) {
+      if (state.mode !== "edit" || state.labelEditing) return;
+      
+      const rect = canvas.getBoundingClientRect();
+      const clientX = rect.left + (p.mouseX / p.width) * rect.width;
+      const clientY = rect.top + (p.mouseY / p.height) * rect.height;
+
+      // 1. Check for input/output gates (label editing)
+      // TODO: Add a context menu instead of the direct label editor
+      const target = renderNodes.find(n => n.containsPoint(world.x, world.y));
+      if (target) {
+        const gateType = target.gate.type;
+        if (gateType === "input" || gateType === "output") {
+          openLabelEditor(target, p);
           return;
         }
-        const clockNode = state.dragging;
-        const timeInterval = 1000 / (2 * FREQUENCY);
-        state.dragging.intervalId = setInterval(() => {
-          clockNode.gate.tick();
-          circuit.evaluate();
-        }, timeInterval);
-
-        setTimeout(() => {
-          clearInterval(state.dragging.intervalId);
-          state.dragging.intervalId = null;
-        }, CLOCK_TIMER);
       }
-    } else if (state.mode === "placing") {
-      if (state.ghostNode) {
-        if (wouldOverlap(state.ghostNode, renderNodes, busNodes, null)) return;
-        const placeGateCommand = new PlaceGateCommand(circuit, renderNodes, state.ghostNode, nodeMap);
-        performCommand(placeGateCommand);
 
-        if (event.shiftKey) {
-          const gateType = state.ghostNode.gate.type;
-          const { x, y } = snapPointToGrid(world.x, world.y);
-          if (gateType !== "composite") {
-            state.ghostNode = createBasicNode(gateType, x, y);
-          } else {
-            const name = state.ghostNode.gate.label;
-            const saved = loadCompositeGate(name);
-            if (saved) {
-              const freshCircuit = buildCircuitFromData(saved.circuitData, saved.renderData);
-              state.ghostNode = createCompositeNode(name, freshCircuit, x, y);
-            }
-          }
-        } else {
-          state.mode = "edit";
-          state.ghostNode = null;
-          document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
-          document.getElementById("btn-edit").classList.add("active");
-        }
-      } else if (state.ghostBus) {
-        if (!state.ghostBus.startPointPlaced && !state.ghostBus.endPointPlaced) {
-          if (wouldBusOverlap(state.ghostBus, renderNodes, busNodes)) return;
-          state.ghostBus.startPointPlaced = true;
-          const startPoint = state.ghostBus.startPoint;
-          const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
-          state.ghostBus.waypoints = waypoints;
-          state.ghostBusCleanup = cleanup;
-        } else if (state.ghostBus.startPointPlaced && !state.ghostBus.endPointPlaced) {
-          if (wouldBusOverlap(state.ghostBus, renderNodes, busNodes)) return;
-          const placeBusCommand = new PlaceBusCommand(circuit, busNodes, state.ghostBus, busMap);
-          performCommand(placeBusCommand);
-
-          state.mode = "edit";
-          state.ghostBus = null;
-          document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
-          document.getElementById("btn-edit").classList.add("active");
-          cleanupGhostBus();
-        }
+      // 2. Check for wires and buses
+      const wireInfo = getWireAtPoint(world.x, world.y, wires, nodeMap, busMap);
+      if (wireInfo) {
+        showWireContextMenu(clientX, clientY, { type: "wire", source: wireInfo.conn });
+        return;
       }
-    } else if (state.mode === "delete") {
-      if (state.dragging) {
-        const removeGateCommand = new RemoveGateCommand(
-          renderNodes,
-          wires,
-          circuit,
-          state.dragging,
-          nodeMap,
-        );
-        performCommand(removeGateCommand);
 
-        if (state.selectedNode === state.dragging) state.selectedNode = null;
-        state.dragging = null;
-      } else {
-        const wireInfo = getWireAtPoint(world.x, world.y, wires, nodeMap, busMap);
-        const busInfo = getBusAtPoint(world.x, world.y, busNodes, nodeMap, busMap);
-        
-        if (wireInfo) {
-          const removeWireCommand = new RemoveWireCommand(circuit, wires, wireInfo);
-          performCommand(removeWireCommand);
-        } else if (busInfo) {
-          const removeBusCommand = new RemoveBusCommand(busNodes, wires, circuit, busInfo, busMap);
-          performCommand(removeBusCommand);
-        }
+      const busInfo = getBusAtPoint(world.x, world.y, busNodes);
+      if (busInfo) {
+        showWireContextMenu(clientX, clientY, { type: "bus", source: busInfo });
+        return;
       }
     }
   }
@@ -278,29 +413,10 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
           state.currentX = state.dragging.x;
           state.currentY = state.dragging.y;
           state.changingPos = true;
-          if (state.connectedWires) {
-            state.connectedWireSnapshots = {};
-            state.connectedWireSnapshots.fromWaypoints = state.connectedWires.map(cw =>
-              cw.wire.waypoints.map(wp => ({ ...wp }))
-            );
-          }
-
         }
         const { x, y } = snapPointToGrid(worldDrag.x, worldDrag.y);
         state.dragging.x = x - state.offsetX;
         state.dragging.y = y - state.offsetY;
-
-        if (state.connectedWires) {
-          for (let i = 0; i < state.connectedWires.length; i++) {
-            const lastWaypoint = state.connectedWires[i].wire.waypoints.length - 1;
-            const firstWaypoint = 0;
-            if (state.connectedWires[i].type === "input") {
-              state.connectedWires[i].wire.waypoints[lastWaypoint].y = y - state.connectedWires[i].offsetY;
-            } else if (state.connectedWires[i].type === "output") {
-              state.connectedWires[i].wire.waypoints[firstWaypoint].y = y - state.connectedWires[i].offsetY;
-            }
-          }
-        }
       } else if (state.changingWaypoint) {
         state.changingWaypoint.x = worldDrag.x;
         state.changingWaypoint.y = worldDrag.y;
@@ -316,25 +432,13 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
       if (wouldOverlap(state.dragging, renderNodes, busNodes, state.dragging.gate.id)) {
         state.dragging.x = state.currentX;
         state.dragging.y = state.currentY;
-        if (state.connectedWires && state.connectedWireSnapshots) {
-          for (let i = 0; i < state.connectedWires.length; i++) {
-            state.connectedWires[i].wire.waypoints = state.connectedWireSnapshots.fromWaypoints[i].map(wp => ({ ...wp }));
-          }
-        }
       } else if (state.changingPos) {
-        if (state.connectedWires) {
-          state.connectedWireSnapshots.toWaypoints = state.connectedWires.map(cw =>
-            cw.wire.waypoints.map(wp => ({ ...wp }))
-          );
-        }
         const moveNodeCommand = new MoveNodeCommand(
           state.dragging,
           state.currentX,
           state.currentY,
           state.dragging.x,
           state.dragging.y,
-          state.connectedWires,
-          state.connectedWireSnapshots,
         );
         performCommand(moveNodeCommand);
       }
@@ -349,13 +453,12 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
     state.dragging = null;
     state.offsetX = 0;
     state.offsetY = 0;
-    state.connectedWires = null;
     state.currentX = 0;
     state.currentY = 0;
     state.changingPos = false;
-    state.connectedWireSnapshots = null;
     state.isPanning = false;
     state.waypointSnapshot = null;
+    state.changingWaypoint = null;
   }
 
   p.mouseWheel = function(event) {
@@ -385,22 +488,57 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
     return false; 
   }
 
-  // Right-click on an input/output gate to edit its label
-  const canvasHost = document.querySelector(".canvas-host");
-  canvasHost.addEventListener("contextmenu", function (e) {
-    e.preventDefault();
-    if (state.mode !== "edit" || state.labelEditing) return;
-    // Convert page coords to p5 canvas coords
-    const canvas = canvasHost.querySelector("canvas");
-    const rect = canvas.getBoundingClientRect();
-    const screenX = (e.clientX - rect.left) * (p.width / rect.width);
-    const screenY = (e.clientY - rect.top) * (p.height / rect.height);
-    const { x: mx, y: my } = screenToWorld(screenX, screenY);
-    const target = renderNodes.find(n => n.containsPoint(mx, my));
+
+  function showWireContextMenu(clientX, clientY, target) {
+    state.contextMenuTarget = target;
+    wireCtxMenu.classList.add("open");
+    wireCtxMenu.style.left = `${clientX}px`;
+    wireCtxMenu.style.top = `${clientY}px`;
+
+    const rect = wireCtxMenu.getBoundingClientRect();
+    if (rect.bottom > window.innerHeight) {
+      wireCtxMenu.style.top = `${Math.max(0, clientY - rect.height)}px`;
+    }
+    if (rect.right > window.innerWidth) {
+      wireCtxMenu.style.left = `${Math.max(0, clientX - rect.width)}px`;
+    }
+    state.isAnyModalOpen = true;
+  }
+
+  function hideWireContextMenu() {
+    if (!wireCtxMenu.classList.contains("open")) return;
+    wireCtxMenu.classList.remove("open");
+    state.contextMenuTarget = null;
+    state.isAnyModalOpen = false;
+  }
+
+  // Edit button - placeholder for waypoint editor (coming soon)
+  document.getElementById("ctx-wire-edit").addEventListener("click", () => {
+    state.editorTarget = structuredClone(state.contextMenuTarget);
+    hideWireContextMenu();
+    if (!state.editorTarget) return;
+    state.wireEditing = true;
+  });
+
+  // Delete button - remove the wire or bus
+  document.getElementById("ctx-wire-delete").addEventListener("click", () => {
+    const target = state.contextMenuTarget;
+    hideWireContextMenu();
     if (!target) return;
-    const gateType = target.gate.type;
-    if (gateType !== "input" && gateType !== "output") return;
-    openLabelEditor(target, p);
+
+    if (target.type === "wire") {
+      const removeWireCommand = new RemoveWireCommand(circuit, wires, target.conn);
+      performCommand(removeWireCommand);
+    } else if (target.type === "bus") {
+      const removeBusCommand = new RemoveBusCommand(busNodes, wires, circuit, target.busNode, busMap);
+      performCommand(removeBusCommand);
+    }
+  });
+
+  // Close wire context meny on any click or Escape
+  document.addEventListener("click", () => hideWireContextMenu());
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") hideWireContextMenu();
   });
 }
 
@@ -450,51 +588,60 @@ function findNearInput(mx, my, renderNodes) {
   return null;
 }
 
-function findNearBus(mx, my, busNodes) {
+function findNearBus(mx, my, busNodes, nodeMap, busMap) {
   for (let i = 0; i < busNodes.length; i++) {
     const { start, waypoints, end } = busNodes[i].getPoints();
     const points = [start, ...waypoints, end];
 
     for (let j = 0; j < points.length - 1; j++) {
       if (isOnLineSegment(points[j], points[j + 1], { x: mx, y: my }, 15)) {
-        return { busNode: busNodes[i], tapRef: getPointRef(busNodes[i], mx, my) };
+        return {
+          busNode: busNodes[i],
+          tapRef: getPointRefFromElement(busNodes[i], mx, my, nodeMap, busMap),
+        };
       }
     }
   }
   return null;
 }
 
-function findWireOrigin(mx, my, renderNodes, busNodes) {
+function findWireOrigin(mx, my, renderNodes, busNodes, wires, nodeMap, busMap) {
   const nodeConn = findNearOutput(mx, my, renderNodes);
-  const busConn = findNearBus(mx, my, busNodes);
+  const busConn = findNearBus(mx, my, busNodes, nodeMap, busMap);
+  const wireConn = getWireAtPoint(mx, my, wires, nodeMap, busMap);
   
   if (nodeConn) {
     return {
       originType: "gate",
-      connection: nodeConn,
+      source: nodeConn,
     }
   } else if (busConn) {
     return {
       originType: "bus",
-      connection: busConn,
+      source: busConn,
+    }
+  } else if (wireConn) {
+    return {
+      originType: "wire",
+      source: wireConn,
     }
   }
   return null;
 }
 
-function findWireDestination(mx, my, renderNodes, busNodes) {
+function findWireDestination(mx, my, renderNodes, busNodes, nodeMap, busMap) {
   const nodeConn = findNearInput(mx, my, renderNodes);
-  const busConn = findNearBus(mx, my, busNodes);
+  const busConn = findNearBus(mx, my, busNodes, nodeMap, busMap);
 
   if (nodeConn) {
     return {
       destinationType: "gate",
-      connection: nodeConn,
+      destination: nodeConn,
     }
   } else if (busConn) {
     return {
       destinationType: "bus",
-      connection: busConn,
+      destination: busConn,
     }
   }
   return null;
@@ -505,20 +652,23 @@ function isOnLineSegment(A, B, O, threshold) {
   return distSq <= Math.pow(threshold, 2);
 }
 
-function getWireAtPoint(mx, my, wires, nodeMap, busMap) {
+export function getWireAtPoint(mx, my, wires, nodeMap, busMap) {
   for (const conn of wires) {
     const { start, waypoints, end } = conn.getPoints(nodeMap, busMap);
     const points = [ start, ...waypoints, end ];
     for (let i = 0; i < points.length - 1; i++) {
       if (isOnLineSegment(points[i], points[i + 1], { x: mx, y: my }, 15)) {
-        return conn;
+        return {
+          conn: conn,
+          tapRef: getPointRefFromElement(conn, mx, my, nodeMap, busMap), 
+        };
       }
     }
   }
   return null;
 }
 
-function getBusAtPoint(mx, my, busNodes, nodeMap, busMap) {
+export function getBusAtPoint(mx, my, busNodes) {
   for (const busNode of busNodes) {
     const { start, waypoints, end } = busNode.getPoints();
     const points = [ start, ...waypoints, end ];
@@ -531,12 +681,49 @@ function getBusAtPoint(mx, my, busNodes, nodeMap, busMap) {
   return null;
 }
 
-function findNearWaypoint(mx, my, wires) {
+export function canWireConnectToBus(drawingWire, bus, wires) {
+  if (!drawingWire) return true;
+  if (drawingWire.originType === "bus") return false;
+  if (
+    drawingWire.originType === "wire" &&
+    drawingWire.source.conn instanceof BusConnectionView &&
+    drawingWire.source.conn.direction === "out"
+  ) return false;
+
+  const fromGateId = drawingWire.originType === "gate"
+    ? drawingWire.source.fromNode.gate.id
+    : drawingWire.source.conn.wire.from.id;
+
+  const fromOutputIndex = drawingWire.originType === "gate"
+    ? drawingWire.source.fromOutputIndex
+    : drawingWire.source.conn.wire.fromOutputIndex;
+
+  const alreadyConnected = wires.some(
+    n => (
+      n.wire.to.type === "bus" &&
+      n.wire.to.id === bus?.id &&
+      n.wire.from.id === fromGateId &&
+      n.wire.fromOutputIndex === fromOutputIndex
+    )
+  );
+  return !alreadyConnected;
+}
+
+function findNearWaypoint(mx, my, wires, busNodes) {
   for (let i = 0; i < wires.length; i++) {
     const waypointCount = wires[i].waypoints.length;
     for (let j = 0; j < waypointCount; j++) {
       if (isNearWaypoint(mx, my, wires[i].waypoints[j])) {
         return wires[i].waypoints[j];
+      }
+    }
+  }
+
+  for (let i = 0; i < busNodes.length; i++) {
+    const waypointCount = busNodes[i].waypoints.length;
+    for (let j = 0; j < waypointCount; j++) {
+      if (isNearWaypoint(mx, my, busNodes[i].waypoints[j])) {
+        return busNodes[i].waypoints[j];
       }
     }
   }

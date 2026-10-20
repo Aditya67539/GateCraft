@@ -253,6 +253,9 @@ export class Bus {
   }
 
   connect(fromGate, fromOutputIndex = null) {
+    if (this.inputs.find(n => n.from.id === fromGate.id && n.fromOutputIndex === fromOutputIndex)) {
+      return { ok: false, error: "Connection already exists!" };
+    }
     const wire = new Wire(fromGate, this, this.inputCount++, fromOutputIndex);
     this.inputs.push(wire);
     return { ok: true, wire };

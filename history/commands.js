@@ -1,6 +1,6 @@
 import { rebuildBusMap } from "../render/BusNode.js";
 import { rebuildNodeMap } from "../render/RenderPoint.js";
-import { BusConnection, initWire, WireConnection } from "../render/wireGeometry.js";
+import { BusConnectionView, GateConnectionView } from "../render/wireGeometry.js";
 import { showToast } from "../ui/toast.js";
 
 /**
@@ -156,8 +156,8 @@ export class RemoveBusCommand {
 
 
 /** @implements {Command} */
-export class ConnectGateCommand {
-  constructor(circuit, fromGate, toGate, inputIndex, outputIndex, ghostWire, wires) {
+export class GateConnectionCommand {
+  constructor(circuit, fromGate, toGate, inputIndex, outputIndex, ghostWire, wires, isWireBranch = false, source = null) {
     this.circuit = circuit;
     this.fromGate = fromGate;
     this.toGate = toGate;
@@ -165,6 +165,8 @@ export class ConnectGateCommand {
     this.outputIndex = outputIndex;
     this.ghostWire = ghostWire;
     this.wires = wires;
+    this.isWireBranch = isWireBranch;
+    this.source = source;
     this.connection = null;
   }
 
@@ -179,7 +181,7 @@ export class ConnectGateCommand {
     if (this.connection !== null) {
       this.connection.wire = result.wire;
     } else {
-      this.connection = new WireConnection(initWire(wire, this.ghostWire));
+      this.connection = new GateConnectionView({ wire, waypoints: this.ghostWire, isWireBranch: this.isWireBranch, source: this.source });
     }
     this.wires.push(this.connection);
     return true;
@@ -194,7 +196,7 @@ export class ConnectGateCommand {
 
 /** @implements {Command} */
 export class BusConnectionCommand {
-  constructor(circuit, gate, bus, ghostWire, wires, direction, index, tapRef) {
+  constructor(circuit, gate, bus, ghostWire, wires, direction, index, tapRef, isWireBranch = false, source = null) {
     this.circuit = circuit;
     this.gate = gate;
     this.bus = bus;
@@ -203,6 +205,8 @@ export class BusConnectionCommand {
     this.direction = direction;
     this.index = index;
     this.tapRef = tapRef;
+    this.isWireBranch = isWireBranch;
+    this.source = source;
     this.connection = null;
   }
 
@@ -222,9 +226,14 @@ export class BusConnectionCommand {
     if (this.connection !== null) {
       this.connection.wire = result.wire;
     } else {
-      const wireInfo = initWire(wire, this.ghostWire);
-      wireInfo.tapRef = this.tapRef;
-      this.connection = new BusConnection(
+      const wireInfo = {
+        wire,
+        waypoints: this.ghostWire,
+        isWireBranch: this.isWireBranch,
+        tapRef: this.tapRef,
+        source: this.source,
+      };
+      this.connection = new BusConnectionView(
         wireInfo,
         this.bus.id,
         this.gate.id,
@@ -275,35 +284,23 @@ export class RemoveWireCommand {
 
 /** @implements {Command} */
 export class MoveNodeCommand {
-  constructor(node, fromX, fromY, toX, toY, connectedWires, waypointSnapshot) {
+  constructor(node, fromX, fromY, toX, toY) {
     this.node = node;
     this.fromX = fromX;
     this.fromY = fromY;
     this.toX = toX;
     this.toY = toY;
-    this.connectedWires = connectedWires;
-    this.waypointSnapshot = waypointSnapshot;
   }
 
   do() {
     this.node.x = this.toX;
     this.node.y = this.toY;
-    if (this.connectedWires && this.waypointSnapshot?.toWaypoints) {
-      for (let i = 0; i < this.connectedWires.length; i++) {
-        this.connectedWires[i].wire.waypoints = this.waypointSnapshot.toWaypoints[i].map(wp => ({ ...wp }));
-      }
-    }
     return true;
   }
 
   undo() {
     this.node.x = this.fromX;
     this.node.y = this.fromY;
-    if (this.connectedWires && this.waypointSnapshot?.fromWaypoints) {
-      for (let i = 0; i < this.connectedWires.length; i++) {
-        this.connectedWires[i].wire.waypoints = this.waypointSnapshot.fromWaypoints[i].map(wp => ({ ...wp }));
-      }
-    }
   }
 }
 

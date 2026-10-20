@@ -11,16 +11,6 @@ export class BusNode {
     this.endPointPlaced = false;
   }
 
-  getTapPoint(tapRef) {
-    const points = [this.startPoint, ...this.waypoints, this.endPoint];
-    const A = points[tapRef.segmentIndex];
-    const B = points[tapRef.segmentIndex + 1];
-    return {
-      x: A.x + tapRef.t * (B.x - A.x),
-      y: A.y + tapRef.t * (B.y - A.y),
-    };
-  }
-
   getPoints() {
     return {
       start: this.startPoint,
