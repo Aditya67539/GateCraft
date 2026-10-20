@@ -227,7 +227,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
           cleanupGhostWire();
         } else {
           if (state.wireEditing) {
-            state.changingWaypoint = findNearWaypoint(world.x, world.y, wires);
+            state.changingWaypoint = findNearWaypoint(world.x, world.y, wires, busNodes);
             if (!state.changingWaypoint) {
               cleanupWireEditor();
             }
@@ -710,12 +710,21 @@ export function canWireConnectToBus(drawingWire, bus, wires) {
   return !alreadyConnected;
 }
 
-function findNearWaypoint(mx, my, wires) {
+function findNearWaypoint(mx, my, wires, busNodes) {
   for (let i = 0; i < wires.length; i++) {
     const waypointCount = wires[i].waypoints.length;
     for (let j = 0; j < waypointCount; j++) {
       if (isNearWaypoint(mx, my, wires[i].waypoints[j])) {
         return wires[i].waypoints[j];
+      }
+    }
+  }
+
+  for (let i = 0; i < busNodes.length; i++) {
+    const waypointCount = busNodes[i].waypoints.length;
+    for (let j = 0; j < waypointCount; j++) {
+      if (isNearWaypoint(mx, my, busNodes[i].waypoints[j])) {
+        return busNodes[i].waypoints[j];
       }
     }
   }
