@@ -460,6 +460,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
     state.changingPos = false;
     state.isPanning = false;
     state.waypointSnapshot = null;
+    state.changingWaypoint = null;
   }
 
   p.mouseWheel = function(event) {
