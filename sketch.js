@@ -207,8 +207,12 @@ const sketch = (p) => {
       const signal = state.editorTarget.type === "wire"
         ? state.editorTarget.source.wire.signal
         : state.editorTarget.source.bus.output;
-      for (const waypoint of state.editorTarget.source.waypoints) {
-        const hovered = isNearWaypoint(mouse.x, mouse.y, waypoint) 
+      const target = state.editorTarget.type === "wire"
+        ? wires.find(n => n.wire.id === state.editorTarget.source.wire.id)
+        : busNodes.find(n => n.bus.id === state.editorTarget.source.bus.id);
+
+      for (const waypoint of target.waypoints) {
+        const hovered = isNearWaypoint(mouse.x, mouse.y, waypoint);
         drawWaypoint(signal, waypoint, p, hovered);
       }
     }
