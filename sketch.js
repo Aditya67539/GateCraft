@@ -1,7 +1,7 @@
 import p5 from "p5";
 import { state, screenToWorld } from "./state.js";
 import { drawGate, drawWaypoint, drawWire, drawPortTooltip, setFont, drawDynamicGrid, drawGhostPath, drawBus, drawGhostBus } from "./render/draw.js";
-import { registerMouseHandlers, isNearWaypoint, isNearPort, busMap, nodeMap, getWireAtPoint, getBusAtPoint, canWireConnectToBus, findWireDestination } from "./input/mouseHandlers.js";
+import { registerMouseHandlers, isNearWaypoint, isNearPort, busMap, nodeMap, getWireAtPoint, getBusAtPoint, findWireDestination } from "./input/mouseHandlers.js";
 import { initToolbar } from "./ui/toolbar.js";
 import { getActiveTheme, applyTheme } from "./render/theme.js";
 import { CircuitBuilder } from "./logic/CircuitBuilder.js";
@@ -82,29 +82,21 @@ const sketch = (p) => {
     const isIdle = !state.ghostNode && !state.ghostBus && !state.dragging;
 
     for (let i = 0; i < busNodes.length; i++) {
-      const isHovered = hoveredBus?.bus.id === busNodes[i].bus.id;
-      const isEditorTarget = 
-        state.editorTarget?.type === "bus" &&
-        state.editorTarget.source.bus.id === busNodes[i].bus.id;
-
-      if (state.contextMenuTarget?.type === "bus") {
-        if (state.contextMenuTarget.source.bus.id === busNodes[i].bus.id) {
-          drawBus(busNodes[i], p, true);
-          continue;
-        }
-      } else if (
-        isIdle &&
+      const busNode = busNodes[i];
+      const isContextTarget = state.contextMenuTarget?.type === "bus" &&
+        state.contextMenuTarget.source.bus.id === busNode.bus.id;
+      const isEditorTarget = state.editorTarget?.type === "bus" &&
+        state.editorTarget.source.bus.id === busNode.bus.id;
+      const isHovered = hoveredBus?.bus.id === busNode.bus.id;
+      const highlighted = isContextTarget || (
+        !state.contextMenuTarget && isIdle &&
+        (state.wireEditing ? isEditorTarget : isHovered) &&
         (
-          state.wireEditing ?
-          isEditorTarget :
-          isHovered
-        ) &&
-        canWireConnectToBus(state.drawingWire, hoveredBus?.bus, wires)
-      ) {
-        drawBus(busNodes[i], p, true);
-        continue;
-      }
-      drawBus(busNodes[i], p);
+          !state.drawingWire || 
+          canWireConnectToTarget(circuit, state.drawingWire, { destinationType: "bus", destination: { busNode } })
+        )
+      );
+      drawBus(busNode, p, highlighted);
     }
 
     // ── Detect hovered port for tooltip ──────────────────────
@@ -179,29 +171,17 @@ const sketch = (p) => {
     const hoveredWire = getWireAtPoint(mouse.x, mouse.y, wires, nodeMap, busMap);
 
     for (let i = 0; i < wires.length; i++) {
-      const isHovered = hoveredWire?.conn.wire.id === wires[i].wire.id;
-      const isEditorTarget = 
-        state.editorTarget?.type === "wire" &&
-        state.editorTarget.source.wire.id === wires[i].wire.id;
-
-      if (state.contextMenuTarget?.type === "wire") {
-        if (state.contextMenuTarget.source.wire.id === wires[i].wire.id) {
-          drawWire(wires[i], nodeMap, busMap, p, true);
-          continue;
-        }
-      } else if (
-        !state.drawingWire &&
-        isIdle &&
-        (
-          state.wireEditing ?
-          isEditorTarget :
-          isHovered
-        )
-      ) {
-        drawWire(wires[i], nodeMap, busMap, p, true);
-        continue;
-      }
-      drawWire(wires[i], nodeMap, busMap, p);
+      const conn = wires[i];
+      const isContextTarget = state.contextMenuTarget?.type === "wire" &&
+        state.contextMenuTarget.source.wire.id === conn.wire.id;
+      const isEditorTarget = state.editorTarget?.type === "wire" &&
+        state.editorTarget.source.wire.id === conn.wire.id;
+      const isHovered = hoveredWire?.conn.wire.id === conn.wire.id;
+      const highlighted = isContextTarget || (
+        !state.contextMenuTarget && !state.drawingWire && isIdle &&
+        (state.wireEditing ? isEditorTarget : isHovered)
+      );
+      drawWire(conn, nodeMap, busMap, p, highlighted);
     }
 
     if (state.wireEditing) {
