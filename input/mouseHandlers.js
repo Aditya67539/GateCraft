@@ -629,7 +629,7 @@ function findWireOrigin(mx, my, renderNodes, busNodes, wires, nodeMap, busMap) {
   return null;
 }
 
-function findWireDestination(mx, my, renderNodes, busNodes, nodeMap, busMap) {
+export function findWireDestination(mx, my, renderNodes, busNodes, nodeMap, busMap) {
   const nodeConn = findNearInput(mx, my, renderNodes);
   const busConn = findNearBus(mx, my, busNodes, nodeMap, busMap);
 
@@ -679,34 +679,6 @@ export function getBusAtPoint(mx, my, busNodes) {
     }
   }
   return null;
-}
-
-export function canWireConnectToBus(drawingWire, bus, wires) {
-  if (!drawingWire) return true;
-  if (drawingWire.originType === "bus") return false;
-  if (
-    drawingWire.originType === "wire" &&
-    drawingWire.source.conn instanceof BusConnectionView &&
-    drawingWire.source.conn.direction === "out"
-  ) return false;
-
-  const fromGateId = drawingWire.originType === "gate"
-    ? drawingWire.source.fromNode.gate.id
-    : drawingWire.source.conn.wire.from.id;
-
-  const fromOutputIndex = drawingWire.originType === "gate"
-    ? drawingWire.source.fromOutputIndex
-    : drawingWire.source.conn.wire.fromOutputIndex;
-
-  const alreadyConnected = wires.some(
-    n => (
-      n.wire.to.type === "bus" &&
-      n.wire.to.id === bus?.id &&
-      n.wire.from.id === fromGateId &&
-      n.wire.fromOutputIndex === fromOutputIndex
-    )
-  );
-  return !alreadyConnected;
 }
 
 function findNearWaypoint(mx, my, wires, busNodes) {

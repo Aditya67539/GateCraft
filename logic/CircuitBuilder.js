@@ -175,6 +175,15 @@ export class CircuitBuilder {
     return result;
   }
 
+  canConnect(from, to, fromOutputIndex = null, toInputIndex = null) {
+    if (to.type !== "bus") {
+      return to.canConnect(toInputIndex);
+    } else {
+      if (from.type === "bus") return false;
+      return to.canConnect(from, fromOutputIndex);
+    }
+  }
+
   /**
    * Disconnects a wire from a gate's input. 
    * 
