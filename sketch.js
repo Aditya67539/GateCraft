@@ -1,7 +1,7 @@
 import p5 from "p5";
 import { state, screenToWorld } from "./state.js";
 import { drawGate, drawWaypoint, drawWire, drawPortTooltip, setFont, drawDynamicGrid, drawGhostPath, drawBus, drawGhostBus } from "./render/draw.js";
-import { registerMouseHandlers, isNearWaypoint, isNearPort, busMap, nodeMap, getWireAtPoint, getBusAtPoint, canWireConnectToBus } from "./input/mouseHandlers.js";
+import { registerMouseHandlers, isNearWaypoint, isNearPort, busMap, nodeMap, getWireAtPoint, getBusAtPoint, canWireConnectToBus, findWireDestination } from "./input/mouseHandlers.js";
 import { initToolbar } from "./ui/toolbar.js";
 import { getActiveTheme, applyTheme } from "./render/theme.js";
 import { CircuitBuilder } from "./logic/CircuitBuilder.js";
@@ -9,6 +9,7 @@ import { snapPointToGrid, wouldBusOverlap, wouldOverlap } from "./render/RenderP
 import { registerKeyboardHandlers } from "./input/keyboardHandlers.js";
 import { drawMinimap } from "./render/minimap.js";
 import { getOctilinearSnap, getTapPointFromElement } from "./render/wireGeometry.js";
+import { canWireConnectToTarget } from "./logic/wire.js";
 
 applyTheme(getActiveTheme());
 
@@ -270,7 +271,36 @@ const sketch = (p) => {
         const conn = connection.conn;
         startPoint = getTapPointFromElement(conn, connection.tapRef, nodeMap, busMap);
       }
-      drawGhostPath(startPoint, state.ghostWire, mouse, p);
+
+      const hoveredDestination = findWireDestination(
+        mouse.x,
+        mouse.y,
+        renderNodes,
+        busNodes,
+        nodeMap,
+        busMap,
+      );
+      const validDestination = canWireConnectToTarget(circuit, state.drawingWire, hoveredDestination);
+
+      if (validDestination) {
+        let endPoint = mouse;
+
+        if (hoveredDestination.destinationType === "gate") {
+          const inputIndex = hoveredDestination.destination.index;
+          const totalInputs = hoveredDestination.destination.toNode.gate.inputCount;
+
+          endPoint = hoveredDestination.destination.toNode.getInputPortByIndex(inputIndex, totalInputs);
+        } else if (hoveredDestination.destinationType === "bus") {
+          const busNode = hoveredDestination.destination.busNode;
+          const tapRef = hoveredDestination.destination.tapRef;
+
+          endPoint = getTapPointFromElement(busNode, tapRef, nodeMap, busMap);
+        }
+
+        drawGhostPath(startPoint, state.ghostWire, endPoint, p);
+      } else {
+        drawGhostPath(startPoint, state.ghostWire, mouse, p);
+      }
     }
 
     // ── Draw tooltip last so it renders on top of everything ──

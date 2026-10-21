@@ -629,7 +629,7 @@ function findWireOrigin(mx, my, renderNodes, busNodes, wires, nodeMap, busMap) {
   return null;
 }
 
-function findWireDestination(mx, my, renderNodes, busNodes, nodeMap, busMap) {
+export function findWireDestination(mx, my, renderNodes, busNodes, nodeMap, busMap) {
   const nodeConn = findNearInput(mx, my, renderNodes);
   const busConn = findNearBus(mx, my, busNodes, nodeMap, busMap);
 
