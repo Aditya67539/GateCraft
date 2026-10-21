@@ -58,6 +58,12 @@ class ConnectableGate {
   hasNoInputsConnected() {
     return this.inputs.length > 0 && this.inputs.every(n => n === undefined);
   }
+
+  canConnect(toInputIndex) {
+    if (toInputIndex === null) return false;
+    if (this.inputs[toInputIndex] !== undefined) return false;
+    return true;
+  }
 }
 
 export class TriStateBuffer extends ConnectableGate {
@@ -253,7 +259,7 @@ export class Bus {
   }
 
   connect(fromGate, fromOutputIndex = null) {
-    if (this.inputs.find(n => n.from.id === fromGate.id && n.fromOutputIndex === fromOutputIndex)) {
+    if (!this.canConnect(fromGate, fromOutputIndex)) {
       return { ok: false, error: "Connection already exists!" };
     }
     const wire = new Wire(fromGate, this, this.inputCount++, fromOutputIndex);
@@ -263,6 +269,10 @@ export class Bus {
 
   hasNoInputsConnected() {
     return this.inputs.length === 0;
+  }
+
+  canConnect(fromGate, fromOutputIndex = null) {
+    return !(this.inputs.find(n => n.from.id === fromGate.id && n.fromOutputIndex === fromOutputIndex));
   }
 
   evaluate() {
