@@ -37,6 +37,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
   const canvasHost = document.querySelector(".canvas-host");
   const canvas = canvasHost.querySelector("canvas");
   const wireCtxMenu = document.getElementById("wire-context-menu");
+  const gateCtxMenu = document.getElementById("gate-context-menu");
 
   p.mousePressed = function (event) {
     if (state.labelEditing) return;
@@ -379,15 +380,11 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
       const clientX = rect.left + (p.mouseX / p.width) * rect.width;
       const clientY = rect.top + (p.mouseY / p.height) * rect.height;
 
-      // 1. Check for input/output gates (label editing)
-      // TODO: Add a context menu instead of the direct label editor
+      // 1. Check for input/output gates
       const target = renderNodes.find(n => n.containsPoint(world.x, world.y));
       if (target) {
-        const gateType = target.gate.type;
-        if (gateType === "input" || gateType === "output") {
-          openLabelEditor(target, p);
-          return;
-        }
+        showContextMenu(gateCtxMenu, clientX, clientY, { type: "gate", source: target });
+        return;
       }
 
       // 2. Check for wires and buses
@@ -521,31 +518,38 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
   });
 
   // Delete button - remove the wire or bus
-  document.getElementById("ctx-delete-target").addEventListener("click", () => {
-    const target = state.contextMenuTarget;
-    hideContextMenu(wireCtxMenu);
-    if (!target) return;
+  document.querySelectorAll(".ctx-delete-target").forEach(element => {
+    element.addEventListener("click", () => {
+      const target = state.contextMenuTarget;
+      hideContextMenu(wireCtxMenu);
+      hideContextMenu(gateCtxMenu);
+      if (!target) return;
 
-    if (target.type === "wire") {
-      const removeWireCommand = new RemoveWireCommand(circuit, wires, target.source);
-      performCommand(removeWireCommand);
-    } else if (target.type === "bus") {
-      const removeBusCommand = new RemoveBusCommand(busNodes, wires, circuit, target.source, busMap);
-      performCommand(removeBusCommand);
-    }
+      if (target.type === "wire") {
+        const removeWireCommand = new RemoveWireCommand(circuit, wires, target.source);
+        performCommand(removeWireCommand);
+      } else if (target.type === "bus") {
+        const removeBusCommand = new RemoveBusCommand(busNodes, wires, circuit, target.source, busMap);
+        performCommand(removeBusCommand);
+      } else if (target.type === "gate") {
+        const removeGateCommand = new RemoveGateCommand(renderNodes, wires, circuit, target.source, nodeMap);
+        performCommand(removeGateCommand);
+      }
+    });
   });
 
   // Close wire context meny on any click or Escape
   document.addEventListener("click", () => {
     hideContextMenu(wireCtxMenu);
+    hideContextMenu(gateCtxMenu);
   });
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       hideContextMenu(wireCtxMenu);
+      hideContextMenu(gateCtxMenu);
     };
   });
 }
-
 
 export function isNearPort(mouseX, mouseY, port) {
   const d = dist(mouseX, mouseY, port.x, port.y);
