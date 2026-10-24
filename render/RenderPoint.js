@@ -121,7 +121,11 @@ export function spawnCompositeNode(name, circuitData, mouseX, mouseY) {
 
 function computeSize(gate) {
   if (gate.type === "seven-seg") return { width: 9 * GRID_SIZE, height: 11 * GRID_SIZE };
-  if (gate.type === "input" || gate.type === "output") return { width: 2 * GRID_SIZE, height: 2 * GRID_SIZE };
+  if (
+    gate.type === "input" || 
+    gate.type === "output" ||
+    gate.type === "clock"
+  ) return { width: 2 * GRID_SIZE, height: 2 * GRID_SIZE };
   const inputCount = gate.inputCount;
   const outputCount = gate.outputCount;
 
