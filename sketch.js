@@ -66,12 +66,17 @@ const sketch = (p) => {
     setFont(theme, p);
     for (let i = 0; i < renderNodes.length; i++) {
       let nodeStatus = null;
+      const isContextTarget = state.contextMenuTarget?.type === "gate" &&
+        state.contextMenuTarget.source.gate.id === renderNodes[i].gate.id;
       if (state.dragging && renderNodes[i] === state.dragging) {
         // Actively dragging — show overlap feedback
         nodeStatus = wouldOverlap(state.dragging, renderNodes, busNodes, state.dragging.gate.id)
           ? "invalid"
           : "selected";
-      } else if (state.selectedNode && renderNodes[i] === state.selectedNode) {
+      } else if (
+        (state.selectedNode && renderNodes[i] === state.selectedNode) ||
+        isContextTarget
+      ) {
         // Persistently selected (not being dragged)
         nodeStatus = "selected";
       }
