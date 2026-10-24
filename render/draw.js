@@ -44,8 +44,6 @@ import { getActiveTheme } from "./theme.js";
 import { screenToWorld } from "../state.js";
 import { getOctilinearSnap } from "./wireGeometry.js";
 
-const SIGNAL_KEYS = ["low", "high", "x", "z", "e"];
-
 /**
  * Return "#ffffff" or "#1a1a2e" depending on which has better contrast
  * against the given hex background color.
@@ -177,7 +175,7 @@ export function drawBus(busNode, p, hovered = false) {
   const theme = getActiveTheme();
   p.strokeWeight(hovered ? HOVERED_BUS_THICKNESS : BUS_THICKNESS);
 
-  const stateKey = SIGNAL_KEYS[busNode.bus.output] || "x";
+  const stateKey = SIGNAL_MAP[busNode.bus.output]?.key || "x";
   const color = theme.wires[stateKey].hex;
   p.stroke(color);
 
@@ -194,7 +192,7 @@ export function drawGhostBus(busNode, p, status = null) {
   const theme = getActiveTheme();
   p.strokeWeight(BUS_THICKNESS);
 
-  const stateKey = SIGNAL_KEYS[busNode.bus.output] || "x";
+  const stateKey = SIGNAL_MAP[busNode.bus.output]?.key || "x";
   const color = theme.wires[stateKey].hex;
   p.stroke(color);
 
@@ -341,7 +339,7 @@ function drawDisplay(renderNode, p) {
 
   let colors = gate.output.map(segment => {
     if (segment === 0 || segment === 3) return "#2a1a1a";
-    const stateKey = SIGNAL_KEYS[segment] || "x";
+    const stateKey = SIGNAL_MAP[segment]?.key || "x";
     return theme.gates.output[stateKey].hex;
   });
 
@@ -420,7 +418,7 @@ function drawEmbeddedDisplay(displayGate, x, y, width, height, p) {
 
   let colors = displayGate.output.map(segment => {
     if (segment === 0 || segment === 3) return "#2a1a1a";
-    const stateKey = SIGNAL_KEYS[segment] || "x";
+    const stateKey = SIGNAL_MAP[segment]?.key || "x";
     return theme.gates.output[stateKey].hex;
   });
 
@@ -628,7 +626,7 @@ export function drawGhostPath(start, waypoints, end, p) {
 
 export function drawWire(connection, nodeMap, busMap, p, hovered = false) {
   const theme = getActiveTheme();
-  const stateKey = SIGNAL_KEYS[connection.wire.signal] || "x";
+  const stateKey = SIGNAL_MAP[connection.wire.signal]?.key || "x";
 
   const { start, waypoints, end } = connection.getPoints(nodeMap, busMap);
 
@@ -641,7 +639,7 @@ export function drawWire(connection, nodeMap, busMap, p, hovered = false) {
 
 export function drawWaypoint(signal, waypoint, p, hovered = false) {
   const theme = getActiveTheme();
-  const stateKey = SIGNAL_KEYS[signal] || "x";
+  const stateKey = SIGNAL_MAP[signal]?.key || "x";
   let color = theme.wires[stateKey].hex;
   p.fill(color);
   p.strokeWeight(WAYPOINT_STROKE_WEIGHT);
