@@ -38,6 +38,7 @@ import {
   HOVERED_BUS_THICKNESS,
   HOVERED_WAYPOINT_RADIUS,
   WAYPOINT_STROKE_WEIGHT,
+  SIGNAL_MAP,
 } from "../constants.js";
 import { getActiveTheme } from "./theme.js";
 import { screenToWorld } from "../state.js";
@@ -76,7 +77,8 @@ export function drawGate(renderNode, p, status = null) {
 
   const gate = renderNode.gate;
   const stateVal = Array.isArray(gate.output) ? gate.output[0] : gate.output;
-  const stateKey = SIGNAL_KEYS[stateVal] || "x";
+  const signalInfo = SIGNAL_MAP[stateVal];
+  const stateKey = signalInfo?.key || "x";
 
   let color;
   let useGradient = false;
@@ -136,7 +138,8 @@ export function drawGate(renderNode, p, status = null) {
   p.noStroke();
   p.textAlign(p.CENTER, p.CENTER);
   p.textSize(FONT_SIZE);
-  const label = gate.label || gate.type;
+  const isIOnode = gate.type === "input" || gate.type === "output";
+  const label = isIOnode ? signalInfo.label : gate.label || gate.type;
 
   if (gate.type === "composite" && gate.embeddedDisplays && gate.embeddedDisplays.length > 0 && gate._displayArea) {
     // --- Label at the top ---
