@@ -393,13 +393,13 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
       // 2. Check for wires and buses
       const wireInfo = getWireAtPoint(world.x, world.y, wires, nodeMap, busMap);
       if (wireInfo) {
-        showWireContextMenu(clientX, clientY, { type: "wire", source: wireInfo.conn });
+        showContextMenu(wireCtxMenu, clientX, clientY, { type: "wire", source: wireInfo.conn });
         return;
       }
 
       const busInfo = getBusAtPoint(world.x, world.y, busNodes);
       if (busInfo) {
-        showWireContextMenu(clientX, clientY, { type: "bus", source: busInfo });
+        showContextMenu(wireCtxMenu, clientX, clientY, { type: "bus", source: busInfo });
         return;
       }
     }
@@ -489,25 +489,25 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
   }
 
 
-  function showWireContextMenu(clientX, clientY, target) {
+  function showContextMenu(contextMenu, clientX, clientY, target) {
     state.contextMenuTarget = target;
-    wireCtxMenu.classList.add("open");
-    wireCtxMenu.style.left = `${clientX}px`;
-    wireCtxMenu.style.top = `${clientY}px`;
+    contextMenu.classList.add("open");
+    contextMenu.style.left = `${clientX}px`;
+    contextMenu.style.top = `${clientY}px`;
 
-    const rect = wireCtxMenu.getBoundingClientRect();
+    const rect = contextMenu.getBoundingClientRect();
     if (rect.bottom > window.innerHeight) {
-      wireCtxMenu.style.top = `${Math.max(0, clientY - rect.height)}px`;
+      contextMenu.style.top = `${Math.max(0, clientY - rect.height)}px`;
     }
     if (rect.right > window.innerWidth) {
-      wireCtxMenu.style.left = `${Math.max(0, clientX - rect.width)}px`;
+      contextMenu.style.left = `${Math.max(0, clientX - rect.width)}px`;
     }
     state.isAnyModalOpen = true;
   }
 
-  function hideWireContextMenu() {
-    if (!wireCtxMenu.classList.contains("open")) return;
-    wireCtxMenu.classList.remove("open");
+  function hideContextMenu(contextMenu) {
+    if (!contextMenu.classList.contains("open")) return;
+    contextMenu.classList.remove("open");
     state.contextMenuTarget = null;
     state.isAnyModalOpen = false;
   }
@@ -515,7 +515,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
   // Edit button - placeholder for waypoint editor (coming soon)
   document.getElementById("ctx-wire-edit").addEventListener("click", () => {
     state.editorTarget = structuredClone(state.contextMenuTarget);
-    hideWireContextMenu();
+    hideContextMenu(wireCtxMenu);
     if (!state.editorTarget) return;
     state.wireEditing = true;
   });
@@ -523,7 +523,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
   // Delete button - remove the wire or bus
   document.getElementById("ctx-wire-delete").addEventListener("click", () => {
     const target = state.contextMenuTarget;
-    hideWireContextMenu();
+    hideContextMenu(wireCtxMenu);
     if (!target) return;
 
     if (target.type === "wire") {
@@ -536,9 +536,13 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
   });
 
   // Close wire context meny on any click or Escape
-  document.addEventListener("click", () => hideWireContextMenu());
+  document.addEventListener("click", () => {
+    hideContextMenu(wireCtxMenu);
+  });
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") hideWireContextMenu();
+    if (e.key === "Escape") {
+      hideContextMenu(wireCtxMenu);
+    };
   });
 }
 
