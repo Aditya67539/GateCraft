@@ -5,6 +5,13 @@ export const SIGNAL = {
   Z:    3,
   E:    4,
 }
+export const SIGNAL_MAP = {
+  [SIGNAL.LOW]:  { key: "low", label: "0" },
+  [SIGNAL.HIGH]: { key: "high", label: "1" },
+  [SIGNAL.X]:    { key: "x", label: "X" },
+  [SIGNAL.Z]:    { key: "z", label: "Z" },
+  [SIGNAL.E]:    { key: "e", label: "E" },
+};
 export const GATE_DEFS = {
   and:         { inputs: 2, outputs: 1 },
   or:          { inputs: 2, outputs: 1 },
