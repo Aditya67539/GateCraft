@@ -59,6 +59,62 @@ function contrastText(hex) {
   return lum > 0.35 ? "#1a1a2e" : "#ffffff";
 }
 
+/**
+ * Draws a square wave symbol inside a clock gate matching the 1-cycle waveform.
+ * When the signal is low, the wave is drawn with high signal color.
+ * When the signal is high, the wave is drawn with low signal color and flipped.
+ *
+ * @param {RenderPoint} renderNode
+ * @param {string} stateKey - "low", "high", "x", "z", "e"
+ * @param {Object} theme - active theme
+ * @param {Object} p - p5 instance
+ */
+function drawClockWave(renderNode, stateKey, theme, p) {
+  const ctx = p.drawingContext;
+  const w = renderNode.width;
+  const h = renderNode.height;
+  const cx = renderNode.x + w / 2;
+  const cy = renderNode.y + h / 2;
+
+  const isHigh = stateKey === "high";
+  const waveColor = isHigh ? theme.gates.input.low.hex : theme.gates.input.high.hex;
+
+  // Single-cycle square wave
+  const waveW = Math.round(w * 0.55);
+  const waveH = Math.round(h * 0.55);
+  const halfW = waveW / 2;
+  const halfH = waveH / 2;
+
+  const x0 = cx - halfW;
+  const x1 = cx + halfW;
+
+  const topY = cy - halfH;
+  const bottomY = cy + halfH;
+
+  // When low (unflipped, matching sketch):
+  // (x0, cy) -> (x0, topY) -> (cx, topY) -> (cx, bottomY) -> (x1, bottomY) -> (x1, cy)
+  // When high (flipped):
+  // (x0, cy) -> (x0, bottomY) -> (cx, bottomY) -> (cx, topY) -> (x1, topY) -> (x1, cy)
+  const y1 = isHigh ? bottomY : topY;
+  const y2 = isHigh ? topY : bottomY;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(x0, cy);
+  ctx.lineTo(x0, y1);
+  ctx.lineTo(cx, y1);
+  ctx.lineTo(cx, y2);
+  ctx.lineTo(x1, y2);
+  ctx.lineTo(x1, cy);
+
+  ctx.strokeStyle = waveColor;
+  ctx.lineWidth = 3;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "miter";
+  ctx.stroke();
+  ctx.restore();
+}
+
 export function drawGate(renderNode, p, status = null) {
   const theme = getActiveTheme();
   if (renderNode.gate.type === "seven-seg") {
@@ -157,6 +213,8 @@ export function drawGate(renderNode, p, status = null) {
       const dispX = stripStartX + i * (displayW + displayGap);
       drawEmbeddedDisplay(gate.embeddedDisplays[i].gate, dispX, dispY, displayW, displayH, p);
     }
+  } else if (gate.type === "clock") {
+    drawClockWave(renderNode, stateKey, theme, p);
   } else {
     p.text(label, renderNode.x + renderNode.width / 2, renderNode.y + renderNode.height / 2);
   }
