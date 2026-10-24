@@ -521,7 +521,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
   });
 
   // Delete button - remove the wire or bus
-  document.getElementById("ctx-wire-delete").addEventListener("click", () => {
+  document.getElementById("ctx-delete-target").addEventListener("click", () => {
     const target = state.contextMenuTarget;
     hideContextMenu(wireCtxMenu);
     if (!target) return;
