@@ -212,8 +212,6 @@ export class CompositeGate extends ConnectableGate {
       this.internalInputs[i].setValue(resolvedInputs[i]);
     }
 
-    const gates = this.circuitData.builder.getGates();
-    const wires = this.circuitData.builder.wires;
     if (this.circuitData.builder.dirty) {
       this.circuitData.builder.buildFanout();
     }
