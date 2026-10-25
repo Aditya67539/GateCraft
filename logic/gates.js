@@ -314,7 +314,6 @@ export function createBasicGate(type) {
  * @returns {CompositeGate} The instantiated composite gate object 
  */
 export function createCompositeGate(name, circuitData) {
-  const gates = circuitData.builder.getGates();
   const inputCount = circuitData.inputOrder.length;
   const inputs = new Array(inputCount).fill(undefined);
   const gate = new CompositeGate(inputs, circuitData);
