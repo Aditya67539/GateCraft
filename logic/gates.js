@@ -1,6 +1,6 @@
 import { Wire } from "./wire.js";
 import { evaluateAll } from "./evaluate.js";
-import { GATE_CATEGORIES, GATE_DEFS, SIGNAL } from "../constants.js";
+import { GATE_CATEGORIES, PRIMITIVE_GATE_DEFS, SIGNAL } from "../constants.js";
 
 
 const { LOW, HIGH, X, Z, E } = SIGNAL;
@@ -17,8 +17,8 @@ export class Input {
     this.id = Logic.nextId++;
     this.category = GATE_CATEGORIES.PRIMITIVE;
     this.type = "input";
-    this.outputCount = GATE_DEFS[this.type].outputs;
-    this.inputCount = GATE_DEFS[this.type].inputs;
+    this.outputCount = PRIMITIVE_GATE_DEFS[this.type].outputs;
+    this.inputCount = PRIMITIVE_GATE_DEFS[this.type].inputs;
     this.output = LOW;
   }
 
@@ -73,8 +73,8 @@ export class TriStateBuffer extends ConnectableGate {
     this.id = Logic.nextId++;
     this.category = GATE_CATEGORIES.PRIMITIVE;
     this.type = "Tri-state Buffer";
-    this.inputCount = GATE_DEFS[this.type].inputs;
-    this.outputCount = GATE_DEFS[this.type].outputs;
+    this.inputCount = PRIMITIVE_GATE_DEFS[this.type].inputs;
+    this.outputCount = PRIMITIVE_GATE_DEFS[this.type].outputs;
     this.inputs = new Array(this.inputCount).fill(undefined);
     this.output = X;
     this.tempOutput = X;
@@ -93,8 +93,8 @@ export class Output extends ConnectableGate {
     this.id = Logic.nextId++;
     this.category = GATE_CATEGORIES.PRIMITIVE;
     this.type = "output";
-    this.inputCount = GATE_DEFS[this.type].inputs;
-    this.outputCount = GATE_DEFS[this.type].outputs;
+    this.inputCount = PRIMITIVE_GATE_DEFS[this.type].inputs;
+    this.outputCount = PRIMITIVE_GATE_DEFS[this.type].outputs;
     this.inputs = new Array(this.inputCount).fill(undefined);
     this.output = X;
     this.tempOutput = X;
@@ -112,8 +112,8 @@ export class Gate extends ConnectableGate {
     this.id = Logic.nextId++;
     this.category = GATE_CATEGORIES.PRIMITIVE;
     this.type = type.toLowerCase();
-    this.inputCount = GATE_DEFS[this.type].inputs;
-    this.outputCount = GATE_DEFS[this.type].outputs;
+    this.inputCount = PRIMITIVE_GATE_DEFS[this.type].inputs;
+    this.outputCount = PRIMITIVE_GATE_DEFS[this.type].outputs;
     this.inputs = new Array(this.inputCount).fill(undefined);
     this.output = X;
     this.tempOutput = X;
@@ -237,8 +237,8 @@ export class SevenSegmentDisplay extends ConnectableGate {
     this.id = Logic.nextId++;
     this.category = GATE_CATEGORIES.PRIMITIVE;
     this.type = "seven-seg";
-    this.inputCount = GATE_DEFS[this.type].inputs;
-    this.outputCount = GATE_DEFS[this.type].outputs;
+    this.inputCount = PRIMITIVE_GATE_DEFS[this.type].inputs;
+    this.outputCount = PRIMITIVE_GATE_DEFS[this.type].outputs;
     this.inputs = new Array(this.inputCount).fill(undefined);
     this.output = new Array(this.inputCount).fill(X);
     this.tempOutput = new Array(this.inputCount).fill(X);

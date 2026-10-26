@@ -16,7 +16,7 @@ export const SIGNAL_MAP = Object.freeze({
   [SIGNAL.Z]:    Object.freeze({ key: "z", label: "Z" }),
   [SIGNAL.E]:    Object.freeze({ key: "e", label: "E" }),
 });
-export const GATE_DEFS = Object.freeze({
+export const PRIMITIVE_GATE_DEFS = Object.freeze({
   and:         Object.freeze({ inputs: 2, outputs: 1 }),
   or:          Object.freeze({ inputs: 2, outputs: 1 }),
   not:         Object.freeze({ inputs: 1, outputs: 1 }),
