@@ -2,6 +2,7 @@ import { settleCircuit, createAccumulator, flatten, buildTypedArrays, clearAccum
 import { Bus, CompositeGate, createPrimitiveGate, createCompositeGate, Gate, Output } from "./gates.js";
 import { Wire } from "./wire.js";
 import { initWasm } from "#wasmLoader";
+import { GATE_CATEGORIES } from "../constants.js";
 
 await initWasm();
 
@@ -176,10 +177,10 @@ export class CircuitBuilder {
   }
 
   canConnect(from, to, fromOutputIndex = null, toInputIndex = null) {
-    if (to.type !== "bus") {
+    if (to.category === GATE_CATEGORIES.PRIMITIVE && to.type !== "bus") {
       return to.canConnect(toInputIndex);
     } else {
-      if (from.type === "bus") return false;
+      if (from.category === GATE_CATEGORIES.PRIMITIVE && from.type === "bus") return false;
       return to.canConnect(from, fromOutputIndex);
     }
   }
@@ -194,7 +195,7 @@ export class CircuitBuilder {
     const index = destination.inputs.indexOf(wire);
     if (index === -1) return;
     this.dirty = true;
-    if (destination.type === "bus") {
+    if (destination.category === GATE_CATEGORIES.PRIMITIVE && destination.type === "bus") {
       destination.inputs.splice(index, 1);
       destination.inputCount--;
 
