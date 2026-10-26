@@ -99,7 +99,7 @@ export function createCompositeNode(name, circuitData, mouseX, mouseY) {
  * @param {number} mouseX - The x-coordinate where the node will be placed
  * @param {number} mouseY - The y-coordinate where the node will be placed
  */
-export function spawnBasicNode(type, mouseX, mouseY) {
+export function spawnPrimitiveNode(type, mouseX, mouseY) {
   state.ghostNode = createPrimitiveNode(type, mouseX, mouseY);
   state.mode = "placing";
 }

@@ -1,4 +1,4 @@
-import { spawnBasicNode, spawnCompositeNode } from "../render/RenderPoint.js";
+import { spawnPrimitiveNode, spawnCompositeNode } from "../render/RenderPoint.js";
 import { state, screenToWorld } from "../state.js";
 import {
   saveCompositeGate,
@@ -843,7 +843,7 @@ export function initToolbar(p, circuit, renderNodes, wires, busNodes) {
       if (type === "bus") {
         spawnBusNode(worldMouseX, worldMouseY);
       } else {
-        spawnBasicNode(type, worldMouseX, worldMouseY);
+        spawnPrimitiveNode(type, worldMouseX, worldMouseY);
       }
     });
   });
