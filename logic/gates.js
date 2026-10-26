@@ -1,6 +1,6 @@
 import { Wire } from "./wire.js";
 import { evaluateAll } from "./evaluate.js";
-import { GATE_DEFS, SIGNAL } from "../constants.js";
+import { GATE_CATEGORIES, GATE_DEFS, SIGNAL } from "../constants.js";
 
 
 const { LOW, HIGH, X, Z, E } = SIGNAL;
@@ -15,6 +15,7 @@ class Logic {
 export class Input {
   constructor() {
     this.id = Logic.nextId++;
+    this.category = GATE_CATEGORIES.PRIMITIVE;
     this.type = "input";
     this.outputCount = GATE_DEFS[this.type].outputs;
     this.inputCount = GATE_DEFS[this.type].inputs;
@@ -70,6 +71,7 @@ export class TriStateBuffer extends ConnectableGate {
   constructor() {
     super();
     this.id = Logic.nextId++;
+    this.category = GATE_CATEGORIES.PRIMITIVE;
     this.type = "Tri-state Buffer";
     this.inputCount = GATE_DEFS[this.type].inputs;
     this.outputCount = GATE_DEFS[this.type].outputs;
@@ -89,6 +91,7 @@ export class Output extends ConnectableGate {
   constructor() {
     super();
     this.id = Logic.nextId++;
+    this.category = GATE_CATEGORIES.PRIMITIVE;
     this.type = "output";
     this.inputCount = GATE_DEFS[this.type].inputs;
     this.outputCount = GATE_DEFS[this.type].outputs;
@@ -107,6 +110,7 @@ export class Gate extends ConnectableGate {
   constructor(type) {
     super();
     this.id = Logic.nextId++;
+    this.category = GATE_CATEGORIES.PRIMITIVE;
     this.type = type.toLowerCase();
     this.inputCount = GATE_DEFS[this.type].inputs;
     this.outputCount = GATE_DEFS[this.type].outputs;
@@ -175,6 +179,7 @@ export class CompositeGate extends ConnectableGate {
   constructor(inputs, circuitData) {
     super();
     this.id = Logic.nextId++;
+    this.category = GATE_CATEGORIES.COMPOSITE;
     this.type = "composite";
     this.inputs = inputs;
     this.circuitData = circuitData;
@@ -230,6 +235,7 @@ export class SevenSegmentDisplay extends ConnectableGate {
   constructor() {
     super();
     this.id = Logic.nextId++;
+    this.category = GATE_CATEGORIES.PRIMITIVE;
     this.type = "seven-seg";
     this.inputCount = GATE_DEFS[this.type].inputs;
     this.outputCount = GATE_DEFS[this.type].outputs;
@@ -249,6 +255,7 @@ export class SevenSegmentDisplay extends ConnectableGate {
 export class Bus {
   constructor() {
     this.id = Logic.nextId++;
+    this.category = GATE_CATEGORIES.PRIMITIVE;
     this.type = "bus";
     this.inputCount = 0;
     this.inputs = [];
