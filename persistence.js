@@ -234,7 +234,7 @@ export function buildCircuitFromData(circuitData, renderData = null) {
       const nestedBuilder = buildCircuitFromData(nestedCircuit.circuitData, nestedCircuit.renderData);
       gate = builder.addCompositeGate(gateSpec.label, nestedBuilder);
     } else {
-      gate = builder.addBasicGate(gateSpec.type);
+      gate = builder.addPrimitiveGate(gateSpec.type);
     }
 
     idMap[gateSpec.id] = gate.id;

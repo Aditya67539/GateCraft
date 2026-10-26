@@ -8,19 +8,19 @@ describe("Full Adder", () => {
   it("follows truth table", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const B = builder.addBasicGate("input");
-    const C = builder.addBasicGate("input");
+    const A = builder.addPrimitiveGate("input");
+    const B = builder.addPrimitiveGate("input");
+    const C = builder.addPrimitiveGate("input");
 
-    const xor1 = builder.addBasicGate("xor");
-    const xor2 = builder.addBasicGate("xor");
-    const and1 = builder.addBasicGate("and");
-    const and2 = builder.addBasicGate("and");
-    const or1 = builder.addBasicGate("or");
-    const or2 = builder.addBasicGate("or");
+    const xor1 = builder.addPrimitiveGate("xor");
+    const xor2 = builder.addPrimitiveGate("xor");
+    const and1 = builder.addPrimitiveGate("and");
+    const and2 = builder.addPrimitiveGate("and");
+    const or1 = builder.addPrimitiveGate("or");
+    const or2 = builder.addPrimitiveGate("or");
 
-    const sum = builder.addBasicGate("output");
-    const carry = builder.addBasicGate("output");
+    const sum = builder.addPrimitiveGate("output");
+    const carry = builder.addPrimitiveGate("output");
 
     builder.connectToGate(A, xor1, 0);
     builder.connectToGate(B, xor1, 1);

@@ -8,12 +8,12 @@ describe("Half Adder", () => {
   it("follows truth table", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const B = builder.addBasicGate("input");
-    const xor = builder.addBasicGate("xor");
-    const and = builder.addBasicGate("and");
-    const sum = builder.addBasicGate("output");
-    const carry = builder.addBasicGate("output");
+    const A = builder.addPrimitiveGate("input");
+    const B = builder.addPrimitiveGate("input");
+    const xor = builder.addPrimitiveGate("xor");
+    const and = builder.addPrimitiveGate("and");
+    const sum = builder.addPrimitiveGate("output");
+    const carry = builder.addPrimitiveGate("output");
 
     builder.connectToGate(A, xor, 0);
     builder.connectToGate(B, xor, 1);

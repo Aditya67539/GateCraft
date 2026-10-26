@@ -86,9 +86,9 @@ describe("Persistence – Backward Compatibility", () => {
   it("reconstructs a circuit serialized without the buses property", () => {
     // Simulate old serialized data that has no `buses` key at all
     const inner = new CircuitBuilder();
-    const A = inner.addBasicGate("input");
-    const not = inner.addBasicGate("not");
-    const Q = inner.addBasicGate("output");
+    const A = inner.addPrimitiveGate("input");
+    const not = inner.addPrimitiveGate("not");
+    const Q = inner.addPrimitiveGate("output");
 
     inner.connectToGate(A, not, 0, null, false);
     inner.connectToGate(not, Q, 0, null, false);
@@ -112,9 +112,9 @@ describe("Persistence – Backward Compatibility", () => {
     const reconstructed = buildCircuitFromData(serialized);
 
     const outer = new CircuitBuilder();
-    const oA = outer.addBasicGate("input");
+    const oA = outer.addPrimitiveGate("input");
     const comp = outer.addCompositeGate("not-wrapper", reconstructed);
-    const oQ = outer.addBasicGate("output");
+    const oQ = outer.addPrimitiveGate("output");
 
     outer.connectToGate(oA, comp, 0);
     outer.connectToGate(comp, oQ, 0, 0);
@@ -130,10 +130,10 @@ describe("Persistence – Backward Compatibility", () => {
 
   it("reconstructs wires without isBusConnection field as gate-to-gate connections", () => {
     const inner = new CircuitBuilder();
-    const A = inner.addBasicGate("input");
-    const B = inner.addBasicGate("input");
-    const andGate = inner.addBasicGate("and");
-    const Q = inner.addBasicGate("output");
+    const A = inner.addPrimitiveGate("input");
+    const B = inner.addPrimitiveGate("input");
+    const andGate = inner.addPrimitiveGate("and");
+    const Q = inner.addPrimitiveGate("output");
 
     inner.connectToGate(A, andGate, 0, null, false);
     inner.connectToGate(B, andGate, 1, null, false);
@@ -160,10 +160,10 @@ describe("Persistence – Backward Compatibility", () => {
     const reconstructed = buildCircuitFromData(serialized);
 
     const outer = new CircuitBuilder();
-    const oA = outer.addBasicGate("input");
-    const oB = outer.addBasicGate("input");
+    const oA = outer.addPrimitiveGate("input");
+    const oB = outer.addPrimitiveGate("input");
     const comp = outer.addCompositeGate("and-gate", reconstructed);
-    const oQ = outer.addBasicGate("output");
+    const oQ = outer.addPrimitiveGate("output");
 
     outer.connectToGate(oA, comp, 0);
     outer.connectToGate(oB, comp, 1);
@@ -190,9 +190,9 @@ describe("Persistence – Bus round-trip", () => {
   it("reconstructs a single-driver bus circuit and evaluates correctly", () => {
     // Build: Input → Bus → Output
     const inner = new CircuitBuilder();
-    const inp = inner.addBasicGate("input");
+    const inp = inner.addPrimitiveGate("input");
     const bus = inner.addBus();
-    const out = inner.addBasicGate("output");
+    const out = inner.addPrimitiveGate("output");
 
     inner.connectToBus(bus, inp, null, false);       // wire 0: gate→bus (direction "in")
     inner.connectToGate(bus, out, 0, null, false);    // wire 1: bus→gate (direction "out")
@@ -208,9 +208,9 @@ describe("Persistence – Bus round-trip", () => {
 
     // Use reconstructed circuit as composite gate
     const outer = new CircuitBuilder();
-    const oA = outer.addBasicGate("input");
+    const oA = outer.addPrimitiveGate("input");
     const comp = outer.addCompositeGate("bus-passthrough", reconstructed);
-    const oQ = outer.addBasicGate("output");
+    const oQ = outer.addPrimitiveGate("output");
 
     outer.connectToGate(oA, comp, 0);
     outer.connectToGate(comp, oQ, 0, 0);
@@ -227,10 +227,10 @@ describe("Persistence – Bus round-trip", () => {
   it("reconstructs a dual-driver bus and detects contention", () => {
     // Build: Input1 → Bus ← Input2, Bus → Output
     const inner = new CircuitBuilder();
-    const inp1 = inner.addBasicGate("input");
-    const inp2 = inner.addBasicGate("input");
+    const inp1 = inner.addPrimitiveGate("input");
+    const inp2 = inner.addPrimitiveGate("input");
     const bus = inner.addBus();
-    const out = inner.addBasicGate("output");
+    const out = inner.addPrimitiveGate("output");
 
     inner.connectToBus(bus, inp1, null, false);       // wire 0
     inner.connectToBus(bus, inp2, null, false);       // wire 1
@@ -246,10 +246,10 @@ describe("Persistence – Bus round-trip", () => {
     const reconstructed = buildCircuitFromData(serialized);
 
     const outer = new CircuitBuilder();
-    const oA = outer.addBasicGate("input");
-    const oB = outer.addBasicGate("input");
+    const oA = outer.addPrimitiveGate("input");
+    const oB = outer.addPrimitiveGate("input");
     const comp = outer.addCompositeGate("dual-bus", reconstructed);
-    const oQ = outer.addBasicGate("output");
+    const oQ = outer.addPrimitiveGate("output");
 
     outer.connectToGate(oA, comp, 0);
     outer.connectToGate(oB, comp, 1);
@@ -271,16 +271,16 @@ describe("Persistence – Bus round-trip", () => {
   it("reconstructs a bus with tri-state buffer drivers", () => {
     // Build: enable1,data1 → TSB1 → Bus ← TSB2 ← enable2,data2; Bus → Output
     const inner = new CircuitBuilder();
-    const enable1 = inner.addBasicGate("input");
-    const data1 = inner.addBasicGate("input");
-    const tsb1 = inner.addBasicGate("Tri-state Buffer");
+    const enable1 = inner.addPrimitiveGate("input");
+    const data1 = inner.addPrimitiveGate("input");
+    const tsb1 = inner.addPrimitiveGate("Tri-state Buffer");
 
-    const enable2 = inner.addBasicGate("input");
-    const data2 = inner.addBasicGate("input");
-    const tsb2 = inner.addBasicGate("Tri-state Buffer");
+    const enable2 = inner.addPrimitiveGate("input");
+    const data2 = inner.addPrimitiveGate("input");
+    const tsb2 = inner.addPrimitiveGate("Tri-state Buffer");
 
     const bus = inner.addBus();
-    const out = inner.addBasicGate("output");
+    const out = inner.addPrimitiveGate("output");
 
     inner.connectToGate(enable1, tsb1, 0, null, false);
     inner.connectToGate(data1, tsb1, 1, null, false);
@@ -301,12 +301,12 @@ describe("Persistence – Bus round-trip", () => {
     const reconstructed = buildCircuitFromData(serialized);
 
     const outer = new CircuitBuilder();
-    const oEn1 = outer.addBasicGate("input");
-    const oD1 = outer.addBasicGate("input");
-    const oEn2 = outer.addBasicGate("input");
-    const oD2 = outer.addBasicGate("input");
+    const oEn1 = outer.addPrimitiveGate("input");
+    const oD1 = outer.addPrimitiveGate("input");
+    const oEn2 = outer.addPrimitiveGate("input");
+    const oD2 = outer.addPrimitiveGate("input");
     const comp = outer.addCompositeGate("tsb-bus", reconstructed);
-    const oQ = outer.addBasicGate("output");
+    const oQ = outer.addPrimitiveGate("output");
 
     outer.connectToGate(oEn1, comp, 0);
     outer.connectToGate(oD1, comp, 1);
@@ -355,10 +355,10 @@ describe("Persistence – Mixed gate and bus circuits", () => {
   it("reconstructs a circuit with both regular wires and bus connections", () => {
     // Build: Input → NOT → Bus → Output
     const inner = new CircuitBuilder();
-    const inp = inner.addBasicGate("input");
-    const not = inner.addBasicGate("not");
+    const inp = inner.addPrimitiveGate("input");
+    const not = inner.addPrimitiveGate("not");
     const bus = inner.addBus();
-    const out = inner.addBasicGate("output");
+    const out = inner.addPrimitiveGate("output");
 
     inner.connectToGate(inp, not, 0, null, false);    // wire 0: gate→gate
     inner.connectToBus(bus, not, null, false);         // wire 1: gate→bus
@@ -374,9 +374,9 @@ describe("Persistence – Mixed gate and bus circuits", () => {
     const reconstructed = buildCircuitFromData(serialized);
 
     const outer = new CircuitBuilder();
-    const oA = outer.addBasicGate("input");
+    const oA = outer.addPrimitiveGate("input");
     const comp = outer.addCompositeGate("not-via-bus", reconstructed);
-    const oQ = outer.addBasicGate("output");
+    const oQ = outer.addPrimitiveGate("output");
 
     outer.connectToGate(oA, comp, 0);
     outer.connectToGate(comp, oQ, 0, 0);
@@ -399,9 +399,9 @@ describe("Persistence – Mixed gate and bus circuits", () => {
 describe("Persistence – buildCircuitFromData structure", () => {
   it("returns correct inputOrder and outputOrder mappings", () => {
     const inner = new CircuitBuilder();
-    const A = inner.addBasicGate("input");
-    const B = inner.addBasicGate("input");
-    const Q = inner.addBasicGate("output");
+    const A = inner.addPrimitiveGate("input");
+    const B = inner.addPrimitiveGate("input");
+    const Q = inner.addPrimitiveGate("output");
 
     inner.connectToGate(A, Q, 0, null, false);
 
@@ -421,9 +421,9 @@ describe("Persistence – buildCircuitFromData structure", () => {
 
   it("creates buses in the builder's bus map during reconstruction", () => {
     const inner = new CircuitBuilder();
-    const inp = inner.addBasicGate("input");
+    const inp = inner.addPrimitiveGate("input");
     const bus = inner.addBus();
-    const out = inner.addBasicGate("output");
+    const out = inner.addPrimitiveGate("output");
 
     inner.connectToBus(bus, inp, null, false);
     inner.connectToGate(bus, out, 0, null, false);
@@ -445,10 +445,10 @@ describe("Persistence – buildCircuitFromData structure", () => {
 
   it("preserves wire count during reconstruction", () => {
     const inner = new CircuitBuilder();
-    const A = inner.addBasicGate("input");
-    const B = inner.addBasicGate("input");
-    const xor = inner.addBasicGate("xor");
-    const Q = inner.addBasicGate("output");
+    const A = inner.addPrimitiveGate("input");
+    const B = inner.addPrimitiveGate("input");
+    const xor = inner.addPrimitiveGate("xor");
+    const Q = inner.addPrimitiveGate("output");
 
     inner.connectToGate(A, xor, 0, null, false);
     inner.connectToGate(B, xor, 1, null, false);
@@ -462,9 +462,9 @@ describe("Persistence – buildCircuitFromData structure", () => {
 
   it("preserves gate labels through serialization", () => {
     const inner = new CircuitBuilder();
-    const A = inner.addBasicGate("input");
+    const A = inner.addPrimitiveGate("input");
     A.label = "clk";
-    const Q = inner.addBasicGate("output");
+    const Q = inner.addPrimitiveGate("output");
     Q.label = "q_out";
 
     inner.connectToGate(A, Q, 0, null, false);

@@ -8,14 +8,14 @@ describe("SR Latch", ()=> {
   it("follows truth table", () => {
     const builder = new CircuitBuilder();
 
-    const S = builder.addBasicGate("input");
-    const R = builder.addBasicGate("input");
-    const notS = builder.addBasicGate("not");
-    const notR = builder.addBasicGate("not");
-    const nand1 = builder.addBasicGate("nand");
-    const nand2 = builder.addBasicGate("nand");
-    const Q = builder.addBasicGate("output");
-    const notQ = builder.addBasicGate("output");
+    const S = builder.addPrimitiveGate("input");
+    const R = builder.addPrimitiveGate("input");
+    const notS = builder.addPrimitiveGate("not");
+    const notR = builder.addPrimitiveGate("not");
+    const nand1 = builder.addPrimitiveGate("nand");
+    const nand2 = builder.addPrimitiveGate("nand");
+    const Q = builder.addPrimitiveGate("output");
+    const notQ = builder.addPrimitiveGate("output");
 
     builder.connectToGate(S, notS, 0);
     builder.connectToGate(R, notR, 0);

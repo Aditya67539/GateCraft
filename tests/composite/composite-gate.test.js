@@ -19,12 +19,12 @@ const { LOW, HIGH, X, Z, E } = SIGNAL;
 function halfAdderCircuitData() {
   const inner = new CircuitBuilder();
 
-  const A = inner.addBasicGate("input");
-  const B = inner.addBasicGate("input");
-  const xor = inner.addBasicGate("xor");
-  const and = inner.addBasicGate("and");
-  const sum = inner.addBasicGate("output");
-  const carry = inner.addBasicGate("output");
+  const A = inner.addPrimitiveGate("input");
+  const B = inner.addPrimitiveGate("input");
+  const xor = inner.addPrimitiveGate("xor");
+  const and = inner.addPrimitiveGate("and");
+  const sum = inner.addPrimitiveGate("output");
+  const carry = inner.addPrimitiveGate("output");
 
   inner.connectToGate(A, xor, 0);
   inner.connectToGate(B, xor, 1);
@@ -54,9 +54,9 @@ function halfAdderCircuitData() {
 function notGateCircuitData() {
   const inner = new CircuitBuilder();
 
-  const A = inner.addBasicGate("input");
-  const not = inner.addBasicGate("not");
-  const Q = inner.addBasicGate("output");
+  const A = inner.addPrimitiveGate("input");
+  const not = inner.addPrimitiveGate("not");
+  const Q = inner.addPrimitiveGate("output");
 
   inner.connectToGate(A, not, 0, null, false);
   inner.connectToGate(not, Q, 0, null, false);
@@ -78,11 +78,11 @@ describe("Composite Gate – Half Adder", () => {
   it("follows the half-adder truth table when used inside an outer circuit", () => {
     const outer = new CircuitBuilder();
 
-    const A = outer.addBasicGate("input");
-    const B = outer.addBasicGate("input");
+    const A = outer.addPrimitiveGate("input");
+    const B = outer.addPrimitiveGate("input");
     const halfAdder = outer.addCompositeGate("half-adder", halfAdderCircuitData());
-    const sumOut = outer.addBasicGate("output");
-    const carryOut = outer.addBasicGate("output");
+    const sumOut = outer.addPrimitiveGate("output");
+    const carryOut = outer.addPrimitiveGate("output");
 
     // Connect outer inputs → composite gate (fixed-index inputs)
     outer.connectToGate(A, halfAdder, 0);
@@ -116,9 +116,9 @@ describe("Composite Gate – NOT wrapper", () => {
   it("inverts its single input", () => {
     const outer = new CircuitBuilder();
 
-    const A = outer.addBasicGate("input");
+    const A = outer.addPrimitiveGate("input");
     const notGate = outer.addCompositeGate("not-wrapper", notGateCircuitData());
-    const out = outer.addBasicGate("output");
+    const out = outer.addPrimitiveGate("output");
 
     outer.connectToGate(A, notGate, 0);
     outer.connectToGate(notGate, out, 0, 0);
@@ -144,11 +144,11 @@ describe("Composite Gate – Nested Composite", () => {
     // Outer composite: double-NOT (should be identity)
     const middle = new CircuitBuilder();
 
-    const mA = middle.addBasicGate("input");
+    const mA = middle.addPrimitiveGate("input");
     const not1 = middle.addCompositeGate("not-wrapper", notData);
     // Build a fresh NOT data for the second instance to avoid shared state
     const not2 = middle.addCompositeGate("not-wrapper", notGateCircuitData());
-    const mQ = middle.addBasicGate("output");
+    const mQ = middle.addPrimitiveGate("output");
 
     middle.connectToGate(mA, not1, 0, null, false);
     middle.connectToGate(not1, not2, 0, 0, false);
@@ -165,9 +165,9 @@ describe("Composite Gate – Nested Composite", () => {
     // Top-level circuit using the nested composite
     const top = new CircuitBuilder();
 
-    const tA = top.addBasicGate("input");
+    const tA = top.addPrimitiveGate("input");
     const doubleNot = top.addCompositeGate("double-not", doubleNotData);
-    const tOut = top.addBasicGate("output");
+    const tOut = top.addPrimitiveGate("output");
 
     top.connectToGate(tA, doubleNot, 0);
     top.connectToGate(doubleNot, tOut, 0, 0);
@@ -185,11 +185,11 @@ describe("Composite Gate – Re-evaluation", () => {
   it("correctly updates outputs when inputs change across multiple evaluations", () => {
     const outer = new CircuitBuilder();
 
-    const A = outer.addBasicGate("input");
-    const B = outer.addBasicGate("input");
+    const A = outer.addPrimitiveGate("input");
+    const B = outer.addPrimitiveGate("input");
     const halfAdder = outer.addCompositeGate("half-adder", halfAdderCircuitData());
-    const sumOut = outer.addBasicGate("output");
-    const carryOut = outer.addBasicGate("output");
+    const sumOut = outer.addPrimitiveGate("output");
+    const carryOut = outer.addPrimitiveGate("output");
 
     outer.connectToGate(A, halfAdder, 0);
     outer.connectToGate(B, halfAdder, 1);
@@ -221,14 +221,14 @@ describe("Composite Gate – Multiple Outputs Wired Independently", () => {
   it("allows each output index to drive a different downstream gate", () => {
     const outer = new CircuitBuilder();
 
-    const A = outer.addBasicGate("input");
-    const B = outer.addBasicGate("input");
+    const A = outer.addPrimitiveGate("input");
+    const B = outer.addPrimitiveGate("input");
     const halfAdder = outer.addCompositeGate("half-adder", halfAdderCircuitData());
 
     // Wire sum (index 0) through an extra NOT, but carry (index 1) directly
-    const notGate = outer.addBasicGate("not");
-    const invertedSum = outer.addBasicGate("output");
-    const carryOut = outer.addBasicGate("output");
+    const notGate = outer.addPrimitiveGate("not");
+    const invertedSum = outer.addPrimitiveGate("output");
+    const carryOut = outer.addPrimitiveGate("output");
 
     outer.connectToGate(A, halfAdder, 0);
     outer.connectToGate(B, halfAdder, 1);
@@ -259,12 +259,12 @@ describe("Composite Gate – buildCircuitFromData round-trip", () => {
     // Manually create the serialized format that persistence.js produces
     const inner = new CircuitBuilder();
 
-    const A = inner.addBasicGate("input");
-    const B = inner.addBasicGate("input");
-    const xor = inner.addBasicGate("xor");
-    const and = inner.addBasicGate("and");
-    const sum = inner.addBasicGate("output");
-    const carry = inner.addBasicGate("output");
+    const A = inner.addPrimitiveGate("input");
+    const B = inner.addPrimitiveGate("input");
+    const xor = inner.addPrimitiveGate("xor");
+    const and = inner.addPrimitiveGate("and");
+    const sum = inner.addPrimitiveGate("output");
+    const carry = inner.addPrimitiveGate("output");
 
     inner.connectToGate(A, xor, 0);
     inner.connectToGate(B, xor, 1);
@@ -300,11 +300,11 @@ describe("Composite Gate – buildCircuitFromData round-trip", () => {
 
     // Use the reconstructed circuit as a composite gate
     const outer = new CircuitBuilder();
-    const oA = outer.addBasicGate("input");
-    const oB = outer.addBasicGate("input");
+    const oA = outer.addPrimitiveGate("input");
+    const oB = outer.addPrimitiveGate("input");
     const composite = outer.addCompositeGate("half-adder", reconstructed);
-    const oSum = outer.addBasicGate("output");
-    const oCarry = outer.addBasicGate("output");
+    const oSum = outer.addPrimitiveGate("output");
+    const oCarry = outer.addPrimitiveGate("output");
 
     outer.connectToGate(oA, composite, 0);
     outer.connectToGate(oB, composite, 1);

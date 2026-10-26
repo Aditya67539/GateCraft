@@ -13,10 +13,10 @@ describe("Bus", () => {
   function buildSingleDriverBus() {
     const builder = new CircuitBuilder();
 
-    const inp = builder.addBasicGate("input");
+    const inp = builder.addPrimitiveGate("input");
     const bus = createPrimitiveGate("bus");
     builder.registerBus(bus);
-    const out = builder.addBasicGate("output");
+    const out = builder.addPrimitiveGate("output");
 
     builder.connectToBus(bus, inp);
     builder.connectToGate(bus, out, 0);
@@ -31,11 +31,11 @@ describe("Bus", () => {
   function buildDualDriverBus() {
     const builder = new CircuitBuilder();
 
-    const inp1 = builder.addBasicGate("input");
-    const inp2 = builder.addBasicGate("input");
+    const inp1 = builder.addPrimitiveGate("input");
+    const inp2 = builder.addPrimitiveGate("input");
     const bus = createPrimitiveGate("bus");
     builder.registerBus(bus);
-    const out = builder.addBasicGate("output");
+    const out = builder.addPrimitiveGate("output");
 
     builder.connectToBus(bus, inp1);
     builder.connectToBus(bus, inp2);
@@ -113,7 +113,7 @@ describe("Bus", () => {
       const builder = new CircuitBuilder();
       const bus = createPrimitiveGate("bus");
       builder.registerBus(bus);
-      const out = builder.addBasicGate("output");
+      const out = builder.addPrimitiveGate("output");
       builder.connectToGate(bus, out, 0);
       
       builder.evaluate();
@@ -161,17 +161,17 @@ describe("Bus", () => {
     function buildTriStateBusCircuit() {
       const builder = new CircuitBuilder();
 
-      const enable1 = builder.addBasicGate("input");
-      const data1 = builder.addBasicGate("input");
-      const tsb1 = builder.addBasicGate("Tri-state Buffer");
+      const enable1 = builder.addPrimitiveGate("input");
+      const data1 = builder.addPrimitiveGate("input");
+      const tsb1 = builder.addPrimitiveGate("Tri-state Buffer");
 
-      const enable2 = builder.addBasicGate("input");
-      const data2 = builder.addBasicGate("input");
-      const tsb2 = builder.addBasicGate("Tri-state Buffer");
+      const enable2 = builder.addPrimitiveGate("input");
+      const data2 = builder.addPrimitiveGate("input");
+      const tsb2 = builder.addPrimitiveGate("Tri-state Buffer");
 
       const bus = createPrimitiveGate("bus");
       builder.registerBus(bus);
-      const out = builder.addBasicGate("output");
+      const out = builder.addPrimitiveGate("output");
 
       builder.connectToGate(enable1, tsb1, 0);
       builder.connectToGate(data1, tsb1, 1);

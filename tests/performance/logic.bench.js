@@ -11,10 +11,10 @@ const toggle = signal => signal === LOW ? HIGH : LOW;
 
 function buildANDGate(withWasm = true) {
   const b = new CircuitBuilder();
-  const A = b.addBasicGate("input");
-  const B = b.addBasicGate("input");
-  const gate = b.addBasicGate("and");
-  const out = b.addBasicGate("output");
+  const A = b.addPrimitiveGate("input");
+  const B = b.addPrimitiveGate("input");
+  const gate = b.addPrimitiveGate("and");
+  const out = b.addPrimitiveGate("output");
   b.connectToGate(A, gate, 0, null, false);
   b.connectToGate(B, gate, 1, null, false);
   b.connectToGate(gate, out, 0, null, false);
@@ -26,9 +26,9 @@ function buildANDGate(withWasm = true) {
 
 function buildNOTGate(withWasm = true) {
   const b = new CircuitBuilder();
-  const A = b.addBasicGate("input");
-  const gate = b.addBasicGate("not");
-  const out = b.addBasicGate("output");
+  const A = b.addPrimitiveGate("input");
+  const gate = b.addPrimitiveGate("not");
+  const out = b.addPrimitiveGate("output");
   b.connectToGate(A, gate, 0, null, false);
   b.connectToGate(gate, out, 0, null, false);
   A.setValue(HIGH);
@@ -38,10 +38,10 @@ function buildNOTGate(withWasm = true) {
 
 function buildXORGate(withWasm = true) {
   const b = new CircuitBuilder();
-  const A = b.addBasicGate("input");
-  const B = b.addBasicGate("input");
-  const gate = b.addBasicGate("xor");
-  const out = b.addBasicGate("output");
+  const A = b.addPrimitiveGate("input");
+  const B = b.addPrimitiveGate("input");
+  const gate = b.addPrimitiveGate("xor");
+  const out = b.addPrimitiveGate("output");
   b.connectToGate(A, gate, 0, null, false);
   b.connectToGate(B, gate, 1, null, false);
   b.connectToGate(gate, out, 0, null, false);
@@ -53,12 +53,12 @@ function buildXORGate(withWasm = true) {
 
 function buildHalfAdder(withWasm = true) {
   const b = new CircuitBuilder();
-  const A = b.addBasicGate("input");
-  const B = b.addBasicGate("input");
-  const xor = b.addBasicGate("xor");
-  const and = b.addBasicGate("and");
-  const sum = b.addBasicGate("output");
-  const carry = b.addBasicGate("output");
+  const A = b.addPrimitiveGate("input");
+  const B = b.addPrimitiveGate("input");
+  const xor = b.addPrimitiveGate("xor");
+  const and = b.addPrimitiveGate("and");
+  const sum = b.addPrimitiveGate("output");
+  const carry = b.addPrimitiveGate("output");
 
   b.connectToGate(A, xor, 0, null, false);
   b.connectToGate(B, xor, 1, null, false);
@@ -73,19 +73,19 @@ function buildHalfAdder(withWasm = true) {
 
 function buildFullAdder(withWasm = true) {
   const b = new CircuitBuilder();
-  const A = b.addBasicGate("input");
-  const B = b.addBasicGate("input");
-  const C = b.addBasicGate("input");
+  const A = b.addPrimitiveGate("input");
+  const B = b.addPrimitiveGate("input");
+  const C = b.addPrimitiveGate("input");
 
-  const xor1 = b.addBasicGate("xor");
-  const xor2 = b.addBasicGate("xor");
-  const and1 = b.addBasicGate("and");
-  const and2 = b.addBasicGate("and");
-  const or1 = b.addBasicGate("or");
-  const or2 = b.addBasicGate("or");
+  const xor1 = b.addPrimitiveGate("xor");
+  const xor2 = b.addPrimitiveGate("xor");
+  const and1 = b.addPrimitiveGate("and");
+  const and2 = b.addPrimitiveGate("and");
+  const or1 = b.addPrimitiveGate("or");
+  const or2 = b.addPrimitiveGate("or");
 
-  const sum = b.addBasicGate("output");
-  const carry = b.addBasicGate("output");
+  const sum = b.addPrimitiveGate("output");
+  const carry = b.addPrimitiveGate("output");
 
   b.connectToGate(A, xor1, 0, null, false);
   b.connectToGate(B, xor1, 1, null, false);
@@ -108,14 +108,14 @@ function buildFullAdder(withWasm = true) {
 
 function buildSRLatch(withWasm = true) {
   const b = new CircuitBuilder();
-  const S = b.addBasicGate("input");
-  const R = b.addBasicGate("input");
-  const notS = b.addBasicGate("not");
-  const notR = b.addBasicGate("not");
-  const nand1 = b.addBasicGate("nand");
-  const nand2 = b.addBasicGate("nand");
-  const Q = b.addBasicGate("output");
-  const notQ = b.addBasicGate("output");
+  const S = b.addPrimitiveGate("input");
+  const R = b.addPrimitiveGate("input");
+  const notS = b.addPrimitiveGate("not");
+  const notR = b.addPrimitiveGate("not");
+  const nand1 = b.addPrimitiveGate("nand");
+  const nand2 = b.addPrimitiveGate("nand");
+  const Q = b.addPrimitiveGate("output");
+  const notQ = b.addPrimitiveGate("output");
 
   b.connectToGate(S, notS, 0, null, false);
   b.connectToGate(R, notR, 0, null, false);
@@ -132,15 +132,15 @@ function buildSRLatch(withWasm = true) {
 
 function buildDLatch(withWasm = true) {
   const b = new CircuitBuilder();
-  const D = b.addBasicGate("input");
-  const E = b.addBasicGate("input");
-  const notD = b.addBasicGate("not");
-  const and1 = b.addBasicGate("and");
-  const and2 = b.addBasicGate("and");
-  const nor1 = b.addBasicGate("nor");
-  const nor2 = b.addBasicGate("nor");
-  const Q = b.addBasicGate("output");
-  const notQ = b.addBasicGate("output");
+  const D = b.addPrimitiveGate("input");
+  const E = b.addPrimitiveGate("input");
+  const notD = b.addPrimitiveGate("not");
+  const and1 = b.addPrimitiveGate("and");
+  const and2 = b.addPrimitiveGate("and");
+  const nor1 = b.addPrimitiveGate("nor");
+  const nor2 = b.addPrimitiveGate("nor");
+  const Q = b.addPrimitiveGate("output");
+  const notQ = b.addPrimitiveGate("output");
 
   b.connectToGate(D, notD, 0, null, false);
   b.connectToGate(notD, and1, 0, null, false);
@@ -168,22 +168,22 @@ function buildRippleCarryAdder(bits, withWasm = true) {
   const A = [];
   const B = [];
   for (let i = 0; i < bits; i++) {
-    A.push(b.addBasicGate("input"));
-    B.push(b.addBasicGate("input"));
+    A.push(b.addPrimitiveGate("input"));
+    B.push(b.addPrimitiveGate("input"));
   }
-  const Cin = b.addBasicGate("input");
+  const Cin = b.addPrimitiveGate("input");
 
   const S = [];
   let prevCarry = Cin;
 
   for (let i = 0; i < bits; i++) {
-    const xor1 = b.addBasicGate("xor");
-    const xor2 = b.addBasicGate("xor");
-    const and1 = b.addBasicGate("and");
-    const and2 = b.addBasicGate("and");
-    const or1 = b.addBasicGate("or");
-    const or2 = b.addBasicGate("or");
-    const sum = b.addBasicGate("output");
+    const xor1 = b.addPrimitiveGate("xor");
+    const xor2 = b.addPrimitiveGate("xor");
+    const and1 = b.addPrimitiveGate("and");
+    const and2 = b.addPrimitiveGate("and");
+    const or1 = b.addPrimitiveGate("or");
+    const or2 = b.addPrimitiveGate("or");
+    const sum = b.addPrimitiveGate("output");
 
     b.connectToGate(A[i], xor1, 0, null, false);
     b.connectToGate(B[i], xor1, 1, null, false);
@@ -207,7 +207,7 @@ function buildRippleCarryAdder(bits, withWasm = true) {
     prevCarry = or2;
   }
 
-  const Cout = b.addBasicGate("output");
+  const Cout = b.addPrimitiveGate("output");
   b.connectToGate(prevCarry, Cout, 0, null, false);
   if (withWasm) b.buildTypedData();
 
@@ -219,12 +219,12 @@ function buildRippleCarryAdder(bits, withWasm = true) {
  */
 function buildWideFanout(width, withWasm = true) {
   const b = new CircuitBuilder();
-  const src = b.addBasicGate("input");
+  const src = b.addPrimitiveGate("input");
   src.setValue(HIGH);
 
   for (let i = 0; i < width; i++) {
-    const gate = b.addBasicGate("or");
-    const out = b.addBasicGate("output");
+    const gate = b.addPrimitiveGate("or");
+    const out = b.addPrimitiveGate("output");
     b.connectToGate(src, gate, 0, null, false);
     b.connectToGate(gate, out, 0, null, false);
   }
@@ -239,17 +239,17 @@ function buildWideFanout(width, withWasm = true) {
  */
 function buildDeepChain(depth, withWasm = true) {
   const b = new CircuitBuilder();
-  const src = b.addBasicGate("input");
+  const src = b.addPrimitiveGate("input");
   src.setValue(HIGH);
 
   let prev = src;
   for (let i = 0; i < depth; i++) {
-    const not = b.addBasicGate("not");
+    const not = b.addPrimitiveGate("not");
     b.connectToGate(prev, not, 0, null, false);
     prev = not;
   }
 
-  const out = b.addBasicGate("output");
+  const out = b.addPrimitiveGate("output");
   b.connectToGate(prev, out, 0, null, false);
 
   if (withWasm) b.buildTypedData();
@@ -264,12 +264,12 @@ function buildDeepChain(depth, withWasm = true) {
  */
 function halfAdderCircuitData(withWasm = true) {
   const inner = new CircuitBuilder();
-  const A = inner.addBasicGate("input");
-  const B = inner.addBasicGate("input");
-  const xor = inner.addBasicGate("xor");
-  const and = inner.addBasicGate("and");
-  const sum = inner.addBasicGate("output");
-  const carry = inner.addBasicGate("output");
+  const A = inner.addPrimitiveGate("input");
+  const B = inner.addPrimitiveGate("input");
+  const xor = inner.addPrimitiveGate("xor");
+  const and = inner.addPrimitiveGate("and");
+  const sum = inner.addPrimitiveGate("output");
+  const carry = inner.addPrimitiveGate("output");
 
   inner.connectToGate(A, xor, 0, null, false);
   inner.connectToGate(B, xor, 1, null, false);
@@ -293,9 +293,9 @@ function halfAdderCircuitData(withWasm = true) {
  */
 function notCircuitData(withWasm = true) {
   const inner = new CircuitBuilder();
-  const A = inner.addBasicGate("input");
-  const not = inner.addBasicGate("not");
-  const Q = inner.addBasicGate("output");
+  const A = inner.addPrimitiveGate("input");
+  const not = inner.addPrimitiveGate("not");
+  const Q = inner.addPrimitiveGate("output");
 
   inner.connectToGate(A, not, 0, null, false);
   inner.connectToGate(not, Q, 0, null, false);
@@ -315,11 +315,11 @@ function notCircuitData(withWasm = true) {
  */
 function buildCompositeHalfAdder(withWasm = true) {
   const b = new CircuitBuilder();
-  const A = b.addBasicGate("input");
-  const B = b.addBasicGate("input");
+  const A = b.addPrimitiveGate("input");
+  const B = b.addPrimitiveGate("input");
   const comp = b.addCompositeGate("half-adder", halfAdderCircuitData());
-  const sum = b.addBasicGate("output");
-  const carry = b.addBasicGate("output");
+  const sum = b.addPrimitiveGate("output");
+  const carry = b.addPrimitiveGate("output");
 
   b.connectToGate(A, comp, 0, null, false);
   b.connectToGate(B, comp, 1, null, false);
@@ -340,10 +340,10 @@ function buildCompositeRCA(bits, withWasm = true) {
   const A = [];
   const B = [];
   for (let i = 0; i < bits; i++) {
-    A.push(b.addBasicGate("input"));
-    B.push(b.addBasicGate("input"));
+    A.push(b.addPrimitiveGate("input"));
+    B.push(b.addPrimitiveGate("input"));
   }
-  const Cin = b.addBasicGate("input");
+  const Cin = b.addPrimitiveGate("input");
 
   const S = [];
   let prevCarry = Cin;
@@ -357,17 +357,17 @@ function buildCompositeRCA(bits, withWasm = true) {
     b.connectToGate(ha1, ha2, 0, 0, false);
     b.connectToGate(prevCarry, ha2, 1, null, false);
 
-    const sum = b.addBasicGate("output");
+    const sum = b.addPrimitiveGate("output");
     b.connectToGate(ha2, sum, 0, 0, false);
     S.push(sum);
 
-    const or = b.addBasicGate("or");
+    const or = b.addPrimitiveGate("or");
     b.connectToGate(ha1, or, 0, 1, false);
     b.connectToGate(ha2, or, 1, 1, false);
     prevCarry = or;
   }
 
-  const Cout = b.addBasicGate("output");
+  const Cout = b.addPrimitiveGate("output");
   b.connectToGate(prevCarry, Cout, 0, null, false);
   if (withWasm) b.buildTypedData();
 
@@ -380,10 +380,10 @@ function buildCompositeRCA(bits, withWasm = true) {
 function buildNestedComposite(withWasm = true) {
   // Middle layer: two NOT composites chained
   const middle = new CircuitBuilder();
-  const mA = middle.addBasicGate("input");
+  const mA = middle.addPrimitiveGate("input");
   const not1 = middle.addCompositeGate("not", notCircuitData());
   const not2 = middle.addCompositeGate("not", notCircuitData());
-  const mQ = middle.addBasicGate("output");
+  const mQ = middle.addPrimitiveGate("output");
 
   middle.connectToGate(mA, not1, 0, null, false);
   middle.connectToGate(not1, not2, 0, 0, false);
@@ -398,9 +398,9 @@ function buildNestedComposite(withWasm = true) {
 
   // Outer circuit using the nested composite
   const b = new CircuitBuilder();
-  const A = b.addBasicGate("input");
+  const A = b.addPrimitiveGate("input");
   const comp = b.addCompositeGate("double-not", doubleNotData);
-  const out = b.addBasicGate("output");
+  const out = b.addPrimitiveGate("output");
 
   b.connectToGate(A, comp, 0, null, false);
   b.connectToGate(comp, out, 0, 0, false);

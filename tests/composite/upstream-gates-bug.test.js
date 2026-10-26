@@ -11,12 +11,12 @@ const { LOW, HIGH, X, Z, E } = SIGNAL;
 
 function halfAdderCircuitData() {
   const inner = new CircuitBuilder();
-  const A = inner.addBasicGate("input");
-  const B = inner.addBasicGate("input");
-  const xor = inner.addBasicGate("xor");
-  const and = inner.addBasicGate("and");
-  const sum = inner.addBasicGate("output");
-  const carry = inner.addBasicGate("output");
+  const A = inner.addPrimitiveGate("input");
+  const B = inner.addPrimitiveGate("input");
+  const xor = inner.addPrimitiveGate("xor");
+  const and = inner.addPrimitiveGate("and");
+  const sum = inner.addPrimitiveGate("output");
+  const carry = inner.addPrimitiveGate("output");
 
   inner.connectToGate(A, xor, 0);
   inner.connectToGate(B, xor, 1);
@@ -35,14 +35,14 @@ function halfAdderCircuitData() {
 
 function fullAdderCircuitData() {
   const inner = new CircuitBuilder();
-  const A = inner.addBasicGate("input");
-  const B = inner.addBasicGate("input");
-  const Cin = inner.addBasicGate("input");
+  const A = inner.addPrimitiveGate("input");
+  const B = inner.addPrimitiveGate("input");
+  const Cin = inner.addPrimitiveGate("input");
   const ha1 = inner.addCompositeGate("half-adder", halfAdderCircuitData());
   const ha2 = inner.addCompositeGate("half-adder", halfAdderCircuitData());
-  const orGate = inner.addBasicGate("or");
-  const sum = inner.addBasicGate("output");
-  const carry = inner.addBasicGate("output");
+  const orGate = inner.addPrimitiveGate("or");
+  const sum = inner.addPrimitiveGate("output");
+  const carry = inner.addPrimitiveGate("output");
 
   inner.connectToGate(A, ha1, 0);
   inner.connectToGate(B, ha1, 1);
@@ -63,26 +63,26 @@ function fullAdderCircuitData() {
 
 function fourBitAdderCircuitData() {
   const inner = new CircuitBuilder();
-  const A0 = inner.addBasicGate("input");
-  const A1 = inner.addBasicGate("input");
-  const A2 = inner.addBasicGate("input");
-  const A3 = inner.addBasicGate("input");
-  const B0 = inner.addBasicGate("input");
-  const B1 = inner.addBasicGate("input");
-  const B2 = inner.addBasicGate("input");
-  const B3 = inner.addBasicGate("input");
-  const Cin = inner.addBasicGate("input");
+  const A0 = inner.addPrimitiveGate("input");
+  const A1 = inner.addPrimitiveGate("input");
+  const A2 = inner.addPrimitiveGate("input");
+  const A3 = inner.addPrimitiveGate("input");
+  const B0 = inner.addPrimitiveGate("input");
+  const B1 = inner.addPrimitiveGate("input");
+  const B2 = inner.addPrimitiveGate("input");
+  const B3 = inner.addPrimitiveGate("input");
+  const Cin = inner.addPrimitiveGate("input");
 
   const fa0 = inner.addCompositeGate("full-adder", fullAdderCircuitData());
   const fa1 = inner.addCompositeGate("full-adder", fullAdderCircuitData());
   const fa2 = inner.addCompositeGate("full-adder", fullAdderCircuitData());
   const fa3 = inner.addCompositeGate("full-adder", fullAdderCircuitData());
 
-  const S0 = inner.addBasicGate("output");
-  const S1 = inner.addBasicGate("output");
-  const S2 = inner.addBasicGate("output");
-  const S3 = inner.addBasicGate("output");
-  const Cout = inner.addBasicGate("output");
+  const S0 = inner.addPrimitiveGate("output");
+  const S1 = inner.addPrimitiveGate("output");
+  const S2 = inner.addPrimitiveGate("output");
+  const S3 = inner.addPrimitiveGate("output");
+  const Cout = inner.addPrimitiveGate("output");
 
   // FA0: A0, B0, Cin
   inner.connectToGate(A0, fa0, 0);
@@ -117,22 +117,22 @@ function fourBitAdderCircuitData() {
 describe("4-bit adder with direct inputs", () => {
   it("computes 5 + 3 = 8 correctly", () => {
     const outer = new CircuitBuilder();
-    const A0 = outer.addBasicGate("input"); // 1
-    const A1 = outer.addBasicGate("input"); // 0
-    const A2 = outer.addBasicGate("input"); // 1
-    const A3 = outer.addBasicGate("input"); // 0
-    const B0 = outer.addBasicGate("input"); // 1
-    const B1 = outer.addBasicGate("input"); // 1
-    const B2 = outer.addBasicGate("input"); // 0
-    const B3 = outer.addBasicGate("input"); // 0
-    const Cin = outer.addBasicGate("input"); // 0
+    const A0 = outer.addPrimitiveGate("input"); // 1
+    const A1 = outer.addPrimitiveGate("input"); // 0
+    const A2 = outer.addPrimitiveGate("input"); // 1
+    const A3 = outer.addPrimitiveGate("input"); // 0
+    const B0 = outer.addPrimitiveGate("input"); // 1
+    const B1 = outer.addPrimitiveGate("input"); // 1
+    const B2 = outer.addPrimitiveGate("input"); // 0
+    const B3 = outer.addPrimitiveGate("input"); // 0
+    const Cin = outer.addPrimitiveGate("input"); // 0
 
     const adder = outer.addCompositeGate("4-bit-adder", fourBitAdderCircuitData());
-    const S0 = outer.addBasicGate("output");
-    const S1 = outer.addBasicGate("output");
-    const S2 = outer.addBasicGate("output");
-    const S3 = outer.addBasicGate("output");
-    const Cout = outer.addBasicGate("output");
+    const S0 = outer.addPrimitiveGate("output");
+    const S1 = outer.addPrimitiveGate("output");
+    const S2 = outer.addPrimitiveGate("output");
+    const S3 = outer.addPrimitiveGate("output");
+    const Cout = outer.addPrimitiveGate("output");
 
     outer.connectToGate(A0, adder, 0);
     outer.connectToGate(A1, adder, 1);
@@ -168,23 +168,23 @@ describe("4-bit adder with upstream XOR gates (2's complement)", () => {
   it("computes A + (~B + 1) with XOR gates before B inputs", () => {
     const outer = new CircuitBuilder();
     // A = 5 = 0101
-    const A0 = outer.addBasicGate("input");
-    const A1 = outer.addBasicGate("input");
-    const A2 = outer.addBasicGate("input");
-    const A3 = outer.addBasicGate("input");
+    const A0 = outer.addPrimitiveGate("input");
+    const A1 = outer.addPrimitiveGate("input");
+    const A2 = outer.addPrimitiveGate("input");
+    const A3 = outer.addPrimitiveGate("input");
     // B = 3 = 0011
-    const B0 = outer.addBasicGate("input");
-    const B1 = outer.addBasicGate("input");
-    const B2 = outer.addBasicGate("input");
-    const B3 = outer.addBasicGate("input");
+    const B0 = outer.addPrimitiveGate("input");
+    const B1 = outer.addPrimitiveGate("input");
+    const B2 = outer.addPrimitiveGate("input");
+    const B3 = outer.addPrimitiveGate("input");
     // SUB signal = 1 (subtract mode: XOR with 1 inverts, Cin=1 for +1)
-    const SUB = outer.addBasicGate("input");
+    const SUB = outer.addPrimitiveGate("input");
 
     // XOR gates to conditionally invert B
-    const xor0 = outer.addBasicGate("xor");
-    const xor1 = outer.addBasicGate("xor");
-    const xor2 = outer.addBasicGate("xor");
-    const xor3 = outer.addBasicGate("xor");
+    const xor0 = outer.addPrimitiveGate("xor");
+    const xor1 = outer.addPrimitiveGate("xor");
+    const xor2 = outer.addPrimitiveGate("xor");
+    const xor3 = outer.addPrimitiveGate("xor");
 
     outer.connectToGate(B0, xor0, 0);
     outer.connectToGate(SUB, xor0, 1);
@@ -196,11 +196,11 @@ describe("4-bit adder with upstream XOR gates (2's complement)", () => {
     outer.connectToGate(SUB, xor3, 1);
 
     const adder = outer.addCompositeGate("4-bit-adder", fourBitAdderCircuitData());
-    const S0 = outer.addBasicGate("output");
-    const S1 = outer.addBasicGate("output");
-    const S2 = outer.addBasicGate("output");
-    const S3 = outer.addBasicGate("output");
-    const Cout = outer.addBasicGate("output");
+    const S0 = outer.addPrimitiveGate("output");
+    const S1 = outer.addPrimitiveGate("output");
+    const S2 = outer.addPrimitiveGate("output");
+    const S3 = outer.addPrimitiveGate("output");
+    const Cout = outer.addPrimitiveGate("output");
 
     outer.connectToGate(A0, adder, 0);
     outer.connectToGate(A1, adder, 1);
@@ -236,20 +236,20 @@ describe("4-bit adder with upstream XOR gates (2's complement)", () => {
 
   it("computes correctly after toggling inputs", () => {
     const outer = new CircuitBuilder();
-    const A0 = outer.addBasicGate("input");
-    const A1 = outer.addBasicGate("input");
-    const A2 = outer.addBasicGate("input");
-    const A3 = outer.addBasicGate("input");
-    const B0 = outer.addBasicGate("input");
-    const B1 = outer.addBasicGate("input");
-    const B2 = outer.addBasicGate("input");
-    const B3 = outer.addBasicGate("input");
-    const SUB = outer.addBasicGate("input");
+    const A0 = outer.addPrimitiveGate("input");
+    const A1 = outer.addPrimitiveGate("input");
+    const A2 = outer.addPrimitiveGate("input");
+    const A3 = outer.addPrimitiveGate("input");
+    const B0 = outer.addPrimitiveGate("input");
+    const B1 = outer.addPrimitiveGate("input");
+    const B2 = outer.addPrimitiveGate("input");
+    const B3 = outer.addPrimitiveGate("input");
+    const SUB = outer.addPrimitiveGate("input");
 
-    const xor0 = outer.addBasicGate("xor");
-    const xor1 = outer.addBasicGate("xor");
-    const xor2 = outer.addBasicGate("xor");
-    const xor3 = outer.addBasicGate("xor");
+    const xor0 = outer.addPrimitiveGate("xor");
+    const xor1 = outer.addPrimitiveGate("xor");
+    const xor2 = outer.addPrimitiveGate("xor");
+    const xor3 = outer.addPrimitiveGate("xor");
 
     outer.connectToGate(B0, xor0, 0);
     outer.connectToGate(SUB, xor0, 1);
@@ -261,11 +261,11 @@ describe("4-bit adder with upstream XOR gates (2's complement)", () => {
     outer.connectToGate(SUB, xor3, 1);
 
     const adder = outer.addCompositeGate("4-bit-adder", fourBitAdderCircuitData());
-    const S0 = outer.addBasicGate("output");
-    const S1 = outer.addBasicGate("output");
-    const S2 = outer.addBasicGate("output");
-    const S3 = outer.addBasicGate("output");
-    const Cout = outer.addBasicGate("output");
+    const S0 = outer.addPrimitiveGate("output");
+    const S1 = outer.addPrimitiveGate("output");
+    const S2 = outer.addPrimitiveGate("output");
+    const S3 = outer.addPrimitiveGate("output");
+    const Cout = outer.addPrimitiveGate("output");
 
     outer.connectToGate(A0, adder, 0);
     outer.connectToGate(A1, adder, 1);
@@ -310,10 +310,10 @@ describe("4-bit adder with upstream XOR gates (2's complement)", () => {
 describe("Wire signal consistency", () => {
   it("wire signal matches gate output after evaluation", () => {
     const outer = new CircuitBuilder();
-    const A = outer.addBasicGate("input");
-    const xor = outer.addBasicGate("xor");
-    const B = outer.addBasicGate("input");
-    const out = outer.addBasicGate("output");
+    const A = outer.addPrimitiveGate("input");
+    const xor = outer.addPrimitiveGate("xor");
+    const B = outer.addPrimitiveGate("input");
+    const out = outer.addPrimitiveGate("output");
 
     outer.connectToGate(A, xor, 0);
     outer.connectToGate(B, xor, 1);
@@ -337,11 +337,11 @@ describe("Wire signal consistency", () => {
 
   it("composite gate output wire signal matches composite output after evaluation", () => {
     const outer = new CircuitBuilder();
-    const A = outer.addBasicGate("input");
-    const B = outer.addBasicGate("input");
+    const A = outer.addPrimitiveGate("input");
+    const B = outer.addPrimitiveGate("input");
     const ha = outer.addCompositeGate("half-adder", halfAdderCircuitData());
-    const sumOut = outer.addBasicGate("output");
-    const carryOut = outer.addBasicGate("output");
+    const sumOut = outer.addPrimitiveGate("output");
+    const carryOut = outer.addPrimitiveGate("output");
 
     outer.connectToGate(A, ha, 0);
     outer.connectToGate(B, ha, 1);

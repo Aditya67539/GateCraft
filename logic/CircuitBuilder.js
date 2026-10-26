@@ -37,7 +37,7 @@ export class CircuitBuilder {
    * @param {string} type - The type of gate ("input", "output", "clock" or logic gate type)
    * @returns {Input|Output|Clock|Gate} The instantiated gate object
    */
-  addBasicGate(type) {
+  addPrimitiveGate(type) {
     const gate = createPrimitiveGate(type);
     this.gates.set(gate.id, gate);
     return gate;
