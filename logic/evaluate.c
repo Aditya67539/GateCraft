@@ -162,14 +162,14 @@ uint8_t evaluateGate(uint8_t type, uint8_t *inputs, uint8_t inputCount) {
         }
         output = not(output);
         break;
-    // 2OR gate
+    // XOR gate
     case 8:
         output = 0;
         for (int i = 0; i < inputCount; i++) {
             output = xorPair(output, inputs[i]);
         }
         break;
-    // 2NOR gate
+    // XNOR gate
     case 9:
         output = 0;
         for (int i = 0; i < inputCount; i++) {
