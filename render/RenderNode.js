@@ -3,7 +3,7 @@ import { createPrimitiveGate, createCompositeGate } from "../logic/gates.js";
 import { state } from "../state.js";
 
 
-export class RenderPoint {
+export class RenderNode {
   constructor(gate, x, y) {
     this.gate = gate;
     this.x = x;
@@ -64,30 +64,30 @@ export class RenderPoint {
 
 
 /**
- * Creates a renderable node (RenderPoint) for a basic gate. 
+ * Creates a renderable node (RenderNode) for a basic gate. 
  * 
  * @param {string} type - The type of gate to create
  * @param {number} mouseX - The x-coordinate where the node will be placed
  * @param {number} mouseY - The y-coordinate where the node will be placed
- * @returns {RenderPoint} A renderable node containing the gate
+ * @returns {RenderNode} A renderable node containing the gate
  */
 export function createPrimitiveNode(type, mouseX, mouseY) {
   const gate = createPrimitiveGate(type);
-  return new RenderPoint(gate, mouseX, mouseY);
+  return new RenderNode(gate, mouseX, mouseY);
 }
 
 /**
- * Creates a renderable node (RenderPoint) for a composite gate. 
+ * Creates a renderable node (RenderNode) for a composite gate. 
  * 
  * @param {string} name - The label/name of the composite gate
  * @param {Object} circuitData - The circuit data used to construct the composite gate
  * @param {number} mouseX - The x-coordinate where the node will be placed
  * @param {number} mouseY - The y-coordinate where the node will be placed
- * @returns {RenderPoint} A renderable node containing the gate
+ * @returns {RenderNode} A renderable node containing the gate
  */
 export function createCompositeNode(name, circuitData, mouseX, mouseY) {
   const gate = createCompositeGate(name, circuitData);
-  return new RenderPoint(gate, mouseX, mouseY);
+  return new RenderNode(gate, mouseX, mouseY);
 }
 
 /**
@@ -235,7 +235,7 @@ export function wouldOverlap(candidate, renderNodes, busNodes, excludeId = null)
  *   everything AND against the bus's own start point.
  *
  * @param {BusNode} ghostBus - The bus currently being placed
- * @param {Array<RenderPoint>} renderNodes - All placed gate nodes
+ * @param {Array<RenderNode>} renderNodes - All placed gate nodes
  * @param {Array<BusNode>} busNodes - All placed bus nodes
  * @returns {boolean} true if the active endpoint overlaps something
  */

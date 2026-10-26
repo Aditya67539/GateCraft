@@ -1,5 +1,5 @@
 import { CircuitBuilder } from "./logic/CircuitBuilder.js";
-import { RenderPoint } from "./render/RenderPoint.js";
+import { RenderNode } from "./render/RenderNode.js";
 import { BusConnectionView, GateConnectionView } from "./render/wireGeometry.js";
 
 const STORAGE_KEY = "compositeGates";
@@ -51,7 +51,7 @@ function setFolderStore(folderStore) {
 /**
  * Extracts logical circuit data (gates, wires, IO ordering) from render nodes. 
  * 
- * @param {Array<RenderPoint>} renderNodes - Array of RenderPoint objects. 
+ * @param {Array<RenderNode>} renderNodes - Array of RenderNode objects. 
  * @param {Array<Object>} wireInfos - Array of wire object containing Wire instances. 
  * @param {Array<BusNode>} busNodes - Array of BusNode objects. 
  * @returns {{
@@ -118,7 +118,7 @@ function getCircuitData(renderNodes, wireInfos, busNodes) {
 /**
  * Extracts rendering data (positions and wire paths) from render nodes. 
  * 
- * @param {Array<RenderPoint>} renderNodes - Array of RenderPoint objects. 
+ * @param {Array<RenderNode>} renderNodes - Array of RenderNode objects. 
  * @param {Array<Object>} wireInfos - Array of wire objects containing Wire instances. 
  * @returns {{
  *   positions: Array<id: Number, x: number, y: number>,
@@ -169,7 +169,7 @@ function getRenderData(renderNodes, wireInfos, busNodes) {
  * Saves a composite gate definition to localStorage. 
  * 
  * @param {string} name - Name of the composite gate. 
- * @param {Array<RenderPoint>} renderNodes - Array of RenderPoint objects. 
+ * @param {Array<RenderNode>} renderNodes - Array of RenderNode objects. 
  * @param {Array<Object>} wires - Array of wire objects containing Wire instances. 
  * @param {Array<BusNode>} buses - Array of BusNode objects. 
  */

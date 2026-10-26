@@ -65,7 +65,7 @@ function contrastText(hex) {
  * When the signal is low, the wave is drawn with high signal color.
  * When the signal is high, the wave is drawn with low signal color and flipped.
  *
- * @param {RenderPoint} renderNode
+ * @param {RenderNode} renderNode
  * @param {string} stateKey - "low", "high", "x", "z", "e"
  * @param {Object} theme - active theme
  * @param {Object} p - p5 instance

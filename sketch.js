@@ -5,7 +5,7 @@ import { registerMouseHandlers, isNearWaypoint, isNearPort, busMap, nodeMap, get
 import { initToolbar } from "./ui/toolbar.js";
 import { getActiveTheme, applyTheme } from "./render/theme.js";
 import { CircuitBuilder } from "./logic/CircuitBuilder.js";
-import { snapPointToGrid, wouldBusOverlap, wouldOverlap } from "./render/RenderPoint.js";
+import { snapPointToGrid, wouldBusOverlap, wouldOverlap } from "./render/RenderNode.js";
 import { registerKeyboardHandlers } from "./input/keyboardHandlers.js";
 import { drawMinimap } from "./render/minimap.js";
 import { getOctilinearSnap, getTapPointFromElement } from "./render/wireGeometry.js";

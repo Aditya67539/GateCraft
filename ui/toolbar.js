@@ -1,4 +1,4 @@
-import { spawnPrimitiveNode, spawnCompositeNode } from "../render/RenderPoint.js";
+import { spawnPrimitiveNode, spawnCompositeNode } from "../render/RenderNode.js";
 import { state, screenToWorld } from "../state.js";
 import {
   saveCompositeGate,
