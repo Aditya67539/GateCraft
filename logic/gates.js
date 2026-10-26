@@ -290,7 +290,7 @@ export class Bus {
  * @param {string} type - The type of gate ("input", "output", "clock" or logic gate type)
  * @returns {Input|Output|Clock|Gate} The instantiated gate object
  */
-export function createBasicGate(type) {
+export function createPrimitiveGate(type) {
   return type === "input"
     ? new Input()
     : type === "output"

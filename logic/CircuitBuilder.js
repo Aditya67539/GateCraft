@@ -1,5 +1,5 @@
 import { settleCircuit, createAccumulator, flatten, buildTypedArrays, clearAccumulator, evaluateWasm } from "./evaluate.js";
-import { Bus, CompositeGate, createBasicGate, createCompositeGate, Gate, Output } from "./gates.js";
+import { Bus, CompositeGate, createPrimitiveGate, createCompositeGate, Gate, Output } from "./gates.js";
 import { Wire } from "./wire.js";
 import { initWasm } from "#wasmLoader";
 
@@ -38,7 +38,7 @@ export class CircuitBuilder {
    * @returns {Input|Output|Clock|Gate} The instantiated gate object
    */
   addBasicGate(type) {
-    const gate = createBasicGate(type);
+    const gate = createPrimitiveGate(type);
     this.gates.set(gate.id, gate);
     return gate;
   }
@@ -61,7 +61,7 @@ export class CircuitBuilder {
    * @returns {Gate} The instantiated bus object
    */
   addBus() {
-    const bus = createBasicGate("bus");
+    const bus = createPrimitiveGate("bus");
     this.buses.set(bus.id, bus);
     return bus;
   }

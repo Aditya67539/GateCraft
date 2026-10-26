@@ -1,5 +1,5 @@
 import { FONT_SIZE, GRID_OFFSET, GRID_SIZE, PORT_LABEL_SIZE, PORT_RADIUS } from "../constants.js";
-import { createBasicGate, createCompositeGate } from "../logic/gates.js";
+import { createPrimitiveGate, createCompositeGate } from "../logic/gates.js";
 import { state } from "../state.js";
 
 
@@ -72,7 +72,7 @@ export class RenderPoint {
  * @returns {RenderPoint} A renderable node containing the gate
  */
 export function createPrimitiveNode(type, mouseX, mouseY) {
-  const gate = createBasicGate(type);
+  const gate = createPrimitiveGate(type);
   return new RenderPoint(gate, mouseX, mouseY);
 }
 

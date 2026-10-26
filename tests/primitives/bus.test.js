@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { CircuitBuilder } from "../../logic/CircuitBuilder.js";
-import { createBasicGate } from "../../logic/gates.js";
+import { createPrimitiveGate } from "../../logic/gates.js";
 import { SIGNAL } from "../../constants.js";
 
 const { LOW, HIGH, X, Z, E } = SIGNAL;
@@ -14,7 +14,7 @@ describe("Bus", () => {
     const builder = new CircuitBuilder();
 
     const inp = builder.addBasicGate("input");
-    const bus = createBasicGate("bus");
+    const bus = createPrimitiveGate("bus");
     builder.registerBus(bus);
     const out = builder.addBasicGate("output");
 
@@ -33,7 +33,7 @@ describe("Bus", () => {
 
     const inp1 = builder.addBasicGate("input");
     const inp2 = builder.addBasicGate("input");
-    const bus = createBasicGate("bus");
+    const bus = createPrimitiveGate("bus");
     builder.registerBus(bus);
     const out = builder.addBasicGate("output");
 
@@ -111,7 +111,7 @@ describe("Bus", () => {
 
     it("bus with no inputs evaluates to Z", () => {
       const builder = new CircuitBuilder();
-      const bus = createBasicGate("bus");
+      const bus = createPrimitiveGate("bus");
       builder.registerBus(bus);
       const out = builder.addBasicGate("output");
       builder.connectToGate(bus, out, 0);
@@ -169,7 +169,7 @@ describe("Bus", () => {
       const data2 = builder.addBasicGate("input");
       const tsb2 = builder.addBasicGate("Tri-state Buffer");
 
-      const bus = createBasicGate("bus");
+      const bus = createPrimitiveGate("bus");
       builder.registerBus(bus);
       const out = builder.addBasicGate("output");
 
