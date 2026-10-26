@@ -1,4 +1,4 @@
-import { FONT_SIZE, GRID_OFFSET, GRID_SIZE, PORT_LABEL_SIZE, PORT_RADIUS } from "../constants.js";
+import { FONT_SIZE, GATE_CATEGORIES, GRID_OFFSET, GRID_SIZE, PORT_LABEL_SIZE, PORT_RADIUS } from "../constants.js";
 import { createPrimitiveGate, createCompositeGate } from "../logic/gates.js";
 import { state } from "../state.js";
 
@@ -23,7 +23,7 @@ export class RenderPoint {
   }
 
   getOutputPort(wire = null) {
-    if (wire !== null && wire.from.type === "composite") {
+    if (wire !== null && wire.from.category === GATE_CATEGORIES.COMPOSITE) {
       return this.getOutputPortByIndex(wire.fromOutputIndex, wire.from.outputCount);
     }
     return this.getOutputPortByIndex(0, 1);
@@ -120,21 +120,27 @@ export function spawnCompositeNode(name, circuitData, mouseX, mouseY) {
 }
 
 function computeSize(gate) {
-  if (gate.type === "seven-seg") return { width: 9 * GRID_SIZE, height: 11 * GRID_SIZE };
-  if (
-    gate.type === "input" || 
-    gate.type === "output" ||
-    gate.type === "clock"
-  ) return { width: 2 * GRID_SIZE, height: 2 * GRID_SIZE };
+  if (gate.category === GATE_CATEGORIES.PRIMITIVE) {
+    if (gate.type === "seven-seg") {
+      return { width: 9 * GRID_SIZE, height: 11 * GRID_SIZE };
+    }
+    if (
+      gate.type === "input" ||
+      gate.type === "output" ||
+      gate.type === "clock"
+    ) {
+      return { width: 2 * GRID_SIZE, height: 2 * GRID_SIZE };
+    }
+  }
   const inputCount = gate.inputCount;
   const outputCount = gate.outputCount;
 
   const maxPortCount = Math.max(inputCount, outputCount);
-  const centerLabel = gate.label || gate.type;
+  const centerLabel = gate.type;
 
   const portHeight = (maxPortCount + 1) * GRID_SIZE;
 
-  if (gate.type === "composite") {
+  if (gate.category === GATE_CATEGORIES.COMPOSITE) {
     const centerLabelWidth = centerLabel.length * FONT_SIZE * 0.6 + 20;
 
     if (gate.embeddedDisplays && gate.embeddedDisplays.length > 0) {
