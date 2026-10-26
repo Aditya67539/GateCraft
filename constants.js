@@ -1,10 +1,14 @@
+export const GATE_CATEGORIES = {
+  PRIMITIVE: 0,
+  COMPOSITE: 1,
+};
 export const SIGNAL = {
   LOW:  0,
   HIGH: 1,
   X:    2,
   Z:    3,
   E:    4,
-}
+};
 export const SIGNAL_MAP = {
   [SIGNAL.LOW]:  { key: "low", label: "0" },
   [SIGNAL.HIGH]: { key: "high", label: "1" },
