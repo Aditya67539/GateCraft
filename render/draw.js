@@ -39,6 +39,7 @@ import {
   HOVERED_WAYPOINT_RADIUS,
   WAYPOINT_STROKE_WEIGHT,
   SIGNAL_MAP,
+  GATE_CATEGORIES,
 } from "../constants.js";
 import { getActiveTheme } from "./theme.js";
 import { screenToWorld } from "../state.js";
@@ -117,7 +118,10 @@ function drawClockWave(renderNode, stateKey, theme, p) {
 
 export function drawGate(renderNode, p, status = null) {
   const theme = getActiveTheme();
-  if (renderNode.gate.type === "seven-seg") {
+  if (
+    renderNode.gate.category = GATE_CATEGORIES.PRIMITIVE &&
+    renderNode.gate.type === "seven-seg"
+  ) {
     drawDisplay(renderNode, p);
     drawInputPort(renderNode, theme, p);
     drawOutputPort(renderNode, theme, p);
@@ -136,9 +140,18 @@ export function drawGate(renderNode, p, status = null) {
 
   let color;
   let useGradient = false;
-  if (gate.type === "input" || gate.type === "clock") {
+  if (
+    gate.category === GATE_CATEGORIES.PRIMITIVE &&
+    (
+      gate.type === "input" ||
+      gate.type === "clock"
+    )
+  ) {
     color = theme.gates.input[stateKey].hex;
-  } else if (gate.type === "output") {
+  } else if (
+    gate.category === GATE_CATEGORIES.PRIMITIVE &&
+    gate.type === "output"
+  ) {
     color = theme.gates.output[stateKey].hex;
   } else {
     color = theme.gates.logic.hex;
@@ -192,10 +205,21 @@ export function drawGate(renderNode, p, status = null) {
   p.noStroke();
   p.textAlign(p.CENTER, p.CENTER);
   p.textSize(FONT_SIZE);
-  const isIOnode = gate.type === "input" || gate.type === "output";
-  const label = isIOnode ? signalInfo.label : gate.label || gate.type;
+  const isIOnode = (
+    gate.category === GATE_CATEGORIES.PRIMITIVE &&
+    (
+      gate.type === "input" ||
+      gate.type === "output"
+    )
+  );
+  const label = isIOnode ? signalInfo.label : gate.type;
 
-  if (gate.type === "composite" && gate.embeddedDisplays && gate.embeddedDisplays.length > 0 && gate._displayArea) {
+  if (
+    gate.category === GATE_CATEGORIES.COMPOSITE &&
+    gate.embeddedDisplays &&
+    gate.embeddedDisplays.length > 0 &&
+    gate._displayArea
+  ) {
     // --- Label at the top ---
     const { displayW, displayH, labelRowH, displayPad, displayCount, displayGap } = gate._displayArea;
     p.text(label, renderNode.x + renderNode.width / 2, renderNode.y + labelRowH / 1.5);
@@ -213,7 +237,10 @@ export function drawGate(renderNode, p, status = null) {
       const dispX = stripStartX + i * (displayW + displayGap);
       drawEmbeddedDisplay(gate.embeddedDisplays[i].gate, dispX, dispY, displayW, displayH, p);
     }
-  } else if (gate.type === "clock") {
+  } else if (
+    gate.category === GATE_CATEGORIES.PRIMITIVE &&
+    gate.type === "clock"
+  ) {
     drawClockWave(renderNode, stateKey, theme, p);
   } else {
     p.text(label, renderNode.x + renderNode.width / 2, renderNode.y + renderNode.height / 2);
@@ -621,7 +648,10 @@ function drawPin(p, x1, y1, x2, y2, baseColor) {
 
 function drawOutputPort(renderNode, theme, p) {
   const gate = renderNode.gate;
-  if (gate.type === "output") return;
+  if (
+    gate.category === GATE_CATEGORIES.PRIMITIVE &&
+    gate.type === "output"
+  ) return;
   const totalOutputs = gate.outputCount;
   const pinColor = theme.wires.ghost.hex;
   const gateEdgeX = renderNode.x + renderNode.width;
@@ -638,7 +668,13 @@ function drawOutputPort(renderNode, theme, p) {
 
 function drawInputPort(renderNode, theme, p) {
   const gate = renderNode.gate;
-  if (gate.type === "input" || gate.type === "clock") return;
+  if (
+    gate.category === GATE_CATEGORIES.PRIMITIVE &&
+    (
+      gate.type === "input" ||
+      gate.type === "clock"
+    )
+  ) return;
   const totalInputs = gate.inputCount;
   const pinColor = theme.wires.ghost.hex;
   const gateEdgeX = renderNode.x;
