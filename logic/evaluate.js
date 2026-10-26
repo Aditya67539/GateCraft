@@ -1,4 +1,4 @@
-import { SIGNAL } from '../constants.js';
+import { GATE_CATEGORIES, SIGNAL } from '../constants.js';
 import { showToast } from '../ui/toast.js';
 import { wasmInstance, wasmMemory } from './wasmCore.js';
 
@@ -30,8 +30,10 @@ export function evaluateAll(circuit, seedAll = false) {
   */
   if (seedAll) {
     for (const wire of wires) {
-      const signal = (wire.from.type === "composite" || wire.from.type === "seven-seg")
-        ? wire.from.output[wire.fromOutputIndex]
+      const signal = (
+        wire.from.category = GATE_CATEGORIES.COMPOSITE ||
+        wire.from.type === "seven-seg"
+      ) ? wire.from.output[wire.fromOutputIndex]
         : wire.from.output;
       if (wire.signal !== signal) {
         wire.signal = signal;
@@ -42,7 +44,13 @@ export function evaluateAll(circuit, seedAll = false) {
     // Seed inputs and clocks if their state is changed
     for (const wire of wires) {
       const from = wire.from;
-      if (from.type === "input" || from.type === "clock") {
+      if (
+        from.category === GATE_CATEGORIES.PRIMITIVE &&
+        (
+          from.type === "input" ||
+          from.type === "clock"
+        )
+      ) {
         const newSignal = from.output;
         if (wire.signal !== newSignal) {
           wire.signal = newSignal;
@@ -60,10 +68,19 @@ export function evaluateAll(circuit, seedAll = false) {
     currentDelta.delete(gateId);
 
     const gate = gateMap.get(gateId) || circuit.buses.get(gateId);
-    if (!gate || gate.type === "input" || gate.type === "clock") continue;
+    if (
+      !gate ||
+      (
+        gate.category === GATE_CATEGORIES.PRIMITIVE &&
+        (
+          gate.type === "input" ||
+          gate.type === "clock"
+        )
+      )
+    ) continue;
 
     // Composite gates use an array of outputs whereas basic gates only have one possible output
-    const oldOutput = gate.type === "composite" ? gate.output.slice() : gate.output;
+    const oldOutput = gate.category === GATE_CATEGORIES.COMPOSITE ? gate.output.slice() : gate.output;
     const result = gate.evaluate();
     if (!result.ok) {
       console.error(result.error);
@@ -75,7 +92,7 @@ export function evaluateAll(circuit, seedAll = false) {
     /**
      * Propagate changes to downstream gates only if output changes
      */
-    if (gate.type === "composite") {
+    if (gate.category === GATE_CATEGORIES.COMPOSITE) {
       if (!arraysEqual(newOutput, oldOutput)) {
         const connections = fanout[gate.id];
         if (connections !== undefined) {
@@ -129,14 +146,26 @@ export function evaluateOnce(circuit) {
   // Update signals from input and clock sources
   for (const wire of wires) {
     const from = wire.from;
-    if (from.type === "input" || from.type === "clock") {
+    if (
+      from.category === GATE_CATEGORIES.PRIMITIVE &&
+      (
+        from.type === "input" ||
+        from.type === "clock"
+      )
+    ) {
       wire.signal = from.output;
     }
   }
 
   // Evaluate every non-input and non-clock gate regardless of change
   for (const gate of gates) {
-    if (gate.type === "input" || gate.type === "clock") continue;
+    if (
+      gate.category === GATE_CATEGORIES.PRIMITIVE &&
+      (
+        gate.type === "input" ||
+        gate.type === "clock"
+      )
+    ) continue;
     if (gate.hasNoInputsConnected()) continue;
     const result = gate.evaluate();
     if (!result.ok) {
@@ -148,8 +177,10 @@ export function evaluateOnce(circuit) {
     for (const wire of wires) {
       if (wire.from.id !== gate.id) continue;
 
-      const signal = (gate.type === "composite" || gate.type === "seven-seg")
-        ? gate.output[wire.fromOutputIndex]
+      const signal = (
+        gate.category === GATE_CATEGORIES.COMPOSITE ||
+        gate.type === "seven-seg"
+      ) ? gate.output[wire.fromOutputIndex]
         : gate.output;
 
       if (wire.signal !== signal) {
@@ -277,7 +308,7 @@ export function flatten(circuit, acc, inputOrder = [], outputOrder = [], gateCou
   // --- Pass 1: Assign indices, handle composite recursion ---
 
   for (const gate of circuit.getGates()) {
-    if (gate.type !== "composite") {
+    if (gate.category === GATE_CATEGORIES.PRIMITIVE) {
       indexMap[gate.id] = gateCount;
       acc.gateMap.set(gate, gateCount);
 
@@ -389,7 +420,11 @@ export function flatten(circuit, acc, inputOrder = [], outputOrder = [], gateCou
   let constantXIndex = null;
 
   for (const gate of circuit.getGates()) {
-    if (gate.type === "composite" || gate.type === "input" || gate.type === "clock") continue;
+    if (
+      gate.category === GATE_CATEGORIES.COMPOSITE ||
+      gate.type === "input" ||
+      gate.type === "clock"
+    ) continue;
     const expectedCount = gate.inputCount || 0;
     if (expectedCount === 0) continue;
 
@@ -582,17 +617,19 @@ export function buildTypedArrays(acc) {
   acc.displayGates = [];
 
   for (const [gate, entry] of acc.gateMap.entries()) {
-    if (gate.type === "input" || gate.type === "clock") {
-      const faninWires = acc.fanin.get(entry);
-      if (!faninWires || faninWires.length === 0) {
-        acc.inputGates.push(gate);
-        acc.inputOffsets.push(acc.outputOffset[entry]);
+    if (gate.category === GATE_CATEGORIES.PRIMITIVE) {
+      if (gate.type === "input" || gate.type === "clock") {
+        const faninWires = acc.fanin.get(entry);
+        if (!faninWires || faninWires.length === 0) {
+          acc.inputGates.push(gate);
+          acc.inputOffsets.push(acc.outputOffset[entry]);
+        }
+      } else if (gate.type === "seven-seg") {
+        acc.displayGates.push(gate);
+      } else {
+        acc.syncGates.push(gate);
+        acc.syncOffsets.push(acc.outputOffset[entry]);
       }
-    } else if (gate.type === "seven-seg") {
-      acc.displayGates.push(gate);
-    } else if (gate.type !== "composite") {
-      acc.syncGates.push(gate);
-      acc.syncOffsets.push(acc.outputOffset[entry]);
     } else {
       acc.compositeGates.push(gate);
       acc.compositeBoundaries.push(entry.outputBoundary);
@@ -634,7 +671,13 @@ export function evaluateWasm(circuit, acc, typedArrays) {
   } else {
     // Fallback if not built yet
     for (const [gate, entry] of acc.gateMap.entries()) {
-      if (gate.type === "input" || gate.type === "clock") {
+      if (
+        gate.category === GATE_CATEGORIES.PRIMITIVE &&
+        (
+          gate.type === "input" ||
+          gate.type === "clock"
+        )
+      ) {
         allOutputs[outputOffset[entry]] = gate.output;
       }
     }
@@ -678,7 +721,7 @@ export function evaluateWasm(circuit, acc, typedArrays) {
     }
   } else {
     for (const [gate, entry] of acc.gateMap.entries()) {
-      if (gate.type !== "composite") {
+      if (gate.category === GATE_CATEGORIES.PRIMITIVE) {
         gate.output = allOutputs[outputOffset[entry]];
       } else {
         const boundary = entry.outputBoundary;
