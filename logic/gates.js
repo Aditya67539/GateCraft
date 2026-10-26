@@ -342,11 +342,18 @@ function collectDisplays(gates, positionMap) {
   const displays = [];
 
   for (const [id, gate] of gates) {
-    if (gate.type === "seven-seg") {
+    if (
+      gate.category === GATE_CATEGORIES.PRIMITIVE &&
+      gate.type === "seven-seg"
+    ) {
       const pos = positionMap ? positionMap[id] : null;
       const sortX = pos ? pos.x : 0;
       displays.push({ gate, sortX });
-    } else if (gate.type === "composite" && gate.embeddedDisplays && gate.embeddedDisplays.length > 0) {
+    } else if (
+      gate.category === GATE_CATEGORIES.COMPOSITE &&
+      gate.embeddedDisplays &&
+      gate.embeddedDisplays.length > 0
+    ) {
       // For nested composites that contain displays, use the composite gate's
       // own x position as the sort key for all its displays
       const pos = positionMap ? positionMap[id] : null;
