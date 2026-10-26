@@ -176,11 +176,11 @@ export class Gate extends ConnectableGate {
 
 
 export class CompositeGate extends ConnectableGate {
-  constructor(inputs, circuitData) {
+  constructor(type, inputs, circuitData) {
     super();
     this.id = Logic.nextId++;
     this.category = GATE_CATEGORIES.COMPOSITE;
-    this.type = "composite";
+    this.type = type;
     this.inputs = inputs;
     this.circuitData = circuitData;
     this.inputOrder = circuitData.inputOrder;
@@ -316,15 +316,14 @@ export function createPrimitiveGate(type) {
 /**
  * Creates a composite gate from saved circuit data. 
  * 
- * @param {string} name - The label/name of the composite gate
+ * @param {string} type - The type of the composite gate
  * @param {Object} circuitData - The circuit data used to construct the composite gate
  * @returns {CompositeGate} The instantiated composite gate object 
  */
-export function createCompositeGate(name, circuitData) {
+export function createCompositeGate(type, circuitData) {
   const inputCount = circuitData.inputOrder.length;
   const inputs = new Array(inputCount).fill(undefined);
-  const gate = new CompositeGate(inputs, circuitData);
-  gate.label = name;
+  const gate = new CompositeGate(type, inputs, circuitData);
   gate.parseCircuitData();
   return gate;
 }
