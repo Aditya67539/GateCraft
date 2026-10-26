@@ -71,7 +71,7 @@ export class RenderPoint {
  * @param {number} mouseY - The y-coordinate where the node will be placed
  * @returns {RenderPoint} A renderable node containing the gate
  */
-export function createBasicNode(type, mouseX, mouseY) {
+export function createPrimitiveNode(type, mouseX, mouseY) {
   const gate = createBasicGate(type);
   return new RenderPoint(gate, mouseX, mouseY);
 }
@@ -100,7 +100,7 @@ export function createCompositeNode(name, circuitData, mouseX, mouseY) {
  * @param {number} mouseY - The y-coordinate where the node will be placed
  */
 export function spawnBasicNode(type, mouseX, mouseY) {
-  state.ghostNode = createBasicNode(type, mouseX, mouseY);
+  state.ghostNode = createPrimitiveNode(type, mouseX, mouseY);
   state.mode = "placing";
 }
 

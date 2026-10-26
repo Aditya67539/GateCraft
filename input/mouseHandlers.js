@@ -1,7 +1,7 @@
 import { state, screenToWorld, worldToScreen } from "../state.js";
 import { CLOCK_TIMER, FREQUENCY, SIGNAL } from "../constants.js";
 import { setCustomWaypoints, getPointRefFromElement, projectPointOntoSegment, dist, getTapPointFromElement, GateConnectionView, BusConnectionView } from "../render/wireGeometry.js";
-import { createBasicNode, createCompositeNode, snapPointToGrid, wouldOverlap, wouldBusOverlap } from "../render/RenderPoint.js";
+import { createPrimitiveNode, createCompositeNode, snapPointToGrid, wouldOverlap, wouldBusOverlap } from "../render/RenderPoint.js";
 import { showToast } from "../ui/toast.js";
 import { GateConnectionCommand, MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand, PlaceBusCommand, RemoveBusCommand, BusConnectionCommand } from "../history/commands.js";
 import { performCommand } from "../history/history.js";
@@ -310,7 +310,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
             const gateType = state.ghostNode.gate.type;
             const { x, y } = snapPointToGrid(world.x, world.y);
             if (gateType !== "composite") {
-              state.ghostNode = createBasicNode(gateType, x, y);
+              state.ghostNode = createPrimitiveNode(gateType, x, y);
             } else {
               const name = state.ghostNode.gate.label;
               const saved = loadCompositeGate(name);
