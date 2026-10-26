@@ -10,6 +10,7 @@ import { registerKeyboardHandlers } from "./input/keyboardHandlers.js";
 import { drawMinimap } from "./render/minimap.js";
 import { getOctilinearSnap, getTapPointFromElement } from "./render/wireGeometry.js";
 import { canWireConnectToTarget } from "./logic/wire.js";
+import { GATE_CATEGORIES } from "./constants.js";
 
 applyTheme(getActiveTheme());
 
@@ -119,13 +120,16 @@ const sketch = (p) => {
           if (isNearPort(mouse.x, mouse.y, port)) {
             hoveredPort = port;
             if (
-              gate.type === "composite" &&
+              gate.category === GATE_CATEGORIES.COMPOSITE &&
               gate.internalInputs &&
               gate.internalInputs[j] &&
               gate.internalInputs[j].label
             ) {
               hoveredLabel = gate.internalInputs[j].label;
-            } else if ( gate.type === "Tri-state Buffer" ) {
+            } else if (
+              gate.category === GATE_CATEGORIES.PRIMITIVE &&
+              gate.type === "Tri-state Buffer"
+            ) {
               if (j === 0) hoveredLabel = "enable";
               else if (j === 1) hoveredLabel = "data";
               else hoveredLabel = "in";
@@ -143,7 +147,7 @@ const sketch = (p) => {
           if (isNearPort(mouse.x, mouse.y, port)) {
             hoveredPort = port;
             if (
-              gate.type === "composite" &&
+              gate.category === GATE_CATEGORIES.COMPOSITE &&
               gate.internalOutputs &&
               gate.internalOutputs[j] &&
               gate.internalOutputs[j].label
