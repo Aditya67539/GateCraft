@@ -1,5 +1,5 @@
 import { state, screenToWorld, worldToScreen } from "../state.js";
-import { CLOCK_TIMER, FREQUENCY, GATE_CATEGORIES, SIGNAL } from "../constants.js";
+import { CLOCK_TIMER, FREQUENCY, GATE_CATEGORIES, GRID_SIZE, SIGNAL } from "../constants.js";
 import { setCustomWaypoints, getPointRefFromElement, projectPointOntoSegment, dist, getTapPointFromElement, GateConnectionView, BusConnectionView } from "../render/wireGeometry.js";
 import { createPrimitiveNode, createCompositeNode, snapPointToGrid, wouldOverlap, wouldBusOverlap } from "../render/RenderNode.js";
 import { showToast } from "../ui/toast.js";
@@ -758,13 +758,13 @@ function openLabelEditor(renderNode, p) {
   const canvasRect = canvas.getBoundingClientRect();
   const scaleX = canvasRect.width / p.width;
   const scaleY = canvasRect.height / p.height;
-  // Position the input centered over the gate (convert world → screen)
-  const gateCenter = worldToScreen(
+  // Position the input below the center of the gate
+  const labelPosition = worldToScreen(
     renderNode.x + renderNode.width / 2,
-    renderNode.y + renderNode.height / 2
+    renderNode.y + renderNode.height + GRID_SIZE,
   );
-  const cssX = gateCenter.x * scaleX;
-  const cssY = gateCenter.y * scaleY;
+  const cssX = labelPosition.x * scaleX;
+  const cssY = labelPosition.y * scaleY;
   const zoom = state.zoom;
   const inputWidth = Math.max(renderNode.width * scaleX * zoom, 80);
   const input = document.createElement("input");
