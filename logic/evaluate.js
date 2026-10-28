@@ -31,7 +31,7 @@ export function evaluateAll(circuit, seedAll = false) {
   if (seedAll) {
     for (const wire of wires) {
       const signal = (
-        wire.from.category = GATE_CATEGORIES.COMPOSITE ||
+        wire.from.category === GATE_CATEGORIES.COMPOSITE ||
         wire.from.type === "seven-seg"
       ) ? wire.from.output[wire.fromOutputIndex]
         : wire.from.output;

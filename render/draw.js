@@ -119,7 +119,7 @@ function drawClockWave(renderNode, stateKey, theme, p) {
 export function drawGate(renderNode, p, status = null) {
   const theme = getActiveTheme();
   if (
-    renderNode.gate.category = GATE_CATEGORIES.PRIMITIVE &&
+    renderNode.gate.category === GATE_CATEGORIES.PRIMITIVE &&
     renderNode.gate.type === "seven-seg"
   ) {
     drawDisplay(renderNode, p);
