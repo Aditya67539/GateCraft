@@ -212,7 +212,7 @@ export function drawGate(renderNode, p, status = null) {
       gate.type === "output"
     )
   );
-  const label = isIOnode ? signalInfo.label : gate.type;
+  const gateDisplayText = isIOnode ? signalInfo.label : gate.type;
 
   if (
     gate.category === GATE_CATEGORIES.COMPOSITE &&
@@ -222,7 +222,7 @@ export function drawGate(renderNode, p, status = null) {
   ) {
     // --- Label at the top ---
     const { displayW, displayH, labelRowH, displayPad, displayCount, displayGap } = gate._displayArea;
-    p.text(label, renderNode.x + renderNode.width / 2, renderNode.y + labelRowH / 1.5);
+    p.text(gateDisplayText, renderNode.x + renderNode.width / 2, renderNode.y + labelRowH / 1.5);
 
     // --- Embedded displays (centered strip) ---
     const displayStripW = displayCount * displayW + (displayCount - 1) * displayGap;
@@ -243,7 +243,7 @@ export function drawGate(renderNode, p, status = null) {
   ) {
     drawClockWave(renderNode, stateKey, theme, p);
   } else {
-    p.text(label, renderNode.x + renderNode.width / 2, renderNode.y + renderNode.height / 2);
+    p.text(gateDisplayText, renderNode.x + renderNode.width / 2, renderNode.y + renderNode.height / 2);
   }
 
   drawOutputPort(renderNode, theme, p);
