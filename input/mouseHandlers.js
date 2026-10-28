@@ -495,6 +495,14 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
 
 
   function showContextMenu(contextMenu, clientX, clientY, target) {
+    if (target.type === "gate") {
+      const labelBtnDiv = document.getElementById("label-btn-div");
+      if (target.source.gate.label) {
+        labelBtnDiv.innerHTML = "Edit Label";
+      } else {
+        labelBtnDiv.innerHTML = "Add Label";
+      }
+    }
     state.contextMenuTarget = target;
     contextMenu.classList.add("open");
     contextMenu.style.left = `${clientX}px`;
