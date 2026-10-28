@@ -1,5 +1,5 @@
 import { state, screenToWorld, worldToScreen } from "../state.js";
-import { CLOCK_TIMER, FREQUENCY, SIGNAL } from "../constants.js";
+import { CLOCK_TIMER, FREQUENCY, GATE_CATEGORIES, SIGNAL } from "../constants.js";
 import { setCustomWaypoints, getPointRefFromElement, projectPointOntoSegment, dist, getTapPointFromElement, GateConnectionView, BusConnectionView } from "../render/wireGeometry.js";
 import { createPrimitiveNode, createCompositeNode, snapPointToGrid, wouldOverlap, wouldBusOverlap } from "../render/RenderNode.js";
 import { showToast } from "../ui/toast.js";
@@ -248,7 +248,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
             const connection = state.drawingWire.source;
             if (state.drawingWire.originType === "gate") {
               const fromNode = connection.fromNode;
-              const startPoint = fromNode.gate.type === "composite"
+              const startPoint = fromNode.gate.category === GATE_CATEGORIES.COMPOSITE
                 ? fromNode.getOutputPortByIndex(connection.fromOutputIndex, fromNode.gate.outputCount)
                 : fromNode.getOutputPort();
               const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
@@ -278,11 +278,19 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
           }
         }
       } else if (state.mode === "run") {
-        if (state.dragging && state.dragging.gate.type === "input") {
+        if (
+          state.dragging &&
+          state.dragging.gate.category === GATE_CATEGORIES.PRIMITIVE &&
+          state.dragging.gate.type === "input"
+        ) {
           const signal = state.dragging.gate.output === LOW ? HIGH : LOW;
           state.dragging.gate.setValue(signal);
           circuit.evaluate();
-        } else if (state.dragging && state.dragging.gate.type === "clock") {
+        } else if (
+          state.dragging &&
+          state.dragging.gate.category === GATE_CATEGORIES.PRIMITIVE &&
+          state.dragging.gate.type === "clock"
+        ) {
           if (state.dragging.intervalId != null) {
             clearInterval(state.dragging.intervalId);
             state.dragging.intervalId = null;
@@ -307,16 +315,16 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
           performCommand(placeGateCommand);
 
           if (event.shiftKey) {
+            const gateCategory = state.ghostNode.gate.category;
             const gateType = state.ghostNode.gate.type;
             const { x, y } = snapPointToGrid(world.x, world.y);
-            if (gateType !== "composite") {
+            if (gateCategory === GATE_CATEGORIES.PRIMITIVE) {
               state.ghostNode = createPrimitiveNode(gateType, x, y);
             } else {
-              const name = state.ghostNode.gate.label;
-              const saved = loadCompositeGate(name);
+              const saved = loadCompositeGate(gateType);
               if (saved) {
                 const freshCircuit = buildCircuitFromData(saved.circuitData, saved.renderData);
-                state.ghostNode = createCompositeNode(name, freshCircuit, x, y);
+                state.ghostNode = createCompositeNode(gateType, freshCircuit, x, y);
               }
             }
           } else {
@@ -564,8 +572,8 @@ export function isNearWaypoint(mx, my, waypoint) {
 function findNearOutput(mx, my, renderNodes) {
   for (let i = 0; i < renderNodes.length; i++) {
     const gate = renderNodes[i].gate;
-    if (gate.type === "output") continue;
-    if (gate.type === "composite") {
+    if (gate.category === GATE_CATEGORIES.PRIMITIVE && gate.type === "output") continue;
+    if (gate.category === GATE_CATEGORIES.COMPOSITE) {
       for (let j = 0; j < gate.outputCount; j++) {
         const port = renderNodes[i].getOutputPortByIndex(j, gate.outputCount);
         if (isNearPort(mx, my, port)) {
@@ -583,8 +591,9 @@ function findNearOutput(mx, my, renderNodes) {
 
 function findNearInput(mx, my, renderNodes) {
   for (let i = 0; i < renderNodes.length; i++) {
-    if (renderNodes[i].gate.type === "input") continue;
-    const totalInputs = renderNodes[i].gate.inputCount;
+    const gate = renderNodes[i].gate;
+    if (gate.category === GATE_CATEGORIES.PRIMITIVE && gate.type === "input") continue;
+    const totalInputs = gate.inputCount;
 
     for (let j = 0; j < totalInputs; j++) {
       const port = renderNodes[i].getInputPortByIndex(j, totalInputs);
