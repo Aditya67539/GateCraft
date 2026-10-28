@@ -1,7 +1,7 @@
 import { state, screenToWorld, worldToScreen } from "../state.js";
-import { CLOCK_TIMER, FREQUENCY, SIGNAL } from "../constants.js";
+import { CLOCK_TIMER, FREQUENCY, GATE_CATEGORIES, GRID_SIZE, SIGNAL } from "../constants.js";
 import { setCustomWaypoints, getPointRefFromElement, projectPointOntoSegment, dist, getTapPointFromElement, GateConnectionView, BusConnectionView } from "../render/wireGeometry.js";
-import { createBasicNode, createCompositeNode, snapPointToGrid, wouldOverlap, wouldBusOverlap } from "../render/RenderPoint.js";
+import { createPrimitiveNode, createCompositeNode, snapPointToGrid, wouldOverlap, wouldBusOverlap } from "../render/RenderNode.js";
 import { showToast } from "../ui/toast.js";
 import { GateConnectionCommand, MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand, PlaceBusCommand, RemoveBusCommand, BusConnectionCommand } from "../history/commands.js";
 import { performCommand } from "../history/history.js";
@@ -37,6 +37,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
   const canvasHost = document.querySelector(".canvas-host");
   const canvas = canvasHost.querySelector("canvas");
   const wireCtxMenu = document.getElementById("wire-context-menu");
+  const gateCtxMenu = document.getElementById("gate-context-menu");
 
   p.mousePressed = function (event) {
     if (state.labelEditing) return;
@@ -247,7 +248,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
             const connection = state.drawingWire.source;
             if (state.drawingWire.originType === "gate") {
               const fromNode = connection.fromNode;
-              const startPoint = fromNode.gate.type === "composite"
+              const startPoint = fromNode.gate.category === GATE_CATEGORIES.COMPOSITE
                 ? fromNode.getOutputPortByIndex(connection.fromOutputIndex, fromNode.gate.outputCount)
                 : fromNode.getOutputPort();
               const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
@@ -277,11 +278,19 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
           }
         }
       } else if (state.mode === "run") {
-        if (state.dragging && state.dragging.gate.type === "input") {
+        if (
+          state.dragging &&
+          state.dragging.gate.category === GATE_CATEGORIES.PRIMITIVE &&
+          state.dragging.gate.type === "input"
+        ) {
           const signal = state.dragging.gate.output === LOW ? HIGH : LOW;
           state.dragging.gate.setValue(signal);
           circuit.evaluate();
-        } else if (state.dragging && state.dragging.gate.type === "clock") {
+        } else if (
+          state.dragging &&
+          state.dragging.gate.category === GATE_CATEGORIES.PRIMITIVE &&
+          state.dragging.gate.type === "clock"
+        ) {
           if (state.dragging.intervalId != null) {
             clearInterval(state.dragging.intervalId);
             state.dragging.intervalId = null;
@@ -306,16 +315,16 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
           performCommand(placeGateCommand);
 
           if (event.shiftKey) {
+            const gateCategory = state.ghostNode.gate.category;
             const gateType = state.ghostNode.gate.type;
             const { x, y } = snapPointToGrid(world.x, world.y);
-            if (gateType !== "composite") {
-              state.ghostNode = createBasicNode(gateType, x, y);
+            if (gateCategory === GATE_CATEGORIES.PRIMITIVE) {
+              state.ghostNode = createPrimitiveNode(gateType, x, y);
             } else {
-              const name = state.ghostNode.gate.label;
-              const saved = loadCompositeGate(name);
+              const saved = loadCompositeGate(gateType);
               if (saved) {
                 const freshCircuit = buildCircuitFromData(saved.circuitData, saved.renderData);
-                state.ghostNode = createCompositeNode(name, freshCircuit, x, y);
+                state.ghostNode = createCompositeNode(gateType, freshCircuit, x, y);
               }
             }
           } else {
@@ -379,27 +388,23 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
       const clientX = rect.left + (p.mouseX / p.width) * rect.width;
       const clientY = rect.top + (p.mouseY / p.height) * rect.height;
 
-      // 1. Check for input/output gates (label editing)
-      // TODO: Add a context menu instead of the direct label editor
+      // 1. Check for input/output gates
       const target = renderNodes.find(n => n.containsPoint(world.x, world.y));
       if (target) {
-        const gateType = target.gate.type;
-        if (gateType === "input" || gateType === "output") {
-          openLabelEditor(target, p);
-          return;
-        }
+        showContextMenu(gateCtxMenu, clientX, clientY, { type: "gate", source: target });
+        return;
       }
 
       // 2. Check for wires and buses
       const wireInfo = getWireAtPoint(world.x, world.y, wires, nodeMap, busMap);
       if (wireInfo) {
-        showWireContextMenu(clientX, clientY, { type: "wire", source: wireInfo.conn });
+        showContextMenu(wireCtxMenu, clientX, clientY, { type: "wire", source: wireInfo.conn });
         return;
       }
 
       const busInfo = getBusAtPoint(world.x, world.y, busNodes);
       if (busInfo) {
-        showWireContextMenu(clientX, clientY, { type: "bus", source: busInfo });
+        showContextMenu(wireCtxMenu, clientX, clientY, { type: "bus", source: busInfo });
         return;
       }
     }
@@ -489,59 +494,86 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
   }
 
 
-  function showWireContextMenu(clientX, clientY, target) {
+  function showContextMenu(contextMenu, clientX, clientY, target) {
+    if (target.type === "gate") {
+      const labelBtnDiv = document.getElementById("label-btn-div");
+      if (target.source.gate.label) {
+        labelBtnDiv.innerHTML = "Edit Label";
+      } else {
+        labelBtnDiv.innerHTML = "Add Label";
+      }
+    }
     state.contextMenuTarget = target;
-    wireCtxMenu.classList.add("open");
-    wireCtxMenu.style.left = `${clientX}px`;
-    wireCtxMenu.style.top = `${clientY}px`;
+    contextMenu.classList.add("open");
+    contextMenu.style.left = `${clientX}px`;
+    contextMenu.style.top = `${clientY}px`;
 
-    const rect = wireCtxMenu.getBoundingClientRect();
+    const rect = contextMenu.getBoundingClientRect();
     if (rect.bottom > window.innerHeight) {
-      wireCtxMenu.style.top = `${Math.max(0, clientY - rect.height)}px`;
+      contextMenu.style.top = `${Math.max(0, clientY - rect.height)}px`;
     }
     if (rect.right > window.innerWidth) {
-      wireCtxMenu.style.left = `${Math.max(0, clientX - rect.width)}px`;
+      contextMenu.style.left = `${Math.max(0, clientX - rect.width)}px`;
     }
     state.isAnyModalOpen = true;
   }
 
-  function hideWireContextMenu() {
-    if (!wireCtxMenu.classList.contains("open")) return;
-    wireCtxMenu.classList.remove("open");
+  function hideContextMenu(contextMenu) {
+    if (!contextMenu.classList.contains("open")) return;
+    contextMenu.classList.remove("open");
     state.contextMenuTarget = null;
     state.isAnyModalOpen = false;
   }
 
-  // Edit button - placeholder for waypoint editor (coming soon)
+  // Wire and Bus edit button
   document.getElementById("ctx-wire-edit").addEventListener("click", () => {
     state.editorTarget = structuredClone(state.contextMenuTarget);
-    hideWireContextMenu();
+    hideContextMenu(wireCtxMenu);
     if (!state.editorTarget) return;
     state.wireEditing = true;
   });
 
-  // Delete button - remove the wire or bus
-  document.getElementById("ctx-wire-delete").addEventListener("click", () => {
-    const target = state.contextMenuTarget;
-    hideWireContextMenu();
-    if (!target) return;
+  // Delete button
+  document.querySelectorAll(".ctx-delete-target").forEach(element => {
+    element.addEventListener("click", () => {
+      const target = state.contextMenuTarget;
+      hideContextMenu(wireCtxMenu);
+      hideContextMenu(gateCtxMenu);
+      if (!target) return;
 
-    if (target.type === "wire") {
-      const removeWireCommand = new RemoveWireCommand(circuit, wires, target.source);
-      performCommand(removeWireCommand);
-    } else if (target.type === "bus") {
-      const removeBusCommand = new RemoveBusCommand(busNodes, wires, circuit, target.source, busMap);
-      performCommand(removeBusCommand);
-    }
+      if (target.type === "wire") {
+        const removeWireCommand = new RemoveWireCommand(circuit, wires, target.source);
+        performCommand(removeWireCommand);
+      } else if (target.type === "bus") {
+        const removeBusCommand = new RemoveBusCommand(busNodes, wires, circuit, target.source, busMap);
+        performCommand(removeBusCommand);
+      } else if (target.type === "gate") {
+        const removeGateCommand = new RemoveGateCommand(renderNodes, wires, circuit, target.source, nodeMap);
+        performCommand(removeGateCommand);
+      }
+    });
+  });
+
+  // Label button for gates
+  document.getElementById("ctx-gate-edit").addEventListener("click", () => {
+    const target = state.contextMenuTarget;
+    if (!target || target.type !== "gate") return;
+
+    openLabelEditor(target.source, p);
   });
 
   // Close wire context meny on any click or Escape
-  document.addEventListener("click", () => hideWireContextMenu());
+  document.addEventListener("click", () => {
+    hideContextMenu(wireCtxMenu);
+    hideContextMenu(gateCtxMenu);
+  });
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") hideWireContextMenu();
+    if (e.key === "Escape") {
+      hideContextMenu(wireCtxMenu);
+      hideContextMenu(gateCtxMenu);
+    };
   });
 }
-
 
 export function isNearPort(mouseX, mouseY, port) {
   const d = dist(mouseX, mouseY, port.x, port.y);
@@ -556,8 +588,8 @@ export function isNearWaypoint(mx, my, waypoint) {
 function findNearOutput(mx, my, renderNodes) {
   for (let i = 0; i < renderNodes.length; i++) {
     const gate = renderNodes[i].gate;
-    if (gate.type === "output") continue;
-    if (gate.type === "composite") {
+    if (gate.category === GATE_CATEGORIES.PRIMITIVE && gate.type === "output") continue;
+    if (gate.category === GATE_CATEGORIES.COMPOSITE) {
       for (let j = 0; j < gate.outputCount; j++) {
         const port = renderNodes[i].getOutputPortByIndex(j, gate.outputCount);
         if (isNearPort(mx, my, port)) {
@@ -575,8 +607,9 @@ function findNearOutput(mx, my, renderNodes) {
 
 function findNearInput(mx, my, renderNodes) {
   for (let i = 0; i < renderNodes.length; i++) {
-    if (renderNodes[i].gate.type === "input") continue;
-    const totalInputs = renderNodes[i].gate.inputCount;
+    const gate = renderNodes[i].gate;
+    if (gate.category === GATE_CATEGORIES.PRIMITIVE && gate.type === "input") continue;
+    const totalInputs = gate.inputCount;
 
     for (let j = 0; j < totalInputs; j++) {
       const port = renderNodes[i].getInputPortByIndex(j, totalInputs);
@@ -725,13 +758,13 @@ function openLabelEditor(renderNode, p) {
   const canvasRect = canvas.getBoundingClientRect();
   const scaleX = canvasRect.width / p.width;
   const scaleY = canvasRect.height / p.height;
-  // Position the input centered over the gate (convert world → screen)
-  const gateCenter = worldToScreen(
+  // Position the input below the center of the gate
+  const labelPosition = worldToScreen(
     renderNode.x + renderNode.width / 2,
-    renderNode.y + renderNode.height / 2
+    renderNode.y + renderNode.height + GRID_SIZE,
   );
-  const cssX = gateCenter.x * scaleX;
-  const cssY = gateCenter.y * scaleY;
+  const cssX = labelPosition.x * scaleX;
+  const cssY = labelPosition.y * scaleY;
   const zoom = state.zoom;
   const inputWidth = Math.max(renderNode.width * scaleX * zoom, 80);
   const input = document.createElement("input");

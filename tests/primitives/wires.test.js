@@ -10,9 +10,9 @@ describe("disconnectWire", () => {
   it("clears the input slot (sets undefined) on a basic gate", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const B = builder.addBasicGate("input");
-    const gate = builder.addBasicGate("and"); // fixed 2 inputs
+    const A = builder.addPrimitiveGate("input");
+    const B = builder.addPrimitiveGate("input");
+    const gate = builder.addPrimitiveGate("and"); // fixed 2 inputs
 
     const resultA = builder.connectToGate(A, gate, 0);
     builder.connectToGate(B, gate, 1);
@@ -32,8 +32,8 @@ describe("disconnectWire", () => {
   it("clears the input slot on an output gate", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const out = builder.addBasicGate("output"); // fixed 1 input
+    const A = builder.addPrimitiveGate("input");
+    const out = builder.addPrimitiveGate("output"); // fixed 1 input
 
     const resultA = builder.connectToGate(A, out, 0);
     expect(out.inputs[0]).toBeDefined();
@@ -46,10 +46,10 @@ describe("disconnectWire", () => {
 
   it("clears the input slot on a composite gate", () => {
     const innerBuilder = new CircuitBuilder();
-    const inA = innerBuilder.addBasicGate("input");
-    const inB = innerBuilder.addBasicGate("input");
-    const andGate = innerBuilder.addBasicGate("and");
-    const outGate = innerBuilder.addBasicGate("output");
+    const inA = innerBuilder.addPrimitiveGate("input");
+    const inB = innerBuilder.addPrimitiveGate("input");
+    const andGate = innerBuilder.addPrimitiveGate("and");
+    const outGate = innerBuilder.addPrimitiveGate("output");
 
     innerBuilder.connectToGate(inA, andGate, 0);
     innerBuilder.connectToGate(inB, andGate, 1);
@@ -64,8 +64,8 @@ describe("disconnectWire", () => {
     const builder = new CircuitBuilder();
     const compositeGate = builder.addCompositeGate("TestComposite", circuitData);
 
-    const X = builder.addBasicGate("input");
-    const Y = builder.addBasicGate("input");
+    const X = builder.addPrimitiveGate("input");
+    const Y = builder.addPrimitiveGate("input");
 
     const resultX = builder.connectToGate(X, compositeGate, 0);
     builder.connectToGate(Y, compositeGate, 1);
@@ -83,10 +83,10 @@ describe("disconnectWire", () => {
   it("does not affect wires targeting other gates", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const B = builder.addBasicGate("input");
-    const gate1 = builder.addBasicGate("and");
-    const gate2 = builder.addBasicGate("or");
+    const A = builder.addPrimitiveGate("input");
+    const B = builder.addPrimitiveGate("input");
+    const gate1 = builder.addPrimitiveGate("and");
+    const gate2 = builder.addPrimitiveGate("or");
 
     const resultA1 = builder.connectToGate(A, gate1, 0);
     const resultB1 = builder.connectToGate(B, gate1, 1);
@@ -111,9 +111,9 @@ describe("disconnectWire", () => {
   it("allows reconnecting a previously disconnected slot", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const B = builder.addBasicGate("input");
-    const gate = builder.addBasicGate("and");
+    const A = builder.addPrimitiveGate("input");
+    const B = builder.addPrimitiveGate("input");
+    const gate = builder.addPrimitiveGate("and");
 
     const resultA = builder.connectToGate(A, gate, 0);
     builder.connectToGate(B, gate, 1);
@@ -123,7 +123,7 @@ describe("disconnectWire", () => {
     expect(gate.inputs[0]).toBeUndefined();
 
     // Reconnect a new input to slot 0
-    const C = builder.addBasicGate("input");
+    const C = builder.addPrimitiveGate("input");
     const resultC = builder.connectToGate(C, gate, 0);
 
     const wireC = resultC.wire;
@@ -140,9 +140,9 @@ describe("removeWire", () => {
   it("removes the wire from the circuit's wire list", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const gate = builder.addBasicGate("not");
-    const out = builder.addBasicGate("output");
+    const A = builder.addPrimitiveGate("input");
+    const gate = builder.addPrimitiveGate("not");
+    const out = builder.addPrimitiveGate("output");
 
     const resultAG = builder.connectToGate(A, gate, 0);
     const resultGO = builder.connectToGate(gate, out, 0);
@@ -162,9 +162,9 @@ describe("removeWire", () => {
   it("clears the input slot on the target gate (does not splice)", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const B = builder.addBasicGate("input");
-    const gate = builder.addBasicGate("and");
+    const A = builder.addPrimitiveGate("input");
+    const B = builder.addPrimitiveGate("input");
+    const gate = builder.addPrimitiveGate("and");
 
     const resultA = builder.connectToGate(A, gate, 0);
     const wireA = resultA.wire;
@@ -182,10 +182,10 @@ describe("removeWire", () => {
   it("does not shift toInputIndex on remaining wires (fixed ports)", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const B = builder.addBasicGate("input");
-    const gate = builder.addBasicGate("and");
-    const out = builder.addBasicGate("output");
+    const A = builder.addPrimitiveGate("input");
+    const B = builder.addPrimitiveGate("input");
+    const gate = builder.addPrimitiveGate("and");
+    const out = builder.addPrimitiveGate("output");
 
     const resultA = builder.connectToGate(A, gate, 0);
     const resultB = builder.connectToGate(B, gate, 1);
@@ -202,8 +202,8 @@ describe("removeWire", () => {
   it("marks the circuit as dirty after removal", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const gate = builder.addBasicGate("not");
+    const A = builder.addPrimitiveGate("input");
+    const gate = builder.addPrimitiveGate("not");
 
     const result = builder.connectToGate(A, gate, 0);
     const wire = result.wire;
@@ -217,8 +217,8 @@ describe("removeWire", () => {
   it("can remove the only wire in the circuit", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const out = builder.addBasicGate("output");
+    const A = builder.addPrimitiveGate("input");
+    const out = builder.addPrimitiveGate("output");
 
     const result = builder.connectToGate(A, out, 0);
     const wire = result.wire;
@@ -232,9 +232,9 @@ describe("removeWire", () => {
   it("allows reconnection to the same slot after wire removal", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const B = builder.addBasicGate("input");
-    const gate = builder.addBasicGate("not");
+    const A = builder.addPrimitiveGate("input");
+    const B = builder.addPrimitiveGate("input");
+    const gate = builder.addPrimitiveGate("not");
 
     const resultA = builder.connectToGate(A, gate, 0);
     const wireA = resultA.wire;
@@ -256,9 +256,9 @@ describe("removeGate", () => {
   it("removes the gate from the circuit's gate map", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const gate = builder.addBasicGate("not");
-    const out = builder.addBasicGate("output");
+    const A = builder.addPrimitiveGate("input");
+    const gate = builder.addPrimitiveGate("not");
+    const out = builder.addPrimitiveGate("output");
 
     builder.connectToGate(A, gate, 0);
     builder.connectToGate(gate, out, 0);
@@ -272,9 +272,9 @@ describe("removeGate", () => {
   it("removes all wires connected to the gate (both inbound and outbound)", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const gate = builder.addBasicGate("not");
-    const out = builder.addBasicGate("output");
+    const A = builder.addPrimitiveGate("input");
+    const gate = builder.addPrimitiveGate("not");
+    const out = builder.addPrimitiveGate("output");
 
     builder.connectToGate(A, gate, 0);
     builder.connectToGate(gate, out, 0);
@@ -289,10 +289,10 @@ describe("removeGate", () => {
   it("clears input slots on downstream gates (not spliced)", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const B = builder.addBasicGate("input");
-    const gate = builder.addBasicGate("and");
-    const out = builder.addBasicGate("output");
+    const A = builder.addPrimitiveGate("input");
+    const B = builder.addPrimitiveGate("input");
+    const gate = builder.addPrimitiveGate("and");
+    const out = builder.addPrimitiveGate("output");
 
     builder.connectToGate(A, gate, 0);
     builder.connectToGate(B, gate, 1);
@@ -311,10 +311,10 @@ describe("removeGate", () => {
   it("removes an input gate and clears the downstream slot", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const B = builder.addBasicGate("input");
-    const gate = builder.addBasicGate("and");
-    const out = builder.addBasicGate("output");
+    const A = builder.addPrimitiveGate("input");
+    const B = builder.addPrimitiveGate("input");
+    const gate = builder.addPrimitiveGate("and");
+    const out = builder.addPrimitiveGate("output");
 
     builder.connectToGate(A, gate, 0);
     builder.connectToGate(B, gate, 1);
@@ -334,9 +334,9 @@ describe("removeGate", () => {
   it("removes an output gate without affecting upstream gates", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const gate = builder.addBasicGate("not");
-    const out = builder.addBasicGate("output");
+    const A = builder.addPrimitiveGate("input");
+    const gate = builder.addPrimitiveGate("not");
+    const out = builder.addPrimitiveGate("output");
 
     builder.connectToGate(A, gate, 0);
     builder.connectToGate(gate, out, 0);
@@ -355,11 +355,11 @@ describe("removeGate", () => {
     //  B --------> OR
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const B = builder.addBasicGate("input");
-    const notGate = builder.addBasicGate("not");
-    const orGate = builder.addBasicGate("or");
-    const out = builder.addBasicGate("output");
+    const A = builder.addPrimitiveGate("input");
+    const B = builder.addPrimitiveGate("input");
+    const notGate = builder.addPrimitiveGate("not");
+    const orGate = builder.addPrimitiveGate("or");
+    const out = builder.addPrimitiveGate("output");
 
     builder.connectToGate(A, notGate, 0);
     builder.connectToGate(notGate, orGate, 0);
@@ -384,7 +384,7 @@ describe("removeGate", () => {
   it("handles removing a gate with no connections", () => {
     const builder = new CircuitBuilder();
 
-    const gate = builder.addBasicGate("and");
+    const gate = builder.addPrimitiveGate("and");
     const gateId = gate.id;
 
     expect(builder.gates.has(gateId)).toBe(true);
@@ -400,9 +400,9 @@ describe("removeGate", () => {
     //  A -> out2
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const out1 = builder.addBasicGate("output");
-    const out2 = builder.addBasicGate("output");
+    const A = builder.addPrimitiveGate("input");
+    const out1 = builder.addPrimitiveGate("output");
+    const out2 = builder.addPrimitiveGate("output");
 
     builder.connectToGate(A, out1, 0);
     builder.connectToGate(A, out2, 0);
@@ -422,10 +422,10 @@ describe("removeGate", () => {
     //  AND -> out
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const B = builder.addBasicGate("input");
-    const gate = builder.addBasicGate("and");
-    const out = builder.addBasicGate("output");
+    const A = builder.addPrimitiveGate("input");
+    const B = builder.addPrimitiveGate("input");
+    const gate = builder.addPrimitiveGate("and");
+    const out = builder.addPrimitiveGate("output");
 
     const resultA = builder.connectToGate(A, gate, 0);
     const wireA = resultA.wire;
@@ -447,9 +447,9 @@ describe("removeGate", () => {
     //  Remove NOT, then connect A -> out directly
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const notGate = builder.addBasicGate("not");
-    const out = builder.addBasicGate("output");
+    const A = builder.addPrimitiveGate("input");
+    const notGate = builder.addPrimitiveGate("not");
+    const out = builder.addPrimitiveGate("output");
 
     builder.connectToGate(A, notGate, 0);
     builder.connectToGate(notGate, out, 0);
@@ -472,8 +472,8 @@ describe("connectToGate", () => {
   it("creates a wire and adds it to the circuit", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const gate = builder.addBasicGate("not");
+    const A = builder.addPrimitiveGate("input");
+    const gate = builder.addPrimitiveGate("not");
 
     const result = builder.connectToGate(A, gate, 0);
     const wire = result.wire;
@@ -486,8 +486,8 @@ describe("connectToGate", () => {
   it("sets correct wire properties (from, to, toInputIndex, fromOutputIndex)", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const gate = builder.addBasicGate("not");
+    const A = builder.addPrimitiveGate("input");
+    const gate = builder.addPrimitiveGate("not");
 
     const result = builder.connectToGate(A, gate, 0);
     const wire = result.wire;
@@ -501,9 +501,9 @@ describe("connectToGate", () => {
   it("stores the wire in the target gate's input slot", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const B = builder.addBasicGate("input");
-    const gate = builder.addBasicGate("and");
+    const A = builder.addPrimitiveGate("input");
+    const B = builder.addPrimitiveGate("input");
+    const gate = builder.addPrimitiveGate("and");
 
     builder.connectToGate(A, gate, 0);
     builder.connectToGate(B, gate, 1);
@@ -515,8 +515,8 @@ describe("connectToGate", () => {
   it("initializes wire signal from the source gate's output", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const gate = builder.addBasicGate("not");
+    const A = builder.addPrimitiveGate("input");
+    const gate = builder.addPrimitiveGate("not");
 
     A.setValue(true);
     const result = builder.connectToGate(A, gate, 0);
@@ -528,8 +528,8 @@ describe("connectToGate", () => {
   it("marks the circuit as dirty after connection", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const gate = builder.addBasicGate("not");
+    const A = builder.addPrimitiveGate("input");
+    const gate = builder.addPrimitiveGate("not");
 
     builder.dirty = false;
     builder.connectToGate(A, gate, 0);
@@ -540,8 +540,8 @@ describe("connectToGate", () => {
   it("returns null when toInputIndex is null (fixed ports require explicit index)", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const gate = builder.addBasicGate("not");
+    const A = builder.addPrimitiveGate("input");
+    const gate = builder.addPrimitiveGate("not");
 
     const result = builder.connectToGate(A, gate, null);
 
@@ -552,9 +552,9 @@ describe("connectToGate", () => {
   it("returns null when the target slot is already occupied", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const B = builder.addBasicGate("input");
-    const gate = builder.addBasicGate("not");
+    const A = builder.addPrimitiveGate("input");
+    const B = builder.addPrimitiveGate("input");
+    const gate = builder.addPrimitiveGate("not");
 
     builder.connectToGate(A, gate, 0);
     const duplicateResult = builder.connectToGate(B, gate, 0);
@@ -568,9 +568,9 @@ describe("connectToGate", () => {
   it("allows connecting to different slots on the same gate", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const B = builder.addBasicGate("input");
-    const gate = builder.addBasicGate("and");
+    const A = builder.addPrimitiveGate("input");
+    const B = builder.addPrimitiveGate("input");
+    const gate = builder.addPrimitiveGate("and");
 
     const resultA = builder.connectToGate(A, gate, 0);
     const resultB = builder.connectToGate(B, gate, 1);
@@ -588,9 +588,9 @@ describe("connectToGate", () => {
   it("supports fan-out (one source to multiple destinations)", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const out1 = builder.addBasicGate("output");
-    const out2 = builder.addBasicGate("output");
+    const A = builder.addPrimitiveGate("input");
+    const out1 = builder.addPrimitiveGate("output");
+    const out2 = builder.addPrimitiveGate("output");
 
     const result1 = builder.connectToGate(A, out1, 0);
     const result2 = builder.connectToGate(A, out2, 0);
@@ -608,8 +608,8 @@ describe("connectToGate", () => {
   it("settles the circuit by default after connecting", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const out = builder.addBasicGate("output");
+    const A = builder.addPrimitiveGate("input");
+    const out = builder.addPrimitiveGate("output");
 
     A.setValue(true);
     builder.connectToGate(A, out, 0);
@@ -621,8 +621,8 @@ describe("connectToGate", () => {
   it("does not settle when settle parameter is false", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const out = builder.addBasicGate("output");
+    const A = builder.addPrimitiveGate("input");
+    const out = builder.addPrimitiveGate("output");
 
     A.setValue(HIGH);
     builder.connectToGate(A, out, 0, null, false);
@@ -633,10 +633,10 @@ describe("connectToGate", () => {
 
   it("connects to a composite gate with fromOutputIndex", () => {
     const innerBuilder = new CircuitBuilder();
-    const inA = innerBuilder.addBasicGate("input");
-    const inB = innerBuilder.addBasicGate("input");
-    const andGate = innerBuilder.addBasicGate("and");
-    const outGate = innerBuilder.addBasicGate("output");
+    const inA = innerBuilder.addPrimitiveGate("input");
+    const inB = innerBuilder.addPrimitiveGate("input");
+    const andGate = innerBuilder.addPrimitiveGate("and");
+    const outGate = innerBuilder.addPrimitiveGate("output");
 
     innerBuilder.connectToGate(inA, andGate, 0);
     innerBuilder.connectToGate(inB, andGate, 1);
@@ -650,7 +650,7 @@ describe("connectToGate", () => {
 
     const builder = new CircuitBuilder();
     const composite = builder.addCompositeGate("TestAnd", circuitData);
-    const out = builder.addBasicGate("output");
+    const out = builder.addPrimitiveGate("output");
 
     // Connect composite output 0 to out input 0
     const result = builder.connectToGate(composite, out, 0, 0);
@@ -668,9 +668,9 @@ describe("Gate fixed port initialization", () => {
   it("basic gates start with fixed-size input arrays filled with undefined", () => {
     const builder = new CircuitBuilder();
 
-    const andGate = builder.addBasicGate("and");
-    const orGate = builder.addBasicGate("or");
-    const notGate = builder.addBasicGate("not");
+    const andGate = builder.addPrimitiveGate("and");
+    const orGate = builder.addPrimitiveGate("or");
+    const notGate = builder.addPrimitiveGate("not");
 
     expect(andGate.inputs.length).toBe(2);
     expect(andGate.inputs.every(i => i === undefined)).toBe(true);
@@ -684,7 +684,7 @@ describe("Gate fixed port initialization", () => {
 
   it("output gate starts with a fixed-size input array of 1", () => {
     const builder = new CircuitBuilder();
-    const out = builder.addBasicGate("output");
+    const out = builder.addPrimitiveGate("output");
 
     expect(out.inputs.length).toBe(1);
     expect(out.inputs[0]).toBeUndefined();
@@ -692,8 +692,8 @@ describe("Gate fixed port initialization", () => {
 
   it("input and clock gates have inputCount 0", () => {
     const builder = new CircuitBuilder();
-    const inp = builder.addBasicGate("input");
-    const clk = builder.addBasicGate("clock");
+    const inp = builder.addPrimitiveGate("input");
+    const clk = builder.addPrimitiveGate("clock");
 
     expect(inp.inputCount).toBe(0);
     expect(clk.inputCount).toBe(0);
@@ -702,11 +702,11 @@ describe("Gate fixed port initialization", () => {
   it("all gate types report correct outputCount", () => {
     const builder = new CircuitBuilder();
 
-    const inp = builder.addBasicGate("input");
-    const clk = builder.addBasicGate("clock");
-    const out = builder.addBasicGate("output");
-    const andGate = builder.addBasicGate("and");
-    const notGate = builder.addBasicGate("not");
+    const inp = builder.addPrimitiveGate("input");
+    const clk = builder.addPrimitiveGate("clock");
+    const out = builder.addPrimitiveGate("output");
+    const andGate = builder.addPrimitiveGate("and");
+    const notGate = builder.addPrimitiveGate("not");
 
     expect(inp.outputCount).toBe(1);
     expect(clk.outputCount).toBe(1);

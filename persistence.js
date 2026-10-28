@@ -1,5 +1,6 @@
+import { GATE_CATEGORIES } from "./constants.js";
 import { CircuitBuilder } from "./logic/CircuitBuilder.js";
-import { RenderPoint } from "./render/RenderPoint.js";
+import { RenderNode } from "./render/RenderNode.js";
 import { BusConnectionView, GateConnectionView } from "./render/wireGeometry.js";
 
 const STORAGE_KEY = "compositeGates";
@@ -51,7 +52,7 @@ function setFolderStore(folderStore) {
 /**
  * Extracts logical circuit data (gates, wires, IO ordering) from render nodes. 
  * 
- * @param {Array<RenderPoint>} renderNodes - Array of RenderPoint objects. 
+ * @param {Array<RenderNode>} renderNodes - Array of RenderNode objects. 
  * @param {Array<Object>} wireInfos - Array of wire object containing Wire instances. 
  * @param {Array<BusNode>} busNodes - Array of BusNode objects. 
  * @returns {{
@@ -68,9 +69,17 @@ function getCircuitData(renderNodes, wireInfos, busNodes) {
   const wires = [];
   const buses = [];
   for (const node of renderNodes) {
+    let type = node.gate.type;
+    if (
+      node.gate.category === GATE_CATEGORIES.PRIMITIVE &&
+      node.gate.type === "clock"
+    ) {
+      type = "input";
+    }
     const data = {
       id: node.gate.id,
-      type: node.gate.type === "clock" ? "input" : node.gate.type,
+      category: node.gate.category,
+      type,
     };
     if (node.gate.label) {
       data.label = node.gate.label;
@@ -102,8 +111,10 @@ function getCircuitData(renderNodes, wireInfos, busNodes) {
   let outputNodes = [];
 
   renderNodes.forEach(node => {
-    if (node.gate.type === "input" || node.gate.type === "clock") inputNodes.push(node);
-    else if (node.gate.type === "output") outputNodes.push(node);
+    if (node.gate.category === GATE_CATEGORIES.PRIMITIVE) {
+      if (node.gate.type === "input" || node.gate.type === "clock") inputNodes.push(node);
+      else if (node.gate.type === "output") outputNodes.push(node);
+    }
   });
 
   inputNodes.sort((a, b) => a.y - b.y);
@@ -118,7 +129,7 @@ function getCircuitData(renderNodes, wireInfos, busNodes) {
 /**
  * Extracts rendering data (positions and wire paths) from render nodes. 
  * 
- * @param {Array<RenderPoint>} renderNodes - Array of RenderPoint objects. 
+ * @param {Array<RenderNode>} renderNodes - Array of RenderNode objects. 
  * @param {Array<Object>} wireInfos - Array of wire objects containing Wire instances. 
  * @returns {{
  *   positions: Array<id: Number, x: number, y: number>,
@@ -169,7 +180,7 @@ function getRenderData(renderNodes, wireInfos, busNodes) {
  * Saves a composite gate definition to localStorage. 
  * 
  * @param {string} name - Name of the composite gate. 
- * @param {Array<RenderPoint>} renderNodes - Array of RenderPoint objects. 
+ * @param {Array<RenderNode>} renderNodes - Array of RenderNode objects. 
  * @param {Array<Object>} wires - Array of wire objects containing Wire instances. 
  * @param {Array<BusNode>} buses - Array of BusNode objects. 
  */
@@ -228,13 +239,13 @@ export function buildCircuitFromData(circuitData, renderData = null) {
 
   for (const gateSpec of circuitData.gates) {
     let gate;
-    if (gateSpec.type === "composite") {
-      const nestedCircuit = loadCompositeGate(gateSpec.label);
-      if (!nestedCircuit) throw new Error(`Missing nested gate: ${gateSpec.label}`);
+    if (gateSpec.category === GATE_CATEGORIES.COMPOSITE) {
+      const nestedCircuit = loadCompositeGate(gateSpec.type);
+      if (!nestedCircuit) throw new Error(`Missing nested gate: ${gateSpec.type}`);
       const nestedBuilder = buildCircuitFromData(nestedCircuit.circuitData, nestedCircuit.renderData);
-      gate = builder.addCompositeGate(gateSpec.label, nestedBuilder);
+      gate = builder.addCompositeGate(gateSpec.type, nestedBuilder);
     } else {
-      gate = builder.addBasicGate(gateSpec.type);
+      gate = builder.addPrimitiveGate(gateSpec.type);
     }
 
     idMap[gateSpec.id] = gate.id;

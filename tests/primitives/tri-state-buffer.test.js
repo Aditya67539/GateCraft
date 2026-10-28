@@ -8,10 +8,10 @@ describe("Tri-state Buffer", () => {
   function buildTriStateCircuit() {
     const builder = new CircuitBuilder();
 
-    const enable = builder.addBasicGate("input");
-    const data = builder.addBasicGate("input");
-    const gate = builder.addBasicGate("Tri-state Buffer");
-    const out = builder.addBasicGate("output");
+    const enable = builder.addPrimitiveGate("input");
+    const data = builder.addPrimitiveGate("input");
+    const gate = builder.addPrimitiveGate("Tri-state Buffer");
+    const out = builder.addPrimitiveGate("output");
 
     builder.connectToGate(enable, gate, 0);  // input 0 = enable (upper port)
     builder.connectToGate(data, gate, 1);    // input 1 = data   (lower port)
@@ -117,8 +117,8 @@ describe("Tri-state Buffer", () => {
     const builder = new CircuitBuilder();
 
     // Create a tri-state buffer with no connections
-    const gate = builder.addBasicGate("Tri-state Buffer");
-    const out = builder.addBasicGate("output");
+    const gate = builder.addPrimitiveGate("Tri-state Buffer");
+    const out = builder.addPrimitiveGate("output");
     builder.connectToGate(gate, out, 0);
 
     builder.settle();
@@ -131,9 +131,9 @@ describe("Tri-state Buffer", () => {
   it("handles only data connected (enable disconnected)", () => {
     const builder = new CircuitBuilder();
 
-    const data = builder.addBasicGate("input");
-    const gate = builder.addBasicGate("Tri-state Buffer");
-    const out = builder.addBasicGate("output");
+    const data = builder.addPrimitiveGate("input");
+    const gate = builder.addPrimitiveGate("Tri-state Buffer");
+    const out = builder.addPrimitiveGate("output");
 
     builder.connectToGate(data, gate, 1);  // data on port 1
     builder.connectToGate(gate, out, 0);
@@ -148,9 +148,9 @@ describe("Tri-state Buffer", () => {
   it("handles only enable connected (data disconnected)", () => {
     const builder = new CircuitBuilder();
 
-    const enable = builder.addBasicGate("input");
-    const gate = builder.addBasicGate("Tri-state Buffer");
-    const out = builder.addBasicGate("output");
+    const enable = builder.addPrimitiveGate("input");
+    const gate = builder.addPrimitiveGate("Tri-state Buffer");
+    const out = builder.addPrimitiveGate("output");
 
     builder.connectToGate(enable, gate, 0);  // enable on port 0
     builder.connectToGate(gate, out, 0);
@@ -171,10 +171,10 @@ describe("Tri-state Buffer", () => {
   it("determines Enable and Data based on port index, regardless of connection order", () => {
     const builder = new CircuitBuilder();
 
-    const data = builder.addBasicGate("input");
-    const enable = builder.addBasicGate("input");
-    const gate = builder.addBasicGate("Tri-state Buffer");
-    const out = builder.addBasicGate("output");
+    const data = builder.addPrimitiveGate("input");
+    const enable = builder.addPrimitiveGate("input");
+    const gate = builder.addPrimitiveGate("Tri-state Buffer");
+    const out = builder.addPrimitiveGate("output");
 
     builder.connectToGate(gate, out, 0);
 

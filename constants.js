@@ -1,23 +1,34 @@
-export const SIGNAL = {
+export const GATE_CATEGORIES = Object.freeze({
+  PRIMITIVE: 0,
+  COMPOSITE: 1,
+});
+export const SIGNAL = Object.freeze({
   LOW:  0,
   HIGH: 1,
   X:    2,
   Z:    3,
   E:    4,
-}
-export const GATE_DEFS = {
-  and:         { inputs: 2, outputs: 1 },
-  or:          { inputs: 2, outputs: 1 },
-  not:         { inputs: 1, outputs: 1 },
-  nand:        { inputs: 2, outputs: 1 },
-  nor:         { inputs: 2, outputs: 1 },
-  xor:         { inputs: 2, outputs: 1 },
-  xnor:        { inputs: 2, outputs: 1 },
-  input:       { inputs: 0, outputs: 1 },
-  output:      { inputs: 1, outputs: 0 },
-  "seven-seg": { inputs: 8, outputs: 0 },
-  "Tri-state Buffer": { inputs: 2, outputs: 1 },
-};
+});
+export const SIGNAL_MAP = Object.freeze({
+  [SIGNAL.LOW]:  Object.freeze({ key: "low", label: "0" }),
+  [SIGNAL.HIGH]: Object.freeze({ key: "high", label: "1" }),
+  [SIGNAL.X]:    Object.freeze({ key: "x", label: "X" }),
+  [SIGNAL.Z]:    Object.freeze({ key: "z", label: "Z" }),
+  [SIGNAL.E]:    Object.freeze({ key: "e", label: "E" }),
+});
+export const PRIMITIVE_GATE_DEFS = Object.freeze({
+  and:         Object.freeze({ inputs: 2, outputs: 1 }),
+  or:          Object.freeze({ inputs: 2, outputs: 1 }),
+  not:         Object.freeze({ inputs: 1, outputs: 1 }),
+  nand:        Object.freeze({ inputs: 2, outputs: 1 }),
+  nor:         Object.freeze({ inputs: 2, outputs: 1 }),
+  xor:         Object.freeze({ inputs: 2, outputs: 1 }),
+  xnor:        Object.freeze({ inputs: 2, outputs: 1 }),
+  input:       Object.freeze({ inputs: 0, outputs: 1 }),
+  output:      Object.freeze({ inputs: 1, outputs: 0 }),
+  "seven-seg": Object.freeze({ inputs: 8, outputs: 0 }),
+  "Tri-state Buffer": Object.freeze({ inputs: 2, outputs: 1 }),
+});
 export const FREQUENCY = 1; // Hertz
 export const CLOCK_TIMER = 120 /* seconds */ * 1000; // ms
 export const FONT_SIZE = 16;
@@ -76,3 +87,11 @@ export const TOOLTIP_ARROW_SIZE = 5;
 export const TOOLTIP_GAP = 10;
 export const TOOLTIP_SLIDE_OFFSET = 6;
 export const TOOLTIP_PORT_CLEARANCE = 2;
+
+// Gate label styling
+export const LABEL_FONT_SIZE = 16;
+export const LABEL_PADDING_X = 6;
+export const LABEL_PADDING_Y = 3;
+export const LABEL_CORNER_RADIUS = 4;
+export const LABEL_BG_ALPHA = 0.15;
+export const LABEL_OFFSET_Y = GRID_SIZE;

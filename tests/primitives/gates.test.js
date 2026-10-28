@@ -8,10 +8,10 @@ describe("AND Gate", () => {
   it("follows truth table", () => {
     const builder = new CircuitBuilder();
     
-    const A = builder.addBasicGate("input");
-    const B = builder.addBasicGate("input");
-    const gate = builder.addBasicGate("and");
-    const out = builder.addBasicGate("output");
+    const A = builder.addPrimitiveGate("input");
+    const B = builder.addPrimitiveGate("input");
+    const gate = builder.addPrimitiveGate("and");
+    const out = builder.addPrimitiveGate("output");
 
     builder.connectToGate(A, gate, 0);
     builder.connectToGate(B, gate, 1);
@@ -39,10 +39,10 @@ describe("OR Gate", () => {
   it("follows truth table", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const B = builder.addBasicGate("input");
-    const gate = builder.addBasicGate("or");
-    const out = builder.addBasicGate("output");
+    const A = builder.addPrimitiveGate("input");
+    const B = builder.addPrimitiveGate("input");
+    const gate = builder.addPrimitiveGate("or");
+    const out = builder.addPrimitiveGate("output");
 
     builder.connectToGate(A, gate, 0);
     builder.connectToGate(B, gate, 1);
@@ -70,9 +70,9 @@ describe("NOT Gate", () => {
   it("follows truth table", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const gate = builder.addBasicGate("not");
-    const out = builder.addBasicGate("output");
+    const A = builder.addPrimitiveGate("input");
+    const gate = builder.addPrimitiveGate("not");
+    const out = builder.addPrimitiveGate("output");
 
     builder.connectToGate(A, gate, 0);
     builder.connectToGate(gate, out, 0);
@@ -96,10 +96,10 @@ describe("NAND Gate", () => {
   it("follows truth table", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const B = builder.addBasicGate("input");
-    const gate = builder.addBasicGate("nand");
-    const out = builder.addBasicGate("output");
+    const A = builder.addPrimitiveGate("input");
+    const B = builder.addPrimitiveGate("input");
+    const gate = builder.addPrimitiveGate("nand");
+    const out = builder.addPrimitiveGate("output");
 
     builder.connectToGate(A, gate, 0);
     builder.connectToGate(B, gate, 1);
@@ -127,10 +127,10 @@ describe("NOR Gate", () => {
   it("follows truth table", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const B = builder.addBasicGate("input");
-    const gate = builder.addBasicGate("nor");
-    const out = builder.addBasicGate("output");
+    const A = builder.addPrimitiveGate("input");
+    const B = builder.addPrimitiveGate("input");
+    const gate = builder.addPrimitiveGate("nor");
+    const out = builder.addPrimitiveGate("output");
 
     builder.connectToGate(A, gate, 0);
     builder.connectToGate(B, gate, 1);
@@ -158,10 +158,10 @@ describe("XOR Gate", () => {
   it("follows truth table", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const B = builder.addBasicGate("input");
-    const gate = builder.addBasicGate("xor");
-    const out = builder.addBasicGate("output");
+    const A = builder.addPrimitiveGate("input");
+    const B = builder.addPrimitiveGate("input");
+    const gate = builder.addPrimitiveGate("xor");
+    const out = builder.addPrimitiveGate("output");
 
     builder.connectToGate(A, gate, 0);
     builder.connectToGate(B, gate, 1);
@@ -189,10 +189,10 @@ describe("XNOR Gate", () => {
   it("follows truth table", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const B = builder.addBasicGate("input");
-    const gate = builder.addBasicGate("xnor");
-    const out = builder.addBasicGate("output");
+    const A = builder.addPrimitiveGate("input");
+    const B = builder.addPrimitiveGate("input");
+    const gate = builder.addPrimitiveGate("xnor");
+    const out = builder.addPrimitiveGate("output");
 
     builder.connectToGate(A, gate, 0);
     builder.connectToGate(B, gate, 1);

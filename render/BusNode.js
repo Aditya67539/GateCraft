@@ -1,5 +1,5 @@
 import { state } from "../state.js";
-import { createBasicGate } from "../logic/gates.js";
+import { createPrimitiveGate } from "../logic/gates.js";
 
 export class BusNode {
   constructor(bus, startPoint, endPoint) {
@@ -48,7 +48,7 @@ export function spawnBusNode(mouseX, mouseY) {
 
 
 function createBusNode(mouseX, mouseY) {
-  const bus = createBasicGate("bus");
+  const bus = createPrimitiveGate("bus");
   return new BusNode(bus, { x: mouseX, y: mouseY }, { x: mouseX, y: mouseY });
 }
 

@@ -1,7 +1,8 @@
 import { settleCircuit, createAccumulator, flatten, buildTypedArrays, clearAccumulator, evaluateWasm } from "./evaluate.js";
-import { Bus, CompositeGate, createBasicGate, createCompositeGate, Gate, Output } from "./gates.js";
+import { Bus, CompositeGate, createPrimitiveGate, createCompositeGate, Gate, Output } from "./gates.js";
 import { Wire } from "./wire.js";
 import { initWasm } from "#wasmLoader";
+import { GATE_CATEGORIES } from "../constants.js";
 
 await initWasm();
 
@@ -37,8 +38,8 @@ export class CircuitBuilder {
    * @param {string} type - The type of gate ("input", "output", "clock" or logic gate type)
    * @returns {Input|Output|Clock|Gate} The instantiated gate object
    */
-  addBasicGate(type) {
-    const gate = createBasicGate(type);
+  addPrimitiveGate(type) {
+    const gate = createPrimitiveGate(type);
     this.gates.set(gate.id, gate);
     return gate;
   }
@@ -61,7 +62,7 @@ export class CircuitBuilder {
    * @returns {Gate} The instantiated bus object
    */
   addBus() {
-    const bus = createBasicGate("bus");
+    const bus = createPrimitiveGate("bus");
     this.buses.set(bus.id, bus);
     return bus;
   }
@@ -176,10 +177,10 @@ export class CircuitBuilder {
   }
 
   canConnect(from, to, fromOutputIndex = null, toInputIndex = null) {
-    if (to.type !== "bus") {
+    if (to.category === GATE_CATEGORIES.PRIMITIVE && to.type !== "bus") {
       return to.canConnect(toInputIndex);
     } else {
-      if (from.type === "bus") return false;
+      if (from.category === GATE_CATEGORIES.PRIMITIVE && from.type === "bus") return false;
       return to.canConnect(from, fromOutputIndex);
     }
   }
@@ -194,7 +195,7 @@ export class CircuitBuilder {
     const index = destination.inputs.indexOf(wire);
     if (index === -1) return;
     this.dirty = true;
-    if (destination.type === "bus") {
+    if (destination.category === GATE_CATEGORIES.PRIMITIVE && destination.type === "bus") {
       destination.inputs.splice(index, 1);
       destination.inputCount--;
 

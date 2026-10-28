@@ -38,12 +38,18 @@ import {
   HOVERED_BUS_THICKNESS,
   HOVERED_WAYPOINT_RADIUS,
   WAYPOINT_STROKE_WEIGHT,
+  SIGNAL_MAP,
+  GATE_CATEGORIES,
+  LABEL_FONT_SIZE,
+  LABEL_PADDING_X,
+  LABEL_PADDING_Y,
+  LABEL_CORNER_RADIUS,
+  LABEL_BG_ALPHA,
+  LABEL_OFFSET_Y,
 } from "../constants.js";
 import { getActiveTheme } from "./theme.js";
 import { screenToWorld } from "../state.js";
 import { getOctilinearSnap } from "./wireGeometry.js";
-
-const SIGNAL_KEYS = ["low", "high", "x", "z", "e"];
 
 /**
  * Return "#ffffff" or "#1a1a2e" depending on which has better contrast
@@ -60,12 +66,72 @@ function contrastText(hex) {
   return lum > 0.35 ? "#1a1a2e" : "#ffffff";
 }
 
+/**
+ * Draws a square wave symbol inside a clock gate matching the 1-cycle waveform.
+ * When the signal is low, the wave is drawn with high signal color.
+ * When the signal is high, the wave is drawn with low signal color and flipped.
+ *
+ * @param {RenderNode} renderNode
+ * @param {string} stateKey - "low", "high", "x", "z", "e"
+ * @param {Object} theme - active theme
+ * @param {Object} p - p5 instance
+ */
+function drawClockWave(renderNode, stateKey, theme, p) {
+  const ctx = p.drawingContext;
+  const w = renderNode.width;
+  const h = renderNode.height;
+  const cx = renderNode.x + w / 2;
+  const cy = renderNode.y + h / 2;
+
+  const isHigh = stateKey === "high";
+  const waveColor = isHigh ? theme.gates.input.low.hex : theme.gates.input.high.hex;
+
+  // Single-cycle square wave
+  const waveW = Math.round(w * 0.55);
+  const waveH = Math.round(h * 0.55);
+  const halfW = waveW / 2;
+  const halfH = waveH / 2;
+
+  const x0 = cx - halfW;
+  const x1 = cx + halfW;
+
+  const topY = cy - halfH;
+  const bottomY = cy + halfH;
+
+  // When low (unflipped, matching sketch):
+  // (x0, cy) -> (x0, topY) -> (cx, topY) -> (cx, bottomY) -> (x1, bottomY) -> (x1, cy)
+  // When high (flipped):
+  // (x0, cy) -> (x0, bottomY) -> (cx, bottomY) -> (cx, topY) -> (x1, topY) -> (x1, cy)
+  const y1 = isHigh ? bottomY : topY;
+  const y2 = isHigh ? topY : bottomY;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(x0, cy);
+  ctx.lineTo(x0, y1);
+  ctx.lineTo(cx, y1);
+  ctx.lineTo(cx, y2);
+  ctx.lineTo(x1, y2);
+  ctx.lineTo(x1, cy);
+
+  ctx.strokeStyle = waveColor;
+  ctx.lineWidth = 3;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "miter";
+  ctx.stroke();
+  ctx.restore();
+}
+
 export function drawGate(renderNode, p, status = null) {
   const theme = getActiveTheme();
-  if (renderNode.gate.type === "seven-seg") {
+  if (
+    renderNode.gate.category === GATE_CATEGORIES.PRIMITIVE &&
+    renderNode.gate.type === "seven-seg"
+  ) {
     drawDisplay(renderNode, p);
     drawInputPort(renderNode, theme, p);
     drawOutputPort(renderNode, theme, p);
+    drawLabel(renderNode, p);
     if (status) drawOverlay(renderNode.getBounds(), status, p);
 
     p.fill(0);
@@ -76,13 +142,23 @@ export function drawGate(renderNode, p, status = null) {
 
   const gate = renderNode.gate;
   const stateVal = Array.isArray(gate.output) ? gate.output[0] : gate.output;
-  const stateKey = SIGNAL_KEYS[stateVal] || "x";
+  const signalInfo = SIGNAL_MAP[stateVal];
+  const stateKey = signalInfo?.key || "x";
 
   let color;
   let useGradient = false;
-  if (gate.type === "input" || gate.type === "clock") {
+  if (
+    gate.category === GATE_CATEGORIES.PRIMITIVE &&
+    (
+      gate.type === "input" ||
+      gate.type === "clock"
+    )
+  ) {
     color = theme.gates.input[stateKey].hex;
-  } else if (gate.type === "output") {
+  } else if (
+    gate.category === GATE_CATEGORIES.PRIMITIVE &&
+    gate.type === "output"
+  ) {
     color = theme.gates.output[stateKey].hex;
   } else {
     color = theme.gates.logic.hex;
@@ -136,12 +212,24 @@ export function drawGate(renderNode, p, status = null) {
   p.noStroke();
   p.textAlign(p.CENTER, p.CENTER);
   p.textSize(FONT_SIZE);
-  const label = gate.label || gate.type;
+  const isIOnode = (
+    gate.category === GATE_CATEGORIES.PRIMITIVE &&
+    (
+      gate.type === "input" ||
+      gate.type === "output"
+    )
+  );
+  const gateDisplayText = isIOnode ? signalInfo.label : gate.type;
 
-  if (gate.type === "composite" && gate.embeddedDisplays && gate.embeddedDisplays.length > 0 && gate._displayArea) {
+  if (
+    gate.category === GATE_CATEGORIES.COMPOSITE &&
+    gate.embeddedDisplays &&
+    gate.embeddedDisplays.length > 0 &&
+    gate._displayArea
+  ) {
     // --- Label at the top ---
     const { displayW, displayH, labelRowH, displayPad, displayCount, displayGap } = gate._displayArea;
-    p.text(label, renderNode.x + renderNode.width / 2, renderNode.y + labelRowH / 1.5);
+    p.text(gateDisplayText, renderNode.x + renderNode.width / 2, renderNode.y + labelRowH / 1.5);
 
     // --- Embedded displays (centered strip) ---
     const displayStripW = displayCount * displayW + (displayCount - 1) * displayGap;
@@ -156,12 +244,18 @@ export function drawGate(renderNode, p, status = null) {
       const dispX = stripStartX + i * (displayW + displayGap);
       drawEmbeddedDisplay(gate.embeddedDisplays[i].gate, dispX, dispY, displayW, displayH, p);
     }
+  } else if (
+    gate.category === GATE_CATEGORIES.PRIMITIVE &&
+    gate.type === "clock"
+  ) {
+    drawClockWave(renderNode, stateKey, theme, p);
   } else {
-    p.text(label, renderNode.x + renderNode.width / 2, renderNode.y + renderNode.height / 2);
+    p.text(gateDisplayText, renderNode.x + renderNode.width / 2, renderNode.y + renderNode.height / 2);
   }
 
   drawOutputPort(renderNode, theme, p);
   drawInputPort(renderNode, theme, p);
+  drawLabel(renderNode, p);
 
   if (status) drawOverlay(renderNode.getBounds(), status, p);
 
@@ -170,11 +264,45 @@ export function drawGate(renderNode, p, status = null) {
   p.strokeWeight(DEFAULT_STROKE_WEIGHT);
 }
 
+export function drawLabel(renderNode, p) {
+  const labelText = renderNode.gate.label;
+  if (!labelText) return;
+
+  const theme = getActiveTheme();
+  const x = renderNode.x + renderNode.width / 2;
+  const y = renderNode.y + renderNode.height + LABEL_OFFSET_Y;
+
+  // Measure text to size the background pill
+  p.textSize(LABEL_FONT_SIZE);
+  p.textAlign(p.CENTER, p.CENTER);
+  const textW = p.textWidth(labelText);
+  const bgW = textW + LABEL_PADDING_X * 2;
+  const bgH = LABEL_FONT_SIZE + LABEL_PADDING_Y * 2;
+
+  // Subtle semi-transparent background
+  const bgColor = theme.text.primary.hex;
+  const bgC = p.color(bgColor);
+  bgC.setAlpha(LABEL_BG_ALPHA * 255);
+  p.noStroke();
+  p.fill(bgC);
+  p.rect(x - bgW / 2, y - bgH / 2, bgW, bgH, LABEL_CORNER_RADIUS);
+
+  const labelColor = theme.text.primary.hex;
+  p.fill(labelColor);
+  p.noStroke();
+  p.textStyle(p.BOLD);
+  p.text(labelText, x, y);
+
+  // Restore defaults
+  p.textStyle(p.NORMAL);
+  p.textSize(FONT_SIZE);
+}
+
 export function drawBus(busNode, p, hovered = false) {
   const theme = getActiveTheme();
   p.strokeWeight(hovered ? HOVERED_BUS_THICKNESS : BUS_THICKNESS);
 
-  const stateKey = SIGNAL_KEYS[busNode.bus.output] || "x";
+  const stateKey = SIGNAL_MAP[busNode.bus.output]?.key || "x";
   const color = theme.wires[stateKey].hex;
   p.stroke(color);
 
@@ -191,7 +319,7 @@ export function drawGhostBus(busNode, p, status = null) {
   const theme = getActiveTheme();
   p.strokeWeight(BUS_THICKNESS);
 
-  const stateKey = SIGNAL_KEYS[busNode.bus.output] || "x";
+  const stateKey = SIGNAL_MAP[busNode.bus.output]?.key || "x";
   const color = theme.wires[stateKey].hex;
   p.stroke(color);
 
@@ -338,7 +466,7 @@ function drawDisplay(renderNode, p) {
 
   let colors = gate.output.map(segment => {
     if (segment === 0 || segment === 3) return "#2a1a1a";
-    const stateKey = SIGNAL_KEYS[segment] || "x";
+    const stateKey = SIGNAL_MAP[segment]?.key || "x";
     return theme.gates.output[stateKey].hex;
   });
 
@@ -417,7 +545,7 @@ function drawEmbeddedDisplay(displayGate, x, y, width, height, p) {
 
   let colors = displayGate.output.map(segment => {
     if (segment === 0 || segment === 3) return "#2a1a1a";
-    const stateKey = SIGNAL_KEYS[segment] || "x";
+    const stateKey = SIGNAL_MAP[segment]?.key || "x";
     return theme.gates.output[stateKey].hex;
   });
 
@@ -562,7 +690,10 @@ function drawPin(p, x1, y1, x2, y2, baseColor) {
 
 function drawOutputPort(renderNode, theme, p) {
   const gate = renderNode.gate;
-  if (gate.type === "output") return;
+  if (
+    gate.category === GATE_CATEGORIES.PRIMITIVE &&
+    gate.type === "output"
+  ) return;
   const totalOutputs = gate.outputCount;
   const pinColor = theme.wires.ghost.hex;
   const gateEdgeX = renderNode.x + renderNode.width;
@@ -579,7 +710,13 @@ function drawOutputPort(renderNode, theme, p) {
 
 function drawInputPort(renderNode, theme, p) {
   const gate = renderNode.gate;
-  if (gate.type === "input" || gate.type === "clock") return;
+  if (
+    gate.category === GATE_CATEGORIES.PRIMITIVE &&
+    (
+      gate.type === "input" ||
+      gate.type === "clock"
+    )
+  ) return;
   const totalInputs = gate.inputCount;
   const pinColor = theme.wires.ghost.hex;
   const gateEdgeX = renderNode.x;
@@ -625,7 +762,7 @@ export function drawGhostPath(start, waypoints, end, p) {
 
 export function drawWire(connection, nodeMap, busMap, p, hovered = false) {
   const theme = getActiveTheme();
-  const stateKey = SIGNAL_KEYS[connection.wire.signal] || "x";
+  const stateKey = SIGNAL_MAP[connection.wire.signal]?.key || "x";
 
   const { start, waypoints, end } = connection.getPoints(nodeMap, busMap);
 
@@ -638,7 +775,7 @@ export function drawWire(connection, nodeMap, busMap, p, hovered = false) {
 
 export function drawWaypoint(signal, waypoint, p, hovered = false) {
   const theme = getActiveTheme();
-  const stateKey = SIGNAL_KEYS[signal] || "x";
+  const stateKey = SIGNAL_MAP[signal]?.key || "x";
   let color = theme.wires[stateKey].hex;
   p.fill(color);
   p.strokeWeight(WAYPOINT_STROKE_WEIGHT);

@@ -1,3 +1,4 @@
+import { GATE_CATEGORIES } from "../constants.js";
 import { isNearWaypoint } from "../input/mouseHandlers.js";
 import { screenToWorld } from "../state.js";
 import { BusNode } from "./BusNode.js";
@@ -93,7 +94,7 @@ export function getWirePorts(wire, nodeMap) {
     start = fromNode.getOutputPort();
   }
 
-  if (wire.to.type === "composite") {
+  if (wire.to.category === GATE_CATEGORIES.COMPOSITE) {
     const index = wire.toInputIndex;
     const inputCount = wire.to.inputCount;
     end = toNode.getInputPortByIndex(index, inputCount);

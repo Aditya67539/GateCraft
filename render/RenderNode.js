@@ -1,9 +1,9 @@
-import { FONT_SIZE, GRID_OFFSET, GRID_SIZE, PORT_LABEL_SIZE, PORT_RADIUS } from "../constants.js";
-import { createBasicGate, createCompositeGate } from "../logic/gates.js";
+import { FONT_SIZE, GATE_CATEGORIES, GRID_OFFSET, GRID_SIZE, PORT_LABEL_SIZE, PORT_RADIUS } from "../constants.js";
+import { createPrimitiveGate, createCompositeGate } from "../logic/gates.js";
 import { state } from "../state.js";
 
 
-export class RenderPoint {
+export class RenderNode {
   constructor(gate, x, y) {
     this.gate = gate;
     this.x = x;
@@ -23,7 +23,7 @@ export class RenderPoint {
   }
 
   getOutputPort(wire = null) {
-    if (wire !== null && wire.from.type === "composite") {
+    if (wire !== null && wire.from.category === GATE_CATEGORIES.COMPOSITE) {
       return this.getOutputPortByIndex(wire.fromOutputIndex, wire.from.outputCount);
     }
     return this.getOutputPortByIndex(0, 1);
@@ -64,30 +64,30 @@ export class RenderPoint {
 
 
 /**
- * Creates a renderable node (RenderPoint) for a basic gate. 
+ * Creates a renderable node (RenderNode) for a basic gate. 
  * 
  * @param {string} type - The type of gate to create
  * @param {number} mouseX - The x-coordinate where the node will be placed
  * @param {number} mouseY - The y-coordinate where the node will be placed
- * @returns {RenderPoint} A renderable node containing the gate
+ * @returns {RenderNode} A renderable node containing the gate
  */
-export function createBasicNode(type, mouseX, mouseY) {
-  const gate = createBasicGate(type);
-  return new RenderPoint(gate, mouseX, mouseY);
+export function createPrimitiveNode(type, mouseX, mouseY) {
+  const gate = createPrimitiveGate(type);
+  return new RenderNode(gate, mouseX, mouseY);
 }
 
 /**
- * Creates a renderable node (RenderPoint) for a composite gate. 
+ * Creates a renderable node (RenderNode) for a composite gate. 
  * 
  * @param {string} name - The label/name of the composite gate
  * @param {Object} circuitData - The circuit data used to construct the composite gate
  * @param {number} mouseX - The x-coordinate where the node will be placed
  * @param {number} mouseY - The y-coordinate where the node will be placed
- * @returns {RenderPoint} A renderable node containing the gate
+ * @returns {RenderNode} A renderable node containing the gate
  */
 export function createCompositeNode(name, circuitData, mouseX, mouseY) {
   const gate = createCompositeGate(name, circuitData);
-  return new RenderPoint(gate, mouseX, mouseY);
+  return new RenderNode(gate, mouseX, mouseY);
 }
 
 /**
@@ -99,8 +99,8 @@ export function createCompositeNode(name, circuitData, mouseX, mouseY) {
  * @param {number} mouseX - The x-coordinate where the node will be placed
  * @param {number} mouseY - The y-coordinate where the node will be placed
  */
-export function spawnBasicNode(type, mouseX, mouseY) {
-  state.ghostNode = createBasicNode(type, mouseX, mouseY);
+export function spawnPrimitiveNode(type, mouseX, mouseY) {
+  state.ghostNode = createPrimitiveNode(type, mouseX, mouseY);
   state.mode = "placing";
 }
 
@@ -120,16 +120,27 @@ export function spawnCompositeNode(name, circuitData, mouseX, mouseY) {
 }
 
 function computeSize(gate) {
-  if (gate.type === "seven-seg") return { width: 9 * GRID_SIZE, height: 11 * GRID_SIZE };
+  if (gate.category === GATE_CATEGORIES.PRIMITIVE) {
+    if (gate.type === "seven-seg") {
+      return { width: 9 * GRID_SIZE, height: 11 * GRID_SIZE };
+    }
+    if (
+      gate.type === "input" ||
+      gate.type === "output" ||
+      gate.type === "clock"
+    ) {
+      return { width: 2 * GRID_SIZE, height: 2 * GRID_SIZE };
+    }
+  }
   const inputCount = gate.inputCount;
   const outputCount = gate.outputCount;
 
   const maxPortCount = Math.max(inputCount, outputCount);
-  const centerLabel = gate.label || gate.type;
+  const centerLabel = gate.type;
 
   const portHeight = (maxPortCount + 1) * GRID_SIZE;
 
-  if (gate.type === "composite") {
+  if (gate.category === GATE_CATEGORIES.COMPOSITE) {
     const centerLabelWidth = centerLabel.length * FONT_SIZE * 0.6 + 20;
 
     if (gate.embeddedDisplays && gate.embeddedDisplays.length > 0) {
@@ -224,7 +235,7 @@ export function wouldOverlap(candidate, renderNodes, busNodes, excludeId = null)
  *   everything AND against the bus's own start point.
  *
  * @param {BusNode} ghostBus - The bus currently being placed
- * @param {Array<RenderPoint>} renderNodes - All placed gate nodes
+ * @param {Array<RenderNode>} renderNodes - All placed gate nodes
  * @param {Array<BusNode>} busNodes - All placed bus nodes
  * @returns {boolean} true if the active endpoint overlaps something
  */

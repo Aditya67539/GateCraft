@@ -1,5 +1,5 @@
 import { rebuildBusMap } from "../render/BusNode.js";
-import { rebuildNodeMap } from "../render/RenderPoint.js";
+import { rebuildNodeMap } from "../render/RenderNode.js";
 import { BusConnectionView, GateConnectionView } from "../render/wireGeometry.js";
 import { showToast } from "../ui/toast.js";
 

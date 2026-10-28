@@ -8,15 +8,15 @@ describe("D Latch", () => {
   it("follows truth table", () => {
     const builder = new CircuitBuilder();
 
-    const D = builder.addBasicGate("input");
-    const E = builder.addBasicGate("input");
-    const notD = builder.addBasicGate("not");
-    const and1 = builder.addBasicGate("and");
-    const and2 = builder.addBasicGate("and");
-    const nor1 = builder.addBasicGate("nor");
-    const nor2 = builder.addBasicGate("nor");
-    const Q = builder.addBasicGate("output");
-    const notQ = builder.addBasicGate("output");
+    const D = builder.addPrimitiveGate("input");
+    const E = builder.addPrimitiveGate("input");
+    const notD = builder.addPrimitiveGate("not");
+    const and1 = builder.addPrimitiveGate("and");
+    const and2 = builder.addPrimitiveGate("and");
+    const nor1 = builder.addPrimitiveGate("nor");
+    const nor2 = builder.addPrimitiveGate("nor");
+    const Q = builder.addPrimitiveGate("output");
+    const notQ = builder.addPrimitiveGate("output");
 
     builder.connectToGate(D, notD, 0);
     builder.connectToGate(notD, and1, 0);

@@ -1,6 +1,6 @@
 import { Wire } from "./wire.js";
 import { evaluateAll } from "./evaluate.js";
-import { GATE_DEFS, SIGNAL } from "../constants.js";
+import { GATE_CATEGORIES, PRIMITIVE_GATE_DEFS, SIGNAL } from "../constants.js";
 
 
 const { LOW, HIGH, X, Z, E } = SIGNAL;
@@ -15,9 +15,10 @@ class Logic {
 export class Input {
   constructor() {
     this.id = Logic.nextId++;
+    this.category = GATE_CATEGORIES.PRIMITIVE;
     this.type = "input";
-    this.outputCount = GATE_DEFS[this.type].outputs;
-    this.inputCount = GATE_DEFS[this.type].inputs;
+    this.outputCount = PRIMITIVE_GATE_DEFS[this.type].outputs;
+    this.inputCount = PRIMITIVE_GATE_DEFS[this.type].inputs;
     this.output = LOW;
   }
 
@@ -70,9 +71,10 @@ export class TriStateBuffer extends ConnectableGate {
   constructor() {
     super();
     this.id = Logic.nextId++;
+    this.category = GATE_CATEGORIES.PRIMITIVE;
     this.type = "Tri-state Buffer";
-    this.inputCount = GATE_DEFS[this.type].inputs;
-    this.outputCount = GATE_DEFS[this.type].outputs;
+    this.inputCount = PRIMITIVE_GATE_DEFS[this.type].inputs;
+    this.outputCount = PRIMITIVE_GATE_DEFS[this.type].outputs;
     this.inputs = new Array(this.inputCount).fill(undefined);
     this.output = X;
     this.tempOutput = X;
@@ -89,9 +91,10 @@ export class Output extends ConnectableGate {
   constructor() {
     super();
     this.id = Logic.nextId++;
+    this.category = GATE_CATEGORIES.PRIMITIVE;
     this.type = "output";
-    this.inputCount = GATE_DEFS[this.type].inputs;
-    this.outputCount = GATE_DEFS[this.type].outputs;
+    this.inputCount = PRIMITIVE_GATE_DEFS[this.type].inputs;
+    this.outputCount = PRIMITIVE_GATE_DEFS[this.type].outputs;
     this.inputs = new Array(this.inputCount).fill(undefined);
     this.output = X;
     this.tempOutput = X;
@@ -107,9 +110,10 @@ export class Gate extends ConnectableGate {
   constructor(type) {
     super();
     this.id = Logic.nextId++;
+    this.category = GATE_CATEGORIES.PRIMITIVE;
     this.type = type.toLowerCase();
-    this.inputCount = GATE_DEFS[this.type].inputs;
-    this.outputCount = GATE_DEFS[this.type].outputs;
+    this.inputCount = PRIMITIVE_GATE_DEFS[this.type].inputs;
+    this.outputCount = PRIMITIVE_GATE_DEFS[this.type].outputs;
     this.inputs = new Array(this.inputCount).fill(undefined);
     this.output = X;
     this.tempOutput = X;
@@ -172,10 +176,11 @@ export class Gate extends ConnectableGate {
 
 
 export class CompositeGate extends ConnectableGate {
-  constructor(inputs, circuitData) {
+  constructor(type, inputs, circuitData) {
     super();
     this.id = Logic.nextId++;
-    this.type = "composite";
+    this.category = GATE_CATEGORIES.COMPOSITE;
+    this.type = type;
     this.inputs = inputs;
     this.circuitData = circuitData;
     this.inputOrder = circuitData.inputOrder;
@@ -212,8 +217,6 @@ export class CompositeGate extends ConnectableGate {
       this.internalInputs[i].setValue(resolvedInputs[i]);
     }
 
-    const gates = this.circuitData.builder.getGates();
-    const wires = this.circuitData.builder.wires;
     if (this.circuitData.builder.dirty) {
       this.circuitData.builder.buildFanout();
     }
@@ -232,9 +235,10 @@ export class SevenSegmentDisplay extends ConnectableGate {
   constructor() {
     super();
     this.id = Logic.nextId++;
+    this.category = GATE_CATEGORIES.PRIMITIVE;
     this.type = "seven-seg";
-    this.inputCount = GATE_DEFS[this.type].inputs;
-    this.outputCount = GATE_DEFS[this.type].outputs;
+    this.inputCount = PRIMITIVE_GATE_DEFS[this.type].inputs;
+    this.outputCount = PRIMITIVE_GATE_DEFS[this.type].outputs;
     this.inputs = new Array(this.inputCount).fill(undefined);
     this.output = new Array(this.inputCount).fill(X);
     this.tempOutput = new Array(this.inputCount).fill(X);
@@ -251,6 +255,7 @@ export class SevenSegmentDisplay extends ConnectableGate {
 export class Bus {
   constructor() {
     this.id = Logic.nextId++;
+    this.category = GATE_CATEGORIES.PRIMITIVE;
     this.type = "bus";
     this.inputCount = 0;
     this.inputs = [];
@@ -292,7 +297,7 @@ export class Bus {
  * @param {string} type - The type of gate ("input", "output", "clock" or logic gate type)
  * @returns {Input|Output|Clock|Gate} The instantiated gate object
  */
-export function createBasicGate(type) {
+export function createPrimitiveGate(type) {
   return type === "input"
     ? new Input()
     : type === "output"
@@ -311,16 +316,14 @@ export function createBasicGate(type) {
 /**
  * Creates a composite gate from saved circuit data. 
  * 
- * @param {string} name - The label/name of the composite gate
+ * @param {string} type - The type of the composite gate
  * @param {Object} circuitData - The circuit data used to construct the composite gate
  * @returns {CompositeGate} The instantiated composite gate object 
  */
-export function createCompositeGate(name, circuitData) {
-  const gates = circuitData.builder.getGates();
+export function createCompositeGate(type, circuitData) {
   const inputCount = circuitData.inputOrder.length;
   const inputs = new Array(inputCount).fill(undefined);
-  const gate = new CompositeGate(inputs, circuitData);
-  gate.label = name;
+  const gate = new CompositeGate(type, inputs, circuitData);
   gate.parseCircuitData();
   return gate;
 }
@@ -338,11 +341,18 @@ function collectDisplays(gates, positionMap) {
   const displays = [];
 
   for (const [id, gate] of gates) {
-    if (gate.type === "seven-seg") {
+    if (
+      gate.category === GATE_CATEGORIES.PRIMITIVE &&
+      gate.type === "seven-seg"
+    ) {
       const pos = positionMap ? positionMap[id] : null;
       const sortX = pos ? pos.x : 0;
       displays.push({ gate, sortX });
-    } else if (gate.type === "composite" && gate.embeddedDisplays && gate.embeddedDisplays.length > 0) {
+    } else if (
+      gate.category === GATE_CATEGORIES.COMPOSITE &&
+      gate.embeddedDisplays &&
+      gate.embeddedDisplays.length > 0
+    ) {
       // For nested composites that contain displays, use the composite gate's
       // own x position as the sort key for all its displays
       const pos = positionMap ? positionMap[id] : null;

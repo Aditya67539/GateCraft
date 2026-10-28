@@ -8,9 +8,9 @@ describe("Disconnected input handling through WASM", () => {
   it("OR gate with one disconnected input treats it as X", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const gate = builder.addBasicGate("or");
-    const out = builder.addBasicGate("output");
+    const A = builder.addPrimitiveGate("input");
+    const gate = builder.addPrimitiveGate("or");
+    const out = builder.addPrimitiveGate("output");
 
     // Only connect input 0, leave input 1 disconnected
     builder.connectToGate(A, gate, 0);
@@ -35,9 +35,9 @@ describe("Disconnected input handling through WASM", () => {
   it("AND gate with one disconnected input treats it as X", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const gate = builder.addBasicGate("and");
-    const out = builder.addBasicGate("output");
+    const A = builder.addPrimitiveGate("input");
+    const gate = builder.addPrimitiveGate("and");
+    const out = builder.addPrimitiveGate("output");
 
     builder.connectToGate(A, gate, 0);
     builder.connectToGate(gate, out, 0);
@@ -61,9 +61,9 @@ describe("Disconnected input handling through WASM", () => {
   it("XOR gate with one disconnected input treats it as X", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const gate = builder.addBasicGate("xor");
-    const out = builder.addBasicGate("output");
+    const A = builder.addPrimitiveGate("input");
+    const gate = builder.addPrimitiveGate("xor");
+    const out = builder.addPrimitiveGate("output");
 
     builder.connectToGate(A, gate, 0);
     builder.connectToGate(gate, out, 0);
@@ -82,9 +82,9 @@ describe("Disconnected input handling through WASM", () => {
   it("NAND gate with one disconnected input treats it as X", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const gate = builder.addBasicGate("nand");
-    const out = builder.addBasicGate("output");
+    const A = builder.addPrimitiveGate("input");
+    const gate = builder.addPrimitiveGate("nand");
+    const out = builder.addPrimitiveGate("output");
 
     builder.connectToGate(A, gate, 0);
     builder.connectToGate(gate, out, 0);
@@ -103,9 +103,9 @@ describe("Disconnected input handling through WASM", () => {
   it("NOR gate with one disconnected input treats it as X", () => {
     const builder = new CircuitBuilder();
 
-    const A = builder.addBasicGate("input");
-    const gate = builder.addBasicGate("nor");
-    const out = builder.addBasicGate("output");
+    const A = builder.addPrimitiveGate("input");
+    const gate = builder.addPrimitiveGate("nor");
+    const out = builder.addPrimitiveGate("output");
 
     builder.connectToGate(A, gate, 0);
     builder.connectToGate(gate, out, 0);
