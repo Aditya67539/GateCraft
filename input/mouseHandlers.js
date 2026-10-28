@@ -525,7 +525,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
     state.isAnyModalOpen = false;
   }
 
-  // Edit button - placeholder for waypoint editor (coming soon)
+  // Wire and Bus edit button
   document.getElementById("ctx-wire-edit").addEventListener("click", () => {
     state.editorTarget = structuredClone(state.contextMenuTarget);
     hideContextMenu(wireCtxMenu);
@@ -533,7 +533,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
     state.wireEditing = true;
   });
 
-  // Delete button - remove the wire or bus
+  // Delete button
   document.querySelectorAll(".ctx-delete-target").forEach(element => {
     element.addEventListener("click", () => {
       const target = state.contextMenuTarget;
@@ -552,6 +552,14 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
         performCommand(removeGateCommand);
       }
     });
+  });
+
+  // Label button for gates
+  document.getElementById("ctx-gate-edit").addEventListener("click", () => {
+    const target = state.contextMenuTarget;
+    if (!target || target.type !== "gate") return;
+
+    openLabelEditor(target.source, p);
   });
 
   // Close wire context meny on any click or Escape
