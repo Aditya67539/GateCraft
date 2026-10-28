@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { CircuitBuilder } from "../../logic/CircuitBuilder.js";
 import { buildCircuitFromData } from "../../persistence.js";
-import { SIGNAL } from "../../constants.js";
+import { GATE_CATEGORIES, SIGNAL } from "../../constants.js";
 
 const { LOW, HIGH, X, Z, E } = SIGNAL;
 
@@ -16,7 +16,7 @@ const { LOW, HIGH, X, Z, E } = SIGNAL;
 function serializeGateOnly(builder, inputOrder, outputOrder) {
   const gates = [];
   for (const gate of builder.getGates()) {
-    const data = { id: gate.id, type: gate.type };
+    const data = { id: gate.id, category: gate.category, type: gate.type };
     if (gate.type === "input") data.signal = gate.output;
     if (gate.label) data.label = gate.label;
     gates.push(data);
@@ -43,7 +43,7 @@ function serializeGateOnly(builder, inputOrder, outputOrder) {
 function serializeWithBuses(builder, inputOrder, outputOrder, busWireDirections = {}) {
   const gates = [];
   for (const gate of builder.getGates()) {
-    const data = { id: gate.id, type: gate.type };
+    const data = { id: gate.id, category: gate.category, type: gate.type };
     if (gate.type === "input") data.signal = gate.output;
     if (gate.label) data.label = gate.label;
     gates.push(data);
@@ -93,11 +93,12 @@ describe("Persistence – Backward Compatibility", () => {
     inner.connectToGate(A, not, 0, null, false);
     inner.connectToGate(not, Q, 0, null, false);
 
+    const category = GATE_CATEGORIES.PRIMITIVE;
     const serialized = {
       gates: [
-        { id: A.id, type: "input" },
-        { id: not.id, type: "not" },
-        { id: Q.id, type: "output" },
+        { id: A.id,   category, type: "input" },
+        { id: not.id, category, type: "not" },
+        { id: Q.id,   category, type: "output" },
       ],
       wires: [
         { fromId: A.id, toId: not.id, toInputIndex: 0, fromOutputIndex: null },
@@ -140,12 +141,13 @@ describe("Persistence – Backward Compatibility", () => {
     inner.connectToGate(andGate, Q, 0, null, false);
 
     // Wires have no isBusConnection — older format
+    const category = GATE_CATEGORIES.PRIMITIVE;
     const serialized = {
       gates: [
-        { id: A.id, type: "input" },
-        { id: B.id, type: "input" },
-        { id: andGate.id, type: "and" },
-        { id: Q.id, type: "output" },
+        { id: A.id,       category, type: "input" },
+        { id: B.id,       category, type: "input" },
+        { id: andGate.id, category, type: "and" },
+        { id: Q.id,       category, type: "output" },
       ],
       wires: [
         { fromId: A.id, toId: andGate.id, toInputIndex: 0, fromOutputIndex: null },
@@ -473,8 +475,8 @@ describe("Persistence – buildCircuitFromData structure", () => {
     const result = buildCircuitFromData(serialized);
 
     const gates = [...result.builder.getGates()];
-    const inputGate = gates.find(g => g.type === "input");
-    const outputGate = gates.find(g => g.type === "output");
+    const inputGate = gates.find(g =>  g.category === GATE_CATEGORIES.PRIMITIVE && g.type === "input");
+    const outputGate = gates.find(g => g.category === GATE_CATEGORIES.PRIMITIVE && g.type === "output");
 
     expect(inputGate.label).toBe("clk");
     expect(outputGate.label).toBe("q_out");
