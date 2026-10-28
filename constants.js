@@ -87,3 +87,11 @@ export const TOOLTIP_ARROW_SIZE = 5;
 export const TOOLTIP_GAP = 10;
 export const TOOLTIP_SLIDE_OFFSET = 6;
 export const TOOLTIP_PORT_CLEARANCE = 2;
+
+// Gate label styling
+export const LABEL_FONT_SIZE = 16;
+export const LABEL_PADDING_X = 6;
+export const LABEL_PADDING_Y = 3;
+export const LABEL_CORNER_RADIUS = 4;
+export const LABEL_BG_ALPHA = 0.15;
+export const LABEL_OFFSET_Y = GRID_SIZE;

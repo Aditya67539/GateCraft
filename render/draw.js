@@ -40,6 +40,12 @@ import {
   WAYPOINT_STROKE_WEIGHT,
   SIGNAL_MAP,
   GATE_CATEGORIES,
+  LABEL_FONT_SIZE,
+  LABEL_PADDING_X,
+  LABEL_PADDING_Y,
+  LABEL_CORNER_RADIUS,
+  LABEL_BG_ALPHA,
+  LABEL_OFFSET_Y,
 } from "../constants.js";
 import { getActiveTheme } from "./theme.js";
 import { screenToWorld } from "../state.js";
@@ -125,6 +131,7 @@ export function drawGate(renderNode, p, status = null) {
     drawDisplay(renderNode, p);
     drawInputPort(renderNode, theme, p);
     drawOutputPort(renderNode, theme, p);
+    drawLabel(renderNode, p);
     if (status) drawOverlay(renderNode.getBounds(), status, p);
 
     p.fill(0);
@@ -248,12 +255,47 @@ export function drawGate(renderNode, p, status = null) {
 
   drawOutputPort(renderNode, theme, p);
   drawInputPort(renderNode, theme, p);
+  drawLabel(renderNode, p);
 
   if (status) drawOverlay(renderNode.getBounds(), status, p);
 
   p.fill(0);
   p.stroke(0);
   p.strokeWeight(DEFAULT_STROKE_WEIGHT);
+}
+
+export function drawLabel(renderNode, p) {
+  const labelText = renderNode.gate.label;
+  if (!labelText) return;
+
+  const theme = getActiveTheme();
+  const x = renderNode.x + renderNode.width / 2;
+  const y = renderNode.y + renderNode.height + LABEL_OFFSET_Y;
+
+  // Measure text to size the background pill
+  p.textSize(LABEL_FONT_SIZE);
+  p.textAlign(p.CENTER, p.CENTER);
+  const textW = p.textWidth(labelText);
+  const bgW = textW + LABEL_PADDING_X * 2;
+  const bgH = LABEL_FONT_SIZE + LABEL_PADDING_Y * 2;
+
+  // Subtle semi-transparent background
+  const bgColor = theme.text.primary.hex;
+  const bgC = p.color(bgColor);
+  bgC.setAlpha(LABEL_BG_ALPHA * 255);
+  p.noStroke();
+  p.fill(bgC);
+  p.rect(x - bgW / 2, y - bgH / 2, bgW, bgH, LABEL_CORNER_RADIUS);
+
+  const labelColor = theme.text.primary.hex;
+  p.fill(labelColor);
+  p.noStroke();
+  p.textStyle(p.BOLD);
+  p.text(labelText, x, y);
+
+  // Restore defaults
+  p.textStyle(p.NORMAL);
+  p.textSize(FONT_SIZE);
 }
 
 export function drawBus(busNode, p, hovered = false) {
