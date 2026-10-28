@@ -1118,7 +1118,7 @@ body {
   color: var(--text-muted);
   width: 32px;
   height: 32px;
-  border-radius: 50%;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1129,7 +1129,6 @@ body {
   background: var(--overlay-hov);
   color: var(--text);
   border-color: var(--border-hov);
-  transform: rotate(90deg);
 }
 
 .settings-section {
@@ -1368,7 +1367,7 @@ body {
   color: var(--text-muted);
   width: 32px;
   height: 32px;
-  border-radius: 50%;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1380,7 +1379,6 @@ body {
   background: var(--overlay-hov);
   color: var(--text);
   border-color: var(--border-hov);
-  transform: translateX(-2px);
 }
 
 .signal-colors-panel .settings-title {
