@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { CircuitBuilder } from "../../logic/CircuitBuilder.js";
 import { buildCircuitFromData } from "../../persistence.js";
-import { SIGNAL } from "../../constants.js";
+import { GATE_CATEGORIES, SIGNAL } from "../../constants.js";
 
 const { LOW, HIGH, X, Z, E } = SIGNAL;
 
@@ -273,15 +273,16 @@ describe("Composite Gate – buildCircuitFromData round-trip", () => {
     inner.connectToGate(B, and, 1);
     inner.connectToGate(and, carry, 0);
 
+    const category = GATE_CATEGORIES.PRIMITIVE;
     // Serialize
     const serialized = {
       gates: [
-        { id: A.id, type: "input" },
-        { id: B.id, type: "input" },
-        { id: xor.id, type: "xor" },
-        { id: and.id, type: "and" },
-        { id: sum.id, type: "output" },
-        { id: carry.id, type: "output" },
+        { id: A.id,     category, type: "input" },
+        { id: B.id,     category, type: "input" },
+        { id: xor.id,   category, type: "xor" },
+        { id: and.id,   category, type: "and" },
+        { id: sum.id,   category, type: "output" },
+        { id: carry.id, category, type: "output" },
       ],
       wires: inner.wires.map((w) => ({
         fromId: w.from.id,
