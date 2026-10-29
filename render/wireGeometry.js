@@ -23,8 +23,8 @@ export class GateConnectionView extends Connection {
   }
 
   getPoints(nodeMap, busMap) {
-    const ports = getWirePorts(this.wire, nodeMap);
-    let startPos = ports.start;
+    const endpoints = getWireEndpoints(this.wire, nodeMap);
+    let startPos = endpoints.start;
 
     if (this.isWireBranch && this.source) {
       const { start, waypoints, end } = this.source.conn.getPoints(nodeMap, busMap);
@@ -35,7 +35,7 @@ export class GateConnectionView extends Connection {
     return {
       start: startPos,
       waypoints: this.waypoints,
-      end: ports.end,
+      end: endpoints.end,
     }
   }
 }
@@ -81,7 +81,7 @@ export class BusConnectionView extends Connection {
   }
 }
 
-export function getWirePorts(wire, nodeMap) {
+function getWireEndpoints(wire, nodeMap) {
   const fromNode = nodeMap.get(wire.from.id);
   const toNode = nodeMap.get(wire.to.id);
   let start, end;
