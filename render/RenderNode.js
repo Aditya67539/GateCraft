@@ -22,14 +22,14 @@ export class RenderNode {
     );
   }
 
-  getOutputPort(wire = null) {
+  getOutputPortPosition(wire = null) {
     if (wire !== null && wire.from.category === GATE_CATEGORIES.COMPOSITE) {
-      return this.getOutputPortByIndex(wire.fromOutputIndex, wire.from.outputCount);
+      return this.getOutputPortPositionByIndex(wire.fromOutputIndex, wire.from.outputCount);
     }
-    return this.getOutputPortByIndex(0, 1);
+    return this.getOutputPortPositionByIndex(0, 1);
   }
 
-  getOutputPortByIndex(index, totalOutputs) {
+  getOutputPortPositionByIndex(index, totalOutputs) {
     const spacing = this.height / totalOutputs;
     return {
       x: this.x + this.width + GRID_SIZE,
@@ -37,13 +37,13 @@ export class RenderNode {
     };
   }
 
-  getInputPort(wire) {
+  getInputPortPosition(wire) {
     const index = this.gate.inputs.indexOf(wire);
     const inputCount = this.gate.inputCount;
-    return this.getInputPortByIndex(index, inputCount);
+    return this.getInputPortPositionByIndex(index, inputCount);
   }
 
-  getInputPortByIndex(index, totalInputs) {
+  getInputPortPositionByIndex(index, totalInputs) {
     const spacing = this.height / totalInputs;
     return {
       x: this.x - GRID_SIZE,

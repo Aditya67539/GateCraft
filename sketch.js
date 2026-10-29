@@ -8,7 +8,7 @@ import { CircuitBuilder } from "./logic/CircuitBuilder.js";
 import { snapPointToGrid, wouldBusOverlap, wouldOverlap } from "./render/RenderNode.js";
 import { registerKeyboardHandlers } from "./input/keyboardHandlers.js";
 import { drawMinimap } from "./render/minimap.js";
-import { getOctilinearSnap, getTapPointFromElement } from "./render/wireGeometry.js";
+import { getGhostWireStartPoint, getOctilinearSnap, getTapPointFromElement } from "./render/wireGeometry.js";
 import { canWireConnectToTarget } from "./logic/wire.js";
 import { GATE_CATEGORIES } from "./constants.js";
 
@@ -116,7 +116,7 @@ const sketch = (p) => {
 
       if (totalInputs !== 0) {
         for (let j = 0; j < totalInputs; j++) {
-          const port = renderNodes[i].getInputPortByIndex(j, totalInputs);
+          const port = renderNodes[i].getInputPortPositionByIndex(j, totalInputs);
           if (isNearPort(mouse.x, mouse.y, port)) {
             hoveredPort = port;
             if (
@@ -143,7 +143,7 @@ const sketch = (p) => {
 
       if (totalOutputs !== 0) {
         for (let j = 0; j < totalOutputs; j++) {
-          const port = renderNodes[i].getOutputPortByIndex(j, totalOutputs);
+          const port = renderNodes[i].getOutputPortPositionByIndex(j, totalOutputs);
           if (isNearPort(mouse.x, mouse.y, port)) {
             hoveredPort = port;
             if (
@@ -244,22 +244,12 @@ const sketch = (p) => {
       }
     }
     if (state.drawingWire) {
-      const connection = state.drawingWire.source;
-      let startPoint;
-      if (state.drawingWire.originType === "gate") {
-
-        const outputIndex = connection.fromOutputIndex;
-        const totalOutputs = connection.fromNode.gate.outputCount;
-
-        startPoint = outputIndex !== null
-          ? connection.fromNode.getOutputPortByIndex(outputIndex, totalOutputs)
-          : connection.fromNode.getOutputPort();        
-      } else if (state.drawingWire.originType === "bus") {
-        startPoint = getTapPointFromElement(connection.busNode, connection.tapRef, nodeMap, busMap);
-      } else if (state.drawingWire.originType === "wire") {
-        const conn = connection.conn;
-        startPoint = getTapPointFromElement(conn, connection.tapRef, nodeMap, busMap);
-      }
+      const startPoint = getGhostWireStartPoint(
+        state.drawingWire.originType,
+        state.drawingWire.source,
+        nodeMap,
+        busMap,
+      );
 
       const hoveredDestination = findWireDestination(
         mouse.x,
@@ -278,7 +268,7 @@ const sketch = (p) => {
           const inputIndex = hoveredDestination.destination.index;
           const totalInputs = hoveredDestination.destination.toNode.gate.inputCount;
 
-          endPoint = hoveredDestination.destination.toNode.getInputPortByIndex(inputIndex, totalInputs);
+          endPoint = hoveredDestination.destination.toNode.getInputPortPositionByIndex(inputIndex, totalInputs);
         } else if (hoveredDestination.destinationType === "bus") {
           const busNode = hoveredDestination.destination.busNode;
           const tapRef = hoveredDestination.destination.tapRef;
