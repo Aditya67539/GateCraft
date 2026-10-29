@@ -60,7 +60,7 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-export function drawMinimap(p, renderNodes, busNodes, state) {
+export function drawMinimap(p, renderNodes, busNodes, wires, state, nodeMap, busMap) {
   const theme = getActiveTheme();
   const zoom = state.zoom || 1;
 
@@ -174,6 +174,29 @@ export function drawMinimap(p, renderNodes, busNodes, state) {
     ctx.beginPath();
     ctx.arc(mapped[mapped.length - 1].x, mapped[mapped.length - 1].y, r, 0, Math.PI * 2);
     ctx.fill();
+  }
+
+  // Draw Wires
+  const wireColor = theme.wires?.x?.hex || "#888";
+  ctx.strokeStyle = wireColor;
+  ctx.fillStyle = wireColor;
+  ctx.lineWidth = Math.max(1, 2 * mapData.miniScale);
+
+  for (let wire of wires) {
+    const { start, waypoints, end } = wire.getPoints(nodeMap, busMap);
+    const points = [start, ...waypoints, end];
+    const mapped = points.map(pt => ({
+      x: (pt.x - mapData.worldMinX) * mapData.miniScale,
+      y: (pt.y - mapData.worldMinY) * mapData.miniScale,
+    }));
+
+    // Draw polyline segments
+    ctx.beginPath();
+    ctx.moveTo(mapped[0].x, mapped[0].y);
+    for (let i = 1; i < mapped.length; i++) {
+      ctx.lineTo(mapped[i].x, mapped[i].y);
+    }
+    ctx.stroke();
   }
 
   // Draw Red Viewport (What the user currently sees)

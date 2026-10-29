@@ -287,8 +287,7 @@ const sketch = (p) => {
       drawPortTooltip(tooltipState.label, tooltipState.port, tooltipState.opacity, tooltipState.portType, p);
     }
 
-    // TODO: Render buses in the minimap
-    drawMinimap(p, renderNodes, busNodes, state);
+    drawMinimap(p, renderNodes, busNodes, wires, state, nodeMap, busMap);
   }
 }
 
