@@ -143,7 +143,7 @@ const sketch = (p) => {
 
       if (totalOutputs !== 0) {
         for (let j = 0; j < totalOutputs; j++) {
-          const port = renderNodes[i].getOutputPortByIndex(j, totalOutputs);
+          const port = renderNodes[i].getOutputPortPositionByIndex(j, totalOutputs);
           if (isNearPort(mouse.x, mouse.y, port)) {
             hoveredPort = port;
             if (

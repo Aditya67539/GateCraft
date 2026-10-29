@@ -699,7 +699,7 @@ function drawOutputPort(renderNode, theme, p) {
   const gateEdgeX = renderNode.x + renderNode.width;
 
   for (let i = 0; i < totalOutputs; i++) {
-    const port = renderNode.getOutputPortByIndex(i, totalOutputs);
+    const port = renderNode.getOutputPortPositionByIndex(i, totalOutputs);
     drawPin(p, gateEdgeX, port.y, port.x, port.y, pinColor);
     p.fill(theme.accent.hex);
     p.stroke(theme.text.primary.hex);

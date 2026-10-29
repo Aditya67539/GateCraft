@@ -58,7 +58,7 @@ export class BusConnectionView extends Connection {
 
     if (this.direction === "in") {
       // Gate output is the start, and tap on the bus is end
-      let startPoint = node.getOutputPortByIndex(this.portIndex, node.gate.outputCount);
+      let startPoint = node.getOutputPortPositionByIndex(this.portIndex, node.gate.outputCount);
       if (this.isWireBranch && this.source) {
         const { start, waypoints, end } = this.source.conn.getPoints(nodeMap, busMap);
         const points = [ start, ...waypoints, end ];
@@ -89,9 +89,9 @@ export function getWirePorts(wire, nodeMap) {
   if (wire.fromOutputIndex !== null) {
     const index = wire.fromOutputIndex;
     const outputCount = wire.from.outputCount;
-    start = fromNode.getOutputPortByIndex(index, outputCount);
+    start = fromNode.getOutputPortPositionByIndex(index, outputCount);
   } else {
-    start = fromNode.getOutputPort();
+    start = fromNode.getOutputPortPosition();
   }
 
   if (wire.to.category === GATE_CATEGORIES.COMPOSITE) {
@@ -257,8 +257,8 @@ export function getGhostWireStartPoint(originType, source, nodeMap, busMap) {
     const totalOutputs = source.fromNode.gate.outputCount;
 
     startPoint = outputIndex !== null
-      ? source.fromNode.getOutputPortByIndex(outputIndex, totalOutputs)
-      : source.fromNode.getOutputPort();
+      ? source.fromNode.getOutputPortPositionByIndex(outputIndex, totalOutputs)
+      : source.fromNode.getOutputPortPosition();
   } else if (originType === "bus") {
     startPoint = getTapPointFromElement(source.BusNode, source.tapRef, nodeMap, busMap);
   } else if (originType === "wire") {

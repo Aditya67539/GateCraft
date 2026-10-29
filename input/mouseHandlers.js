@@ -266,8 +266,8 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
             if (state.drawingWire.originType === "gate") {
               const fromNode = connection.fromNode;
               const startPoint = fromNode.gate.category === GATE_CATEGORIES.COMPOSITE
-                ? fromNode.getOutputPortByIndex(connection.fromOutputIndex, fromNode.gate.outputCount)
-                : fromNode.getOutputPort();
+                ? fromNode.getOutputPortPositionByIndex(connection.fromOutputIndex, fromNode.gate.outputCount)
+                : fromNode.getOutputPortPosition();
               const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
               state.ghostWire = waypoints;
               state.ghostWireCleanup = cleanup;
@@ -608,13 +608,13 @@ function findNearOutput(mx, my, renderNodes) {
     if (gate.category === GATE_CATEGORIES.PRIMITIVE && gate.type === "output") continue;
     if (gate.category === GATE_CATEGORIES.COMPOSITE) {
       for (let j = 0; j < gate.outputCount; j++) {
-        const port = renderNodes[i].getOutputPortByIndex(j, gate.outputCount);
+        const port = renderNodes[i].getOutputPortPositionByIndex(j, gate.outputCount);
         if (isNearPort(mx, my, port)) {
           return { fromNode: renderNodes[i], fromOutputIndex: j };
         }
       }
     }
-    const port = renderNodes[i].getOutputPort();
+    const port = renderNodes[i].getOutputPortPosition();
     if (isNearPort(mx, my, port)) {
       return { fromNode: renderNodes[i], fromOutputIndex: null };
     }
