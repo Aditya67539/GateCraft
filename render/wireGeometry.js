@@ -248,3 +248,22 @@ function getTapPoint(points, tapRef) {
 export function dist(x1, y1, x2, y2) {
   return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
 }
+
+
+export function getGhostWireStartPoint(originType, source, nodeMap, busMap) {
+  let startPoint;
+  if (originType === "gate") {
+    const outputIndex = source.fromOutputIndex;
+    const totalOutputs = source.fromNode.gate.outputCount;
+
+    startPoint = outputIndex !== null
+      ? source.fromNode.getOutputPortByIndex(outputIndex, totalOutputs)
+      : source.fromNode.getOutputPort();
+  } else if (originType === "bus") {
+    startPoint = getTapPointFromElement(source.BusNode, source.tapRef, nodeMap, busMap);
+  } else if (originType === "wire") {
+    startPoint = getTapPointFromElement(source.conn, source.tapRef, nodeMap, busMap);
+  }
+
+  return startPoint;
+}
