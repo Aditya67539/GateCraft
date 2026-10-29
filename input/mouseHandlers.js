@@ -1,6 +1,6 @@
 import { state, screenToWorld, worldToScreen } from "../state.js";
 import { CLOCK_TIMER, FREQUENCY, GATE_CATEGORIES, GRID_SIZE, SIGNAL } from "../constants.js";
-import { setCustomWaypoints, getPointRefFromElement, projectPointOntoSegment, dist, getTapPointFromElement, GateConnectionView, BusConnectionView } from "../render/wireGeometry.js";
+import { setCustomWaypoints, getPointRefFromElement, projectPointOntoSegment, dist, getTapPointFromElement, GateConnectionView, BusConnectionView, getGhostWireStartPoint, getOctilinearSnap } from "../render/wireGeometry.js";
 import { createPrimitiveNode, createCompositeNode, snapPointToGrid, wouldOverlap, wouldBusOverlap } from "../render/RenderNode.js";
 import { showToast } from "../ui/toast.js";
 import { GateConnectionCommand, MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand, PlaceBusCommand, RemoveBusCommand, BusConnectionCommand } from "../history/commands.js";
@@ -54,7 +54,24 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
       if (state.mode === "edit") {
         // Check input ports
         if (state.drawingWire) {
-          const connInfo = findWireDestination(world.x, world.y, renderNodes, busNodes, nodeMap, busMap);
+          const useSnap = p.keyIsDown(p.SHIFT);
+          const startPoint = getGhostWireStartPoint(
+            state.drawingWire.originType,
+            state.drawingWire.source,
+            nodeMap,
+            busMap,
+          );
+          const x1 = state.ghostWire && state.ghostWire.length > 0
+            ? state.ghostWire[state.ghostWire.length - 1].x
+            : startPoint.x;
+          
+          const y1 = state.ghostWire && state.ghostWire.length > 0
+            ? state.ghostWire[state.ghostWire.length - 1].y
+            : startPoint.y;
+
+          const endPoint = useSnap ? getOctilinearSnap(x1, y1, world.x, world.y) : world;
+
+          const connInfo = findWireDestination(endPoint.x, endPoint.y, renderNodes, busNodes, nodeMap, busMap);
           if (state.drawingWire.originType === "gate") {
             if (connInfo?.destinationType === "gate") {
               const connection = connInfo.destination;
