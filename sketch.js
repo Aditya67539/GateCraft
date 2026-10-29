@@ -1,7 +1,7 @@
 import p5 from "p5";
 import { state, screenToWorld } from "./state.js";
 import { drawGate, drawWaypoint, drawWire, drawPortTooltip, setFont, drawDynamicGrid, drawGhostPath, drawBus, drawGhostBus } from "./render/draw.js";
-import { registerMouseHandlers, isNearWaypoint, isNearPort, busMap, nodeMap, getWireAtPoint, getBusAtPoint, findWireDestination } from "./input/mouseHandlers.js";
+import { registerMouseHandlers, isNearWaypoint, isNearPort, busMap, nodeMap, getWireAtPoint, getBusAtPoint, getEffectiveMousePosition } from "./input/mouseHandlers.js";
 import { initToolbar } from "./ui/toolbar.js";
 import { getActiveTheme, applyTheme } from "./render/theme.js";
 import { CircuitBuilder } from "./logic/CircuitBuilder.js";
@@ -13,8 +13,6 @@ import { canWireConnectToTarget } from "./logic/wire.js";
 import { GATE_CATEGORIES } from "./constants.js";
 
 applyTheme(getActiveTheme());
-
-let mouse = { x: 0, y: 0 };
 
 const canvasHost = document.querySelector(".canvas-host");
 const WIDTH = canvasHost.clientWidth;
@@ -55,8 +53,17 @@ const sketch = (p) => {
 
   p.draw = function () {
     const world = screenToWorld(p.mouseX, p.mouseY);
-    mouse.x = world.x;
-    mouse.y = world.y;
+    const mouse = getEffectiveMousePosition(
+      world,
+      state.drawingWire,
+      state.ghostWire,
+      circuit,
+      renderNodes,
+      busNodes,
+      nodeMap,
+      busMap,
+      p,
+    );
     const theme = getActiveTheme();
     p.background(theme.canvas.bg.hex);
 
@@ -231,8 +238,7 @@ const sketch = (p) => {
       let status = wouldOverlap(state.ghostNode, renderNodes, busNodes, null) ? "invalid" : "valid";
       drawGate(state.ghostNode, p, status);
       if (state.mode === "placing") {
-        const { x: worldMouseX, y: worldMouseY } = screenToWorld(p.mouseX, p.mouseY);
-        const { x, y } = snapPointToGrid(worldMouseX, worldMouseY);
+        const { x, y } = snapPointToGrid(mouse.x, mouse.y);
         state.ghostNode.x = x;
         state.ghostNode.y = y;
       }
@@ -241,10 +247,9 @@ const sketch = (p) => {
       let status = wouldBusOverlap(state.ghostBus, renderNodes, busNodes) ? "invalid" : "valid";
       drawGhostBus(state.ghostBus, p, status);
       if (state.mode === "placing") {
-        const { x, y } = screenToWorld(p.mouseX, p.mouseY);
         if (!state.ghostBus.startPointPlaced && !state.ghostBus.endPointPlaced) {
-          state.ghostBus.startPoint.x = state.ghostBus.endPoint.x = x;
-          state.ghostBus.startPoint.y = state.ghostBus.endPoint.y = y;
+          state.ghostBus.startPoint.x = state.ghostBus.endPoint.x = mouse.x;
+          state.ghostBus.startPoint.y = state.ghostBus.endPoint.y = mouse.y;
         } else if (state.ghostBus.startPointPlaced && !state.ghostBus.endPointPlaced) {
           const useSnap = p.keyIsDown(p.SHIFT);
           state.ghostBus.endPoint = getGhostWireEndPoint(
@@ -264,35 +269,7 @@ const sketch = (p) => {
         busMap,
       );
 
-      const hoveredDestination = findWireDestination(
-        mouse.x,
-        mouse.y,
-        renderNodes,
-        busNodes,
-        nodeMap,
-        busMap,
-      );
-      const validDestination = canWireConnectToTarget(circuit, state.drawingWire, hoveredDestination);
-
-      if (validDestination) {
-        let endPoint = mouse;
-
-        if (hoveredDestination.destinationType === "gate") {
-          const inputIndex = hoveredDestination.destination.index;
-          const totalInputs = hoveredDestination.destination.toNode.gate.inputCount;
-
-          endPoint = hoveredDestination.destination.toNode.getInputPortPositionByIndex(inputIndex, totalInputs);
-        } else if (hoveredDestination.destinationType === "bus") {
-          const busNode = hoveredDestination.destination.busNode;
-          const tapRef = hoveredDestination.destination.tapRef;
-
-          endPoint = getTapPointFromElement(busNode, tapRef, nodeMap, busMap);
-        }
-
-        drawGhostPath(startPoint, state.ghostWire, endPoint, p);
-      } else {
-        drawGhostPath(startPoint, state.ghostWire, mouse, p);
-      }
+      drawGhostPath(startPoint, state.ghostWire, mouse, p);
     }
 
     // ── Draw tooltip last so it renders on top of everything ──
