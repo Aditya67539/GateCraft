@@ -629,7 +629,7 @@ function findNearInput(mx, my, renderNodes) {
     const totalInputs = gate.inputCount;
 
     for (let j = 0; j < totalInputs; j++) {
-      const port = renderNodes[i].getInputPortByIndex(j, totalInputs);
+      const port = renderNodes[i].getInputPortPositionByIndex(j, totalInputs);
       if (isNearPort(mx, my, port)) {
         return { toNode: renderNodes[i], index: j };
       }

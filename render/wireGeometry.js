@@ -68,7 +68,7 @@ export class BusConnectionView extends Connection {
       return { start: startPoint, waypoints: this.waypoints, end: tapPoint };
     } else if (this.direction === "out") {
       // Tap on the bus is start, and gate input is the end
-      const endPoint = node.getInputPortByIndex(this.portIndex, node.gate.inputCount);
+      const endPoint = node.getInputPortPositionByIndex(this.portIndex, node.gate.inputCount);
       let startPoint = tapPoint;
       if (this.isWireBranch && this.source) {
         const { start, waypoints, end } = this.source.conn.getPoints(nodeMap, busMap);
@@ -97,9 +97,9 @@ export function getWirePorts(wire, nodeMap) {
   if (wire.to.category === GATE_CATEGORIES.COMPOSITE) {
     const index = wire.toInputIndex;
     const inputCount = wire.to.inputCount;
-    end = toNode.getInputPortByIndex(index, inputCount);
+    end = toNode.getInputPortPositionByIndex(index, inputCount);
   } else {
-    end = toNode.getInputPort(wire);
+    end = toNode.getInputPortPosition(wire);
   }
   return { start: start, end: end };
 }

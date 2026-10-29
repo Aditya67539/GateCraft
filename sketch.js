@@ -116,7 +116,7 @@ const sketch = (p) => {
 
       if (totalInputs !== 0) {
         for (let j = 0; j < totalInputs; j++) {
-          const port = renderNodes[i].getInputPortByIndex(j, totalInputs);
+          const port = renderNodes[i].getInputPortPositionByIndex(j, totalInputs);
           if (isNearPort(mouse.x, mouse.y, port)) {
             hoveredPort = port;
             if (
@@ -268,7 +268,7 @@ const sketch = (p) => {
           const inputIndex = hoveredDestination.destination.index;
           const totalInputs = hoveredDestination.destination.toNode.gate.inputCount;
 
-          endPoint = hoveredDestination.destination.toNode.getInputPortByIndex(inputIndex, totalInputs);
+          endPoint = hoveredDestination.destination.toNode.getInputPortPositionByIndex(inputIndex, totalInputs);
         } else if (hoveredDestination.destinationType === "bus") {
           const busNode = hoveredDestination.destination.busNode;
           const tapRef = hoveredDestination.destination.tapRef;

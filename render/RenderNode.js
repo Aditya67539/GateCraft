@@ -37,13 +37,13 @@ export class RenderNode {
     };
   }
 
-  getInputPort(wire) {
+  getInputPortPosition(wire) {
     const index = this.gate.inputs.indexOf(wire);
     const inputCount = this.gate.inputCount;
-    return this.getInputPortByIndex(index, inputCount);
+    return this.getInputPortPositionByIndex(index, inputCount);
   }
 
-  getInputPortByIndex(index, totalInputs) {
+  getInputPortPositionByIndex(index, totalInputs) {
     const spacing = this.height / totalInputs;
     return {
       x: this.x - GRID_SIZE,
