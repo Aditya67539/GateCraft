@@ -30,7 +30,7 @@ let circuit = new CircuitBuilder();
 let tooltipState = {
   active: false,        // is a port currently hovered?
   label: "",            // gate.label || gate.type
-  port: { x: 0, y: 0 }, // port position
+  portPosition: { x: 0, y: 0 }, // port position
   opacity: 0,           // animation progress 0 → 1
   portType: "",         // input port || output port
 };
@@ -88,7 +88,7 @@ const sketch = (p) => {
     }
 
     // ── Detect hovered port for tooltip ──────────────────────
-    let hoveredPort = null;
+    let hoveredPortPosition = null;
     let hoveredLabel = "";
     let portType = "";
     for (let i = 0; i < renderNodes.length; i++) {
@@ -98,9 +98,9 @@ const sketch = (p) => {
 
       if (totalInputs !== 0) {
         for (let j = 0; j < totalInputs; j++) {
-          const port = renderNodes[i].getInputPortPositionByIndex(j, totalInputs);
-          if (isNearPort(mouse.x, mouse.y, port)) {
-            hoveredPort = port;
+          const portPosition = renderNodes[i].getInputPortPositionByIndex(j, totalInputs);
+          if (isNearPort(mouse.x, mouse.y, portPosition)) {
+            hoveredPortPosition = portPosition;
             if (
               gate.category === GATE_CATEGORIES.COMPOSITE &&
               gate.internalInputs &&
@@ -125,9 +125,9 @@ const sketch = (p) => {
 
       if (totalOutputs !== 0) {
         for (let j = 0; j < totalOutputs; j++) {
-          const port = renderNodes[i].getOutputPortPositionByIndex(j, totalOutputs);
-          if (isNearPort(mouse.x, mouse.y, port)) {
-            hoveredPort = port;
+          const portPosition = renderNodes[i].getOutputPortPositionByIndex(j, totalOutputs);
+          if (isNearPort(mouse.x, mouse.y, portPosition)) {
+            hoveredPortPosition = portPosition;
             if (
               gate.category === GATE_CATEGORIES.COMPOSITE &&
               gate.internalOutputs &&
@@ -146,10 +146,10 @@ const sketch = (p) => {
 
     // Update tooltip animation state
     const dt = p.deltaTime / 1000; // seconds
-    if (hoveredPort) {
+    if (hoveredPortPosition) {
       tooltipState.active = true;
       tooltipState.label = hoveredLabel;
-      tooltipState.port = hoveredPort;
+      tooltipState.portPosition = hoveredPortPosition;
       tooltipState.portType = portType;
       tooltipState.opacity = Math.min(1, tooltipState.opacity + TOOLTIP_FADE_SPEED * dt);
     } else {
@@ -285,7 +285,7 @@ const sketch = (p) => {
 
     // ── Draw tooltip last so it renders on top of everything ──
     if (tooltipState.active && tooltipState.opacity > 0) {
-      drawPortTooltip(tooltipState.label, tooltipState.port, tooltipState.opacity, tooltipState.portType, p);
+      drawPortTooltip(tooltipState.label, tooltipState.portPosition, tooltipState.opacity, tooltipState.portType, p);
     }
 
     drawMinimap(p, renderNodes, busNodes, wires, state, nodeMap, busMap);
