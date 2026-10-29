@@ -65,24 +65,6 @@ const sketch = (p) => {
     p.scale(state.zoom);
 
     setFont(theme, p);
-    for (let i = 0; i < renderNodes.length; i++) {
-      let nodeStatus = null;
-      const isContextTarget = state.contextMenuTarget?.type === "gate" &&
-        state.contextMenuTarget.source.gate.id === renderNodes[i].gate.id;
-      if (state.dragging && renderNodes[i] === state.dragging) {
-        // Actively dragging — show overlap feedback
-        nodeStatus = wouldOverlap(state.dragging, renderNodes, busNodes, state.dragging.gate.id)
-          ? "invalid"
-          : "selected";
-      } else if (
-        (state.selectedNode && renderNodes[i] === state.selectedNode) ||
-        isContextTarget
-      ) {
-        // Persistently selected (not being dragged)
-        nodeStatus = "selected";
-      }
-      drawGate(renderNodes[i], p, nodeStatus);
-    }
 
     const hoveredBus = getBusAtPoint(mouse.x, mouse.y, busNodes);
     const isIdle = !state.ghostNode && !state.ghostBus && !state.dragging;
@@ -175,6 +157,25 @@ const sketch = (p) => {
       if (tooltipState.opacity <= 0) {
         tooltipState.active = false;
       }
+    }
+
+    for (let i = 0; i < renderNodes.length; i++) {
+      let nodeStatus = null;
+      const isContextTarget = state.contextMenuTarget?.type === "gate" &&
+        state.contextMenuTarget.source.gate.id === renderNodes[i].gate.id;
+      if (state.dragging && renderNodes[i] === state.dragging) {
+        // Actively dragging — show overlap feedback
+        nodeStatus = wouldOverlap(state.dragging, renderNodes, busNodes, state.dragging.gate.id)
+          ? "invalid"
+          : "selected";
+      } else if (
+        (state.selectedNode && renderNodes[i] === state.selectedNode) ||
+        isContextTarget
+      ) {
+        // Persistently selected (not being dragged)
+        nodeStatus = "selected";
+      }
+      drawGate(renderNodes[i], p, nodeStatus);
     }
 
     const hoveredWire = getWireAtPoint(mouse.x, mouse.y, wires, nodeMap, busMap);
