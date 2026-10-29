@@ -89,6 +89,8 @@ const sketch = (p) => {
 
     // ── Detect hovered port for tooltip ──────────────────────
     let hoveredPortPosition = null;
+    let hoveredNode = null;
+    let hoveredPortIndex = null;
     let hoveredLabel = "";
     let portType = "";
     for (let i = 0; i < renderNodes.length; i++) {
@@ -100,6 +102,8 @@ const sketch = (p) => {
         for (let j = 0; j < totalInputs; j++) {
           const portPosition = renderNodes[i].getInputPortPositionByIndex(j, totalInputs);
           if (isNearPort(mouse.x, mouse.y, portPosition)) {
+            hoveredNode = renderNodes[i];
+            hoveredPortIndex = j;
             hoveredPortPosition = portPosition;
             if (
               gate.category === GATE_CATEGORIES.COMPOSITE &&
@@ -127,6 +131,8 @@ const sketch = (p) => {
         for (let j = 0; j < totalOutputs; j++) {
           const portPosition = renderNodes[i].getOutputPortPositionByIndex(j, totalOutputs);
           if (isNearPort(mouse.x, mouse.y, portPosition)) {
+            hoveredNode = renderNodes[i];
+            hoveredPortIndex = j;
             hoveredPortPosition = portPosition;
             if (
               gate.category === GATE_CATEGORIES.COMPOSITE &&
@@ -160,22 +166,33 @@ const sketch = (p) => {
     }
 
     for (let i = 0; i < renderNodes.length; i++) {
+      const node = renderNodes[i];
       let nodeStatus = null;
       const isContextTarget = state.contextMenuTarget?.type === "gate" &&
-        state.contextMenuTarget.source.gate.id === renderNodes[i].gate.id;
-      if (state.dragging && renderNodes[i] === state.dragging) {
+        state.contextMenuTarget.source.gate.id === node.gate.id;
+      if (state.dragging && node === state.dragging) {
         // Actively dragging — show overlap feedback
         nodeStatus = wouldOverlap(state.dragging, renderNodes, busNodes, state.dragging.gate.id)
           ? "invalid"
           : "selected";
       } else if (
-        (state.selectedNode && renderNodes[i] === state.selectedNode) ||
+        (state.selectedNode && node === state.selectedNode) ||
         isContextTarget
       ) {
         // Persistently selected (not being dragged)
         nodeStatus = "selected";
       }
-      drawGate(renderNodes[i], p, nodeStatus);
+
+      // Highlight corresponding segment when hovering over an input port of a seven-segment display
+      const isHoveredDisplayInput = (
+        hoveredNode === node &&
+        portType === "input" &&
+        node.gate.category === GATE_CATEGORIES.PRIMITIVE &&
+        node.gate.type === "seven-seg"
+      );
+      const highlightedSegmentIndex = isHoveredDisplayInput ? hoveredPortIndex : null;
+
+      drawGate(node, p, nodeStatus, highlightedSegmentIndex);
     }
 
     const hoveredWire = getWireAtPoint(mouse.x, mouse.y, wires, nodeMap, busMap);
