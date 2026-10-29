@@ -16,7 +16,6 @@ export function registerKeyboardHandlers(p, circuit, renderNodes, wires, actions
   const shortcuts = {
     "1": () => changeMode("edit"),
     "2": () => changeMode("run"),
-    "3": () => changeMode("delete"),
     "tab": () => toggleSidebar(),
     "control+s": () => actions.openSaveModal(),
     "control+shift+x": () => actions.openWarningModal(),
