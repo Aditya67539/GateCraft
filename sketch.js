@@ -1,20 +1,18 @@
 import p5 from "p5";
 import { state, screenToWorld } from "./state.js";
 import { drawGate, drawWaypoint, drawWire, drawPortTooltip, setFont, drawDynamicGrid, drawGhostPath, drawBus, drawGhostBus } from "./render/draw.js";
-import { registerMouseHandlers, isNearWaypoint, isNearPort, busMap, nodeMap, getWireAtPoint, getBusAtPoint, findWireDestination } from "./input/mouseHandlers.js";
+import { registerMouseHandlers, isNearWaypoint, isNearPort, busMap, nodeMap, getWireAtPoint, getBusAtPoint, getEffectiveMousePosition } from "./input/mouseHandlers.js";
 import { initToolbar } from "./ui/toolbar.js";
 import { getActiveTheme, applyTheme } from "./render/theme.js";
 import { CircuitBuilder } from "./logic/CircuitBuilder.js";
 import { snapPointToGrid, wouldBusOverlap, wouldOverlap } from "./render/RenderNode.js";
 import { registerKeyboardHandlers } from "./input/keyboardHandlers.js";
 import { drawMinimap } from "./render/minimap.js";
-import { getGhostWireStartPoint, getOctilinearSnap, getTapPointFromElement } from "./render/wireGeometry.js";
+import { getGhostWireEndPoint, getGhostWireStartPoint } from "./render/wireGeometry.js";
 import { canWireConnectToTarget } from "./logic/wire.js";
 import { GATE_CATEGORIES } from "./constants.js";
 
 applyTheme(getActiveTheme());
-
-let mouse = { x: 0, y: 0 };
 
 const canvasHost = document.querySelector(".canvas-host");
 const WIDTH = canvasHost.clientWidth;
@@ -30,7 +28,7 @@ let circuit = new CircuitBuilder();
 let tooltipState = {
   active: false,        // is a port currently hovered?
   label: "",            // gate.label || gate.type
-  port: { x: 0, y: 0 }, // port position
+  portPosition: { x: 0, y: 0 }, // port position
   opacity: 0,           // animation progress 0 → 1
   portType: "",         // input port || output port
 };
@@ -55,8 +53,17 @@ const sketch = (p) => {
 
   p.draw = function () {
     const world = screenToWorld(p.mouseX, p.mouseY);
-    mouse.x = world.x;
-    mouse.y = world.y;
+    const mouse = getEffectiveMousePosition(
+      world,
+      state.drawingWire,
+      state.ghostWire,
+      circuit,
+      renderNodes,
+      busNodes,
+      nodeMap,
+      busMap,
+      p,
+    );
     const theme = getActiveTheme();
     p.background(theme.canvas.bg.hex);
 
@@ -65,24 +72,6 @@ const sketch = (p) => {
     p.scale(state.zoom);
 
     setFont(theme, p);
-    for (let i = 0; i < renderNodes.length; i++) {
-      let nodeStatus = null;
-      const isContextTarget = state.contextMenuTarget?.type === "gate" &&
-        state.contextMenuTarget.source.gate.id === renderNodes[i].gate.id;
-      if (state.dragging && renderNodes[i] === state.dragging) {
-        // Actively dragging — show overlap feedback
-        nodeStatus = wouldOverlap(state.dragging, renderNodes, busNodes, state.dragging.gate.id)
-          ? "invalid"
-          : "selected";
-      } else if (
-        (state.selectedNode && renderNodes[i] === state.selectedNode) ||
-        isContextTarget
-      ) {
-        // Persistently selected (not being dragged)
-        nodeStatus = "selected";
-      }
-      drawGate(renderNodes[i], p, nodeStatus);
-    }
 
     const hoveredBus = getBusAtPoint(mouse.x, mouse.y, busNodes);
     const isIdle = !state.ghostNode && !state.ghostBus && !state.dragging;
@@ -106,7 +95,9 @@ const sketch = (p) => {
     }
 
     // ── Detect hovered port for tooltip ──────────────────────
-    let hoveredPort = null;
+    let hoveredPortPosition = null;
+    let hoveredNode = null;
+    let hoveredPortIndex = null;
     let hoveredLabel = "";
     let portType = "";
     for (let i = 0; i < renderNodes.length; i++) {
@@ -116,9 +107,11 @@ const sketch = (p) => {
 
       if (totalInputs !== 0) {
         for (let j = 0; j < totalInputs; j++) {
-          const port = renderNodes[i].getInputPortPositionByIndex(j, totalInputs);
-          if (isNearPort(mouse.x, mouse.y, port)) {
-            hoveredPort = port;
+          const portPosition = renderNodes[i].getInputPortPositionByIndex(j, totalInputs);
+          if (isNearPort(mouse.x, mouse.y, portPosition)) {
+            hoveredNode = renderNodes[i];
+            hoveredPortIndex = j;
+            hoveredPortPosition = portPosition;
             if (
               gate.category === GATE_CATEGORIES.COMPOSITE &&
               gate.internalInputs &&
@@ -143,9 +136,11 @@ const sketch = (p) => {
 
       if (totalOutputs !== 0) {
         for (let j = 0; j < totalOutputs; j++) {
-          const port = renderNodes[i].getOutputPortPositionByIndex(j, totalOutputs);
-          if (isNearPort(mouse.x, mouse.y, port)) {
-            hoveredPort = port;
+          const portPosition = renderNodes[i].getOutputPortPositionByIndex(j, totalOutputs);
+          if (isNearPort(mouse.x, mouse.y, portPosition)) {
+            hoveredNode = renderNodes[i];
+            hoveredPortIndex = j;
+            hoveredPortPosition = portPosition;
             if (
               gate.category === GATE_CATEGORIES.COMPOSITE &&
               gate.internalOutputs &&
@@ -164,10 +159,10 @@ const sketch = (p) => {
 
     // Update tooltip animation state
     const dt = p.deltaTime / 1000; // seconds
-    if (hoveredPort) {
+    if (hoveredPortPosition) {
       tooltipState.active = true;
       tooltipState.label = hoveredLabel;
-      tooltipState.port = hoveredPort;
+      tooltipState.portPosition = hoveredPortPosition;
       tooltipState.portType = portType;
       tooltipState.opacity = Math.min(1, tooltipState.opacity + TOOLTIP_FADE_SPEED * dt);
     } else {
@@ -175,6 +170,36 @@ const sketch = (p) => {
       if (tooltipState.opacity <= 0) {
         tooltipState.active = false;
       }
+    }
+
+    for (let i = 0; i < renderNodes.length; i++) {
+      const node = renderNodes[i];
+      let nodeStatus = null;
+      const isContextTarget = state.contextMenuTarget?.type === "gate" &&
+        state.contextMenuTarget.source.gate.id === node.gate.id;
+      if (state.dragging && node === state.dragging) {
+        // Actively dragging — show overlap feedback
+        nodeStatus = wouldOverlap(state.dragging, renderNodes, busNodes, state.dragging.gate.id)
+          ? "invalid"
+          : "selected";
+      } else if (
+        (state.selectedNode && node === state.selectedNode) ||
+        isContextTarget
+      ) {
+        // Persistently selected (not being dragged)
+        nodeStatus = "selected";
+      }
+
+      // Highlight corresponding segment when hovering over an input port of a seven-segment display
+      const isHoveredDisplayInput = (
+        hoveredNode === node &&
+        portType === "input" &&
+        node.gate.category === GATE_CATEGORIES.PRIMITIVE &&
+        node.gate.type === "seven-seg"
+      );
+      const highlightedSegmentIndex = isHoveredDisplayInput ? hoveredPortIndex : null;
+
+      drawGate(node, p, nodeStatus, highlightedSegmentIndex);
     }
 
     const hoveredWire = getWireAtPoint(mouse.x, mouse.y, wires, nodeMap, busMap);
@@ -213,8 +238,7 @@ const sketch = (p) => {
       let status = wouldOverlap(state.ghostNode, renderNodes, busNodes, null) ? "invalid" : "valid";
       drawGate(state.ghostNode, p, status);
       if (state.mode === "placing") {
-        const { x: worldMouseX, y: worldMouseY } = screenToWorld(p.mouseX, p.mouseY);
-        const { x, y } = snapPointToGrid(worldMouseX, worldMouseY);
+        const { x, y } = snapPointToGrid(mouse.x, mouse.y);
         state.ghostNode.x = x;
         state.ghostNode.y = y;
       }
@@ -223,23 +247,17 @@ const sketch = (p) => {
       let status = wouldBusOverlap(state.ghostBus, renderNodes, busNodes) ? "invalid" : "valid";
       drawGhostBus(state.ghostBus, p, status);
       if (state.mode === "placing") {
-        const { x, y } = screenToWorld(p.mouseX, p.mouseY);
         if (!state.ghostBus.startPointPlaced && !state.ghostBus.endPointPlaced) {
-          state.ghostBus.startPoint.x = state.ghostBus.endPoint.x = x;
-          state.ghostBus.startPoint.y = state.ghostBus.endPoint.y = y;
+          state.ghostBus.startPoint.x = state.ghostBus.endPoint.x = mouse.x;
+          state.ghostBus.startPoint.y = state.ghostBus.endPoint.y = mouse.y;
         } else if (state.ghostBus.startPointPlaced && !state.ghostBus.endPointPlaced) {
           const useSnap = p.keyIsDown(p.SHIFT);
-          
-          const x1 = state.ghostBus.waypoints && state.ghostBus.waypoints.length !== 0
-            ? state.ghostBus.waypoints[state.ghostBus.waypoints.length - 1].x
-            : state.ghostBus.startPoint.x;
-          
-          const y1 = state.ghostBus.waypoints && state.ghostBus.waypoints.length !== 0
-            ? state.ghostBus.waypoints[state.ghostBus.waypoints.length - 1].y
-            : state.ghostBus.startPoint.y;
-
-          state.ghostBus.endPoint.x = useSnap ? getOctilinearSnap(x1, y1, x, y).x : x;
-          state.ghostBus.endPoint.y = useSnap ? getOctilinearSnap(x1, y1, x, y).y : y;
+          state.ghostBus.endPoint = getGhostWireEndPoint(
+            mouse,
+            state.ghostBus.startPoint,
+            state.ghostBus.waypoints,
+            useSnap,
+          );
         }
       }
     }
@@ -251,40 +269,12 @@ const sketch = (p) => {
         busMap,
       );
 
-      const hoveredDestination = findWireDestination(
-        mouse.x,
-        mouse.y,
-        renderNodes,
-        busNodes,
-        nodeMap,
-        busMap,
-      );
-      const validDestination = canWireConnectToTarget(circuit, state.drawingWire, hoveredDestination);
-
-      if (validDestination) {
-        let endPoint = mouse;
-
-        if (hoveredDestination.destinationType === "gate") {
-          const inputIndex = hoveredDestination.destination.index;
-          const totalInputs = hoveredDestination.destination.toNode.gate.inputCount;
-
-          endPoint = hoveredDestination.destination.toNode.getInputPortPositionByIndex(inputIndex, totalInputs);
-        } else if (hoveredDestination.destinationType === "bus") {
-          const busNode = hoveredDestination.destination.busNode;
-          const tapRef = hoveredDestination.destination.tapRef;
-
-          endPoint = getTapPointFromElement(busNode, tapRef, nodeMap, busMap);
-        }
-
-        drawGhostPath(startPoint, state.ghostWire, endPoint, p);
-      } else {
-        drawGhostPath(startPoint, state.ghostWire, mouse, p);
-      }
+      drawGhostPath(startPoint, state.ghostWire, mouse, p);
     }
 
     // ── Draw tooltip last so it renders on top of everything ──
     if (tooltipState.active && tooltipState.opacity > 0) {
-      drawPortTooltip(tooltipState.label, tooltipState.port, tooltipState.opacity, tooltipState.portType, p);
+      drawPortTooltip(tooltipState.label, tooltipState.portPosition, tooltipState.opacity, tooltipState.portType, p);
     }
 
     drawMinimap(p, renderNodes, busNodes, wires, state, nodeMap, busMap);

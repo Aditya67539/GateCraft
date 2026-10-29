@@ -1,11 +1,12 @@
 import { state, screenToWorld, worldToScreen } from "../state.js";
 import { CLOCK_TIMER, FREQUENCY, GATE_CATEGORIES, GRID_SIZE, SIGNAL } from "../constants.js";
-import { setCustomWaypoints, getPointRefFromElement, projectPointOntoSegment, dist, getTapPointFromElement, GateConnectionView, BusConnectionView, getGhostWireStartPoint, getOctilinearSnap } from "../render/wireGeometry.js";
+import { setCustomWaypoints, getPointRefFromElement, projectPointOntoSegment, dist, getTapPointFromElement, GateConnectionView, BusConnectionView, getGhostWireStartPoint, getGhostWireEndPoint } from "../render/wireGeometry.js";
 import { createPrimitiveNode, createCompositeNode, snapPointToGrid, wouldOverlap, wouldBusOverlap } from "../render/RenderNode.js";
 import { showToast } from "../ui/toast.js";
 import { GateConnectionCommand, MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand, PlaceBusCommand, RemoveBusCommand, BusConnectionCommand } from "../history/commands.js";
 import { performCommand } from "../history/history.js";
 import { loadCompositeGate, buildCircuitFromData } from "../persistence.js";
+import { canWireConnectToTarget } from "../logic/wire.js";
 
 const { LOW, HIGH, X, Z, E } = SIGNAL;
 
@@ -61,16 +62,12 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
             nodeMap,
             busMap,
           );
-          const x1 = state.ghostWire && state.ghostWire.length > 0
-            ? state.ghostWire[state.ghostWire.length - 1].x
-            : startPoint.x;
-          
-          const y1 = state.ghostWire && state.ghostWire.length > 0
-            ? state.ghostWire[state.ghostWire.length - 1].y
-            : startPoint.y;
-
-          const endPoint = useSnap ? getOctilinearSnap(x1, y1, world.x, world.y) : world;
-
+          const endPoint = getGhostWireEndPoint(
+            world,
+            startPoint,
+            state.ghostWire,
+            useSnap,
+          );
           const connInfo = findWireDestination(endPoint.x, endPoint.y, renderNodes, busNodes, nodeMap, busMap);
           if (state.drawingWire.originType === "gate") {
             if (connInfo?.destinationType === "gate") {
@@ -654,7 +651,7 @@ function findWireOrigin(mx, my, renderNodes, busNodes, wires, nodeMap, busMap) {
   return null;
 }
 
-export function findWireDestination(mx, my, renderNodes, busNodes, nodeMap, busMap) {
+function findWireDestination(mx, my, renderNodes, busNodes, nodeMap, busMap) {
   const nodeConn = findNearInput(mx, my, renderNodes);
   const busConn = findNearBus(mx, my, busNodes, nodeMap, busMap);
 
@@ -725,6 +722,62 @@ function findNearWaypoint(mx, my, wires, busNodes) {
     }
   }
   return null;
+}
+
+export function getEffectiveMousePosition(
+  mouse,
+  wireOrigin,
+  ghostWire,
+  circuit,
+  renderNodes,
+  busNodes,
+  nodeMap,
+  busMap,
+  p
+) {
+  let effectiveMousePosition = mouse;
+  if (wireOrigin) {
+    const useSnap = p.keyIsDown(p.SHIFT);
+    const startPoint = getGhostWireStartPoint(
+      wireOrigin.originType,
+      wireOrigin.source,
+      nodeMap,
+      busMap,
+    );
+
+    effectiveMousePosition = getGhostWireEndPoint(
+      mouse,
+      startPoint,
+      ghostWire,
+      useSnap,
+    );
+
+    const hoveredDestination = findWireDestination(
+      effectiveMousePosition.x,
+      effectiveMousePosition.y,
+      renderNodes,
+      busNodes,
+      nodeMap,
+      busMap,
+    );
+    const validDestination = canWireConnectToTarget(circuit, wireOrigin, hoveredDestination);
+
+    if (validDestination) {
+      if (hoveredDestination.destinationType === "gate") {
+        const inputIndex = hoveredDestination.destination.index;
+        const toNode = hoveredDestination.destination.toNode;
+        const totalInputs = toNode.gate.inputCount;
+
+        effectiveMousePosition = toNode.getInputPortPositionByIndex(inputIndex, totalInputs);
+      } else if (hoveredDestination.destinationType === "bus") {
+        const busNode = hoveredDestination.destination.busNode;
+        const tapRef = hoveredDestination.destination.tapRef;
+
+        effectiveMousePosition = getTapPointFromElement(busNode, tapRef, nodeMap, busMap);
+      }
+    }
+  }
+  return effectiveMousePosition;
 }
 
 function bringToFront(renderNodes, node) {

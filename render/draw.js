@@ -122,13 +122,21 @@ function drawClockWave(renderNode, stateKey, theme, p) {
   ctx.restore();
 }
 
-export function drawGate(renderNode, p, status = null) {
+/**
+ * Draws a logic gate or display component.
+ *
+ * @param {RenderNode} renderNode - The gate node to draw
+ * @param {Object} p - The p5 instance
+ * @param {string|null} [status=null] - Visual overlay status ('selected', 'valid', 'invalid')
+ * @param {number|null} [highlightedSegmentIndex=null] - Index of segment (0-7) to highlight on seven-segment displays
+ */
+export function drawGate(renderNode, p, status = null, highlightedSegmentIndex = null) {
   const theme = getActiveTheme();
   if (
     renderNode.gate.category === GATE_CATEGORIES.PRIMITIVE &&
     renderNode.gate.type === "seven-seg"
   ) {
-    drawDisplay(renderNode, p);
+    drawDisplay(renderNode, p, highlightedSegmentIndex);
     drawInputPort(renderNode, theme, p);
     drawOutputPort(renderNode, theme, p);
     drawLabel(renderNode, p);
@@ -429,7 +437,14 @@ function drawVerticalSegment(x, y, height, thickness, bevel, color, p) {
   p.endShape(p.CLOSE);
 }
 
-function drawDisplay(renderNode, p) {
+/**
+ * Draws a standalone seven-segment display.
+ *
+ * @param {RenderNode} renderNode - The seven-segment display node
+ * @param {Object} p - The p5 instance
+ * @param {number|null} [highlightedSegmentIndex=null] - Index of segment (0-7) to highlight when hovering over an input port
+ */
+function drawDisplay(renderNode, p, highlightedSegmentIndex = null) {
   const theme = getActiveTheme();
   const gate = renderNode.gate;
 
@@ -469,6 +484,12 @@ function drawDisplay(renderNode, p) {
     const stateKey = SIGNAL_MAP[segment]?.key || "x";
     return theme.gates.output[stateKey].hex;
   });
+
+  if (highlightedSegmentIndex !== null) {
+    if (colors[highlightedSegmentIndex] === theme.gates.output["x"].hex) {
+      colors[highlightedSegmentIndex] = "#2a1a1a";
+    }
+  }
 
   // 0: Top
   p.fill(colors[0]);

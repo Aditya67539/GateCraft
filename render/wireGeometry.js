@@ -267,3 +267,16 @@ export function getGhostWireStartPoint(originType, source, nodeMap, busMap) {
 
   return startPoint;
 }
+
+export function getGhostWireEndPoint(mouse, startPoint, waypoints, useSnap = false) {
+  if (!useSnap) return mouse;
+  const x1 = waypoints && waypoints.length > 0
+    ? waypoints[waypoints.length - 1].x
+    : startPoint.x;
+
+  const y1 = waypoints && waypoints.length > 0
+    ? waypoints[waypoints.length - 1].y
+    : startPoint.y;
+
+  return getOctilinearSnap(x1, y1, mouse.x, mouse.y);
+}
