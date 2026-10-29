@@ -370,31 +370,6 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
             cleanupGhostBus();
           }
         }
-      } else if (state.mode === "delete") {
-        if (state.dragging) {
-          const removeGateCommand = new RemoveGateCommand(
-            renderNodes,
-            wires,
-            circuit,
-            state.dragging,
-            nodeMap,
-          );
-          performCommand(removeGateCommand);
-
-          if (state.selectedNode === state.dragging) state.selectedNode = null;
-          state.dragging = null;
-        } else {
-          const wireInfo = getWireAtPoint(world.x, world.y, wires, nodeMap, busMap);
-          const busInfo = getBusAtPoint(world.x, world.y, busNodes);
-          
-          if (wireInfo) {
-            const removeWireCommand = new RemoveWireCommand(circuit, wires, wireInfo.conn);
-            performCommand(removeWireCommand);
-          } else if (busInfo) {
-            const removeBusCommand = new RemoveBusCommand(busNodes, wires, circuit, busInfo, busMap);
-            performCommand(removeBusCommand);
-          }
-        }
       }
     }
 
