@@ -8,7 +8,7 @@ import { CircuitBuilder } from "./logic/CircuitBuilder.js";
 import { snapPointToGrid, wouldBusOverlap, wouldOverlap } from "./render/RenderNode.js";
 import { registerKeyboardHandlers } from "./input/keyboardHandlers.js";
 import { drawMinimap } from "./render/minimap.js";
-import { getGhostWireStartPoint, getOctilinearSnap, getTapPointFromElement } from "./render/wireGeometry.js";
+import { getGhostWireEndPoint, getGhostWireStartPoint } from "./render/wireGeometry.js";
 import { canWireConnectToTarget } from "./logic/wire.js";
 import { GATE_CATEGORIES } from "./constants.js";
 
@@ -247,17 +247,12 @@ const sketch = (p) => {
           state.ghostBus.startPoint.y = state.ghostBus.endPoint.y = y;
         } else if (state.ghostBus.startPointPlaced && !state.ghostBus.endPointPlaced) {
           const useSnap = p.keyIsDown(p.SHIFT);
-          
-          const x1 = state.ghostBus.waypoints && state.ghostBus.waypoints.length !== 0
-            ? state.ghostBus.waypoints[state.ghostBus.waypoints.length - 1].x
-            : state.ghostBus.startPoint.x;
-          
-          const y1 = state.ghostBus.waypoints && state.ghostBus.waypoints.length !== 0
-            ? state.ghostBus.waypoints[state.ghostBus.waypoints.length - 1].y
-            : state.ghostBus.startPoint.y;
-
-          state.ghostBus.endPoint.x = useSnap ? getOctilinearSnap(x1, y1, x, y).x : x;
-          state.ghostBus.endPoint.y = useSnap ? getOctilinearSnap(x1, y1, x, y).y : y;
+          state.ghostBus.endPoint = getGhostWireEndPoint(
+            mouse,
+            state.ghostBus.startPoint,
+            state.ghostBus.waypoints,
+            useSnap,
+          );
         }
       }
     }
