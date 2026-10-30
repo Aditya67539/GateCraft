@@ -269,8 +269,15 @@ const sketch = (p) => {
         nodeMap,
         busMap,
       );
+      const useSnap = p.keyIsDown(p.SHIFT);
+      const endPoint = getGhostWireEndPoint(
+        mouse,
+        startPoint,
+        state.ghostWire,
+        useSnap,
+      );
 
-      drawGhostPath(startPoint, state.ghostWire, mouse, p);
+      drawGhostPath(startPoint, state.ghostWire, endPoint, p);
     }
 
     // ── Draw tooltip last so it renders on top of everything ──

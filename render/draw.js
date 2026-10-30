@@ -717,12 +717,7 @@ export function drawGhostPath(start, waypoints, end, p) {
   p.stroke(theme.wires.ghost.hex);
   p.strokeWeight(WIRE_THICKNESS);
 
-  const applySnap = p.keyIsDown(p.SHIFT);
-
-  const from = waypoints?.length ? waypoints[waypoints.length - 1] : start;
-  const target = applySnap ? getOctilinearSnap(from.x, from.y, end.x, end.y) : end;
-
-  drawPolylineSegments(start, waypoints, target, p);
+  drawPolylineSegments(start, waypoints, end, p);
 
   p.stroke(0);
   p.strokeWeight(DEFAULT_STROKE_WEIGHT);
