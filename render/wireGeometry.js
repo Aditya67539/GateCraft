@@ -260,7 +260,7 @@ export function getGhostWireStartPoint(originType, source, nodeMap, busMap) {
       ? source.fromNode.getOutputPortPositionByIndex(outputIndex, totalOutputs)
       : source.fromNode.getOutputPortPosition();
   } else if (originType === "bus") {
-    startPoint = getTapPointFromElement(source.BusNode, source.tapRef, nodeMap, busMap);
+    startPoint = getTapPointFromElement(source.busNode, source.tapRef, nodeMap, busMap);
   } else if (originType === "wire") {
     startPoint = getTapPointFromElement(source.conn, source.tapRef, nodeMap, busMap);
   }
