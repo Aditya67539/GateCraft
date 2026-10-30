@@ -244,22 +244,23 @@ const sketch = (p) => {
       }
     }
     if (state.ghostBus) {
-      let status = wouldBusOverlap(state.ghostBus, renderNodes, busNodes) ? "invalid" : "valid";
-      drawGhostBus(state.ghostBus, p, status);
       if (state.mode === "placing") {
+        const { x, y } = snapPointToGrid(mouse.x, mouse.y);
         if (!state.ghostBus.startPointPlaced && !state.ghostBus.endPointPlaced) {
-          state.ghostBus.startPoint.x = state.ghostBus.endPoint.x = mouse.x;
-          state.ghostBus.startPoint.y = state.ghostBus.endPoint.y = mouse.y;
+          state.ghostBus.startPoint.x = state.ghostBus.endPoint.x = x;
+          state.ghostBus.startPoint.y = state.ghostBus.endPoint.y = y;
         } else if (state.ghostBus.startPointPlaced && !state.ghostBus.endPointPlaced) {
           const useSnap = p.keyIsDown(p.SHIFT);
           state.ghostBus.endPoint = getGhostWireEndPoint(
-            mouse,
+            { x, y },
             state.ghostBus.startPoint,
             state.ghostBus.waypoints,
             useSnap,
           );
         }
       }
+      let status = wouldBusOverlap(state.ghostBus, renderNodes, busNodes) ? "invalid" : "valid";
+      drawGhostBus(state.ghostBus, p, status);
     }
     if (state.drawingWire) {
       const startPoint = getGhostWireStartPoint(
