@@ -48,8 +48,6 @@ import {
   LABEL_OFFSET_Y,
 } from "../constants.js";
 import { getActiveTheme } from "./theme.js";
-import { screenToWorld } from "../state.js";
-import { getOctilinearSnap } from "./wireGeometry.js";
 
 /**
  * Return "#ffffff" or "#1a1a2e" depending on which has better contrast
@@ -331,60 +329,9 @@ export function drawGhostBus(busNode, p, status = null) {
   const color = theme.wires[stateKey].hex;
   p.stroke(color);
 
-  const mouseWorld = screenToWorld(p.mouseX, p.mouseY);
-  const useSnap = p.keyIsDown(p.SHIFT);
-
-  const x1 = busNode.waypoints && busNode.waypoints.length !== 0
-    ? busNode.waypoints[busNode.waypoints.length - 1].x
-    : busNode.startPoint.x;
-  
-  const y1 = busNode.waypoints && busNode.waypoints.length !== 0
-    ? busNode.waypoints[busNode.waypoints.length - 1].y
-    : busNode.startPoint.y;
-
-  const endPointX = useSnap && busNode.startPointPlaced
-    ? getOctilinearSnap(x1, y1, busNode.endPoint.x, busNode.endPoint.y).x
-    : busNode.endPoint.x;
-  
-  const endPointY = useSnap && busNode.startPointPlaced
-    ? getOctilinearSnap(x1, y1, busNode.endPoint.x, busNode.endPoint.y).y
-    : busNode.endPoint.y;
-
   drawPoint(busNode.startPoint.x, busNode.startPoint.y, color, p);
-  drawPoint(endPointX, endPointY, color, p);
-
-  if (busNode.waypoints && busNode.waypoints.length !== 0) {
-    const waypointCount = busNode.waypoints.length;
-    p.line(busNode.startPoint.x, busNode.startPoint.y, busNode.waypoints[0].x, busNode.waypoints[0].y);
-    for (let i = 0; i < waypointCount - 1; i++) {
-      p.line(busNode.waypoints[i].x, busNode.waypoints[i].y, busNode.waypoints[i + 1].x, busNode.waypoints[i + 1].y);
-    }
-    const x1 = busNode.waypoints[waypointCount - 1].x;
-    const y1 = busNode.waypoints[waypointCount - 1].y;
-
-    const endX = useSnap
-      ? getOctilinearSnap(x1, y1, mouseWorld.x, mouseWorld.y).x
-      : mouseWorld.x;
-
-    const endY = useSnap
-      ? getOctilinearSnap(x1, y1, mouseWorld.x, mouseWorld.y).y
-      : mouseWorld.y;
-
-    p.line(x1, y1, endX, endY);
-  } else {
-    const x1 = busNode.startPoint.x;
-    const y1 = busNode.startPoint.y;
-
-    const endX = useSnap && busNode.startPointPlaced
-      ? getOctilinearSnap(x1, y1, mouseWorld.x, mouseWorld.y).x
-      : mouseWorld.x;
-
-    const endY = useSnap && busNode.startPointPlaced
-      ? getOctilinearSnap(x1, y1, mouseWorld.x, mouseWorld.y).y
-      : mouseWorld.y;
-
-    p.line(x1, y1, endX, endY);
-  }
+  drawPolylineSegments(busNode.startPoint, busNode.waypoints, busNode.endPoint, p);
+  drawPoint(busNode.endPoint.x, busNode.endPoint.y, color, p);
 
   if (status) {
     let bounds = busNode.startPointPlaced ? busNode.getEndPointBounds(BUS_BOUNDS_PADDING) : busNode.getStartPointBounds(BUS_BOUNDS_PADDING);
@@ -770,12 +717,7 @@ export function drawGhostPath(start, waypoints, end, p) {
   p.stroke(theme.wires.ghost.hex);
   p.strokeWeight(WIRE_THICKNESS);
 
-  const applySnap = p.keyIsDown(p.SHIFT);
-
-  const from = waypoints?.length ? waypoints[waypoints.length - 1] : start;
-  const target = applySnap ? getOctilinearSnap(from.x, from.y, end.x, end.y) : end;
-
-  drawPolylineSegments(start, waypoints, target, p);
+  drawPolylineSegments(start, waypoints, end, p);
 
   p.stroke(0);
   p.strokeWeight(DEFAULT_STROKE_WEIGHT);
