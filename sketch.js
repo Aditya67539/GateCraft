@@ -22,6 +22,7 @@ let renderNodes = [];
 let wires = [];
 let busNodes = [];
 let circuit = new CircuitBuilder();
+let wireDependents = new Map();
 
 // ── Port tooltip hover state ──────────────────────────────────
 // Tracks the currently hovered port for smooth fade-in/out animation
@@ -45,7 +46,7 @@ const sketch = (p) => {
       e.stopPropagation();
     });
 
-    registerMouseHandlers(p, circuit, renderNodes, wires, busNodes);
+    registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, wireDependents);
     registerKeyboardHandlers(p, circuit, renderNodes, wires, toolbarActions);
 
     const theme = getActiveTheme();    

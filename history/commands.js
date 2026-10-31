@@ -157,7 +157,7 @@ export class RemoveBusCommand {
 
 /** @implements {Command} */
 export class GateConnectionCommand {
-  constructor(circuit, fromGate, toGate, inputIndex, outputIndex, ghostWire, wires, isWireBranch = false, source = null) {
+  constructor(circuit, fromGate, toGate, inputIndex, outputIndex, ghostWire, wires, wireDependents, isWireBranch = false, source = null) {
     this.circuit = circuit;
     this.fromGate = fromGate;
     this.toGate = toGate;
@@ -165,6 +165,7 @@ export class GateConnectionCommand {
     this.outputIndex = outputIndex;
     this.ghostWire = ghostWire;
     this.wires = wires;
+    this.wireDependents = wireDependents;
     this.isWireBranch = isWireBranch;
     this.source = source;
     this.connection = null;
@@ -184,10 +185,20 @@ export class GateConnectionCommand {
       this.connection = new GateConnectionView({ wire, waypoints: this.ghostWire, isWireBranch: this.isWireBranch, source: this.source });
     }
     this.wires.push(this.connection);
+
+    if (this.isWireBranch) {
+      if (!(this.wireDependents.has(this.source.conn))) {
+        this.wireDependents.set(this.source.conn, new Set());
+      }
+      this.wireDependents.get(this.source.conn).add(this.connection);
+    }
     return true;
   }
 
   undo() {
+    if (this.isWireBranch) {
+      this.wireDependents.get(this.source.conn).delete(this.connection);
+    }
     this.circuit.removeWire(this.connection.wire);
     this.wires.splice(this.wires.indexOf(this.connection), 1);
   }
@@ -196,7 +207,7 @@ export class GateConnectionCommand {
 
 /** @implements {Command} */
 export class BusConnectionCommand {
-  constructor(circuit, gate, bus, ghostWire, wires, direction, index, tapRef, isWireBranch = false, source = null) {
+  constructor(circuit, gate, bus, ghostWire, wires, direction, index, tapRef, wireDependents, isWireBranch = false, source = null) {
     this.circuit = circuit;
     this.gate = gate;
     this.bus = bus;
@@ -205,6 +216,7 @@ export class BusConnectionCommand {
     this.direction = direction;
     this.index = index;
     this.tapRef = tapRef;
+    this.wireDependents = wireDependents;
     this.isWireBranch = isWireBranch;
     this.source = source;
     this.connection = null;
@@ -243,10 +255,20 @@ export class BusConnectionCommand {
     }
 
     this.wires.push(this.connection);
+
+    if (this.isWireBranch) {
+      if (!(this.wireDependents.has(this.source.conn))) {
+        this.wireDependents.set(this.source.conn, new Set());
+      }
+      this.wireDependents.get(this.source.conn).add(this.connection);
+    }
     return true;
   }
 
   undo() {
+    if (this.isWireBranch) {
+      this.wireDependents.get(this.source.conn).delete(this.connection);
+    }
     this.circuit.removeWire(this.connection.wire);
     this.wires.splice(this.wires.indexOf(this.connection), 1);
   }

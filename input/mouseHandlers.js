@@ -34,7 +34,7 @@ function cleanupWireEditor() {
 export const nodeMap = new Map();
 export const busMap = new Map();
 
-export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) {
+export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, wireDependents) {
   const canvasHost = document.querySelector(".canvas-host");
   const canvas = canvasHost.querySelector("canvas");
   const wireCtxMenu = document.getElementById("wire-context-menu");
@@ -86,6 +86,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
                 outputIndex,
                 state.ghostWire,
                 wires,
+                wireDependents,
               );
               performCommand(connectGateCommand);
             } else if (connInfo?.destinationType === "bus") {
@@ -104,6 +105,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
                 "in",
                 outputIndex,
                 connInfo.destination.tapRef,
+                wireDependents,
               );
               performCommand(busConnectionCommand);
             }
@@ -122,6 +124,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
                 "out",
                 inputIndex,
                 state.drawingWire.source.tapRef,
+                wireDependents,
               );
               performCommand(busConnectionCommand);
             }
@@ -143,6 +146,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
                   outputIndex,
                   state.ghostWire,
                   wires,
+                  wireDependents,
                   true,
                   state.drawingWire.source,
                 );
@@ -163,6 +167,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
                   "in",
                   outputIndex,
                   connInfo.destination.tapRef,
+                  wireDependents,
                   true,
                   state.drawingWire.source,
                 );
@@ -186,6 +191,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
                     outputIndex,
                     state.ghostWire,
                     wires,
+                    wireDependents,
                     true,
                     state.drawingWire.source,
                   );
@@ -206,6 +212,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
                     "in",
                     outputIndex,
                     connInfo.destination.tapRef,
+                    wireDependents,
                     true,
                     state.drawingWire.source,
                   );
@@ -228,6 +235,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
                     "out",
                     inputIndex,
                     state.drawingWire.source.tapRef,
+                    wireDependents,
                     true,
                     state.drawingWire.source,
                   );
