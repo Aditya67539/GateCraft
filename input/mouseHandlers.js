@@ -539,7 +539,14 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
       if (!target) return;
 
       if (target.type === "wire") {
-        const removeWireCommand = new RemoveWireCommand(circuit, wires, target.source);
+        const removeWireCommand = new RemoveWireCommand(
+          circuit,
+          wires,
+          target.source,
+          wireDependents,
+          nodeMap,
+          busMap,
+        );
         performCommand(removeWireCommand);
       } else if (target.type === "bus") {
         const removeBusCommand = new RemoveBusCommand(busNodes, wires, circuit, target.source, busMap);
