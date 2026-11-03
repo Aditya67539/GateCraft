@@ -481,6 +481,15 @@ function reparentDependents(parent, children, wireDependents, nodeMap, busMap) {
       snapEntry.prependedCount = childOffset + 1;
     }
 
+    if (
+      parent instanceof BusConnectionView &&
+      parent.direction === "out" &&
+      parent.tapRef
+    ) {
+      snapEntry.originalTapRef = child.tapRef;
+      child.tapRef = parent.tapRef;
+    }
+
     const grandChildren = wireDependents.get(child) ?? [];
     for (const grandChild of grandChildren) {
       grandChild.source.tapRef.segmentIndex += snapEntry.prependedCount;
@@ -495,6 +504,10 @@ function restoreDependents(parent, childrenSnapshot, wireDependents) {
     if (snap.reParentedTo) {
       const gpSet = wireDependents.get(snap.reParentedTo);
       if (gpSet) gpSet.delete(snap.child);
+    }
+
+    if (snap.originalTapRef) {
+      snap.child.tapRef = snap.originalTapRef;
     }
 
     snap.child.waypoints = snap.originalWaypoints;
