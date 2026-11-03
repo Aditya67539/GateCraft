@@ -413,11 +413,12 @@ export class PlaceBusCommand {
 
 /** @implements {Command} */
 export class ChangeWaypointCommand {
-  constructor(waypointSnapshot, changingWaypoint) {
+  constructor(waypointSnapshot, waypointRef) {
     this.waypointSnapshot = waypointSnapshot;
     this.fromWaypoint = this.waypointSnapshot.fromWaypoint;
     this.toWaypoint = this.waypointSnapshot.toWaypoint;
-    this.liveWaypoint = changingWaypoint;
+    this.waypointRef = waypointRef;
+    this.liveWaypoint = this.waypointRef.source.waypoints[this.waypointRef.waypointIndex];
   }
 
   do() {
