@@ -236,8 +236,10 @@ export function getTapPointFromElement(element, tapRef, nodeMap, busMap) {
 
 
 function getTapPoint(points, tapRef) {
-  const A = points[tapRef.segmentIndex];
-  const B = points[tapRef.segmentIndex + 1];
+  const maxSegment = points.length - 2;
+  const idx = Math.max(0, Math.min(tapRef.segmentIndex, maxSegment));
+  const A = points[idx];
+  const B = points[idx + 1];
   return {
     x: A.x + tapRef.t * (B.x - A.x),
     y: A.y + tapRef.t * (B.y - A.y),
