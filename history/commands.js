@@ -115,7 +115,7 @@ export class RemoveGateCommand {
 
 /** @implements {Command} */
 export class RemoveBusCommand {
-  constructor(busNodes, wires, circuit, busNode, busMap, nodeMap, wireDependents) {
+  constructor(busNodes, wires, circuit, busNode, nodeMap, busMap, wireDependents) {
     this.busNodes = busNodes;
     this.wires = wires;
     this.circuit = circuit;
