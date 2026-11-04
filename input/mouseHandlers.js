@@ -555,7 +555,15 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
         const removeBusCommand = new RemoveBusCommand(busNodes, wires, circuit, target.source, busMap, nodeMap, wireDependents);
         performCommand(removeBusCommand);
       } else if (target.type === "gate") {
-        const removeGateCommand = new RemoveGateCommand(renderNodes, wires, circuit, target.source, nodeMap, wireDependents);
+        const removeGateCommand = new RemoveGateCommand(
+          renderNodes,
+          wires,
+          circuit,
+          target.source,
+          nodeMap,
+          busMap,
+          wireDependents,
+        );
         performCommand(removeGateCommand);
       }
     });
