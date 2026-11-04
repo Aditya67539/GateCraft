@@ -1,6 +1,6 @@
 import { rebuildBusMap } from "../render/BusNode.js";
 import { rebuildNodeMap } from "../render/RenderNode.js";
-import { BusConnectionView, GateConnectionView } from "../render/wireGeometry.js";
+import { BusConnectionView, GateConnectionView, getTapPointFromElement } from "../render/wireGeometry.js";
 import { showToast } from "../ui/toast.js";
 
 /**
@@ -44,12 +44,14 @@ export class PlaceGateCommand {
 
 /** @implements {Command} */
 export class RemoveGateCommand {
-  constructor(renderNodes, wires, circuit, node, nodeMap) {
+  constructor(renderNodes, wires, circuit, node, nodeMap, busMap, wireDependents) {
     this.renderNodes = renderNodes;
     this.wires = wires;
     this.circuit = circuit;
     this.node = node;
     this.nodeMap = nodeMap;
+    this.busMap = busMap;
+    this.wireDependents = wireDependents;
   }
 
   do() {
@@ -58,11 +60,24 @@ export class RemoveGateCommand {
 
     const wiresToRemove = this.wires.filter(n => n.wire.from.id === gateId || n.wire.to.id === gateId);
 
+    this.dependentWireSnapshots = new Map();
+
+    wiresToRemove.forEach(w => {
+      const children = this.wireDependents.get(w) ?? [];
+      const childrenSnapshot = reparentDependents(
+        w,
+        children,
+        this.wireDependents,
+        this.nodeMap,
+        this.busMap,
+      );
+      this.dependentWireSnapshots.set(w, childrenSnapshot);
+      this.wireDependents.delete(w);
+      this.wires.splice(this.wires.indexOf(w), 1);
+    });
+    
     this.circuit.removeGate(gateId);
     this.renderNodes.splice(nodeIndex, 1);
-    
-    wiresToRemove.forEach(w => this.wires.splice(this.wires.indexOf(w), 1));
-
     rebuildNodeMap(this.renderNodes, this.nodeMap);
     this.wiresRemoved = wiresToRemove;
     return true;
@@ -88,6 +103,11 @@ export class RemoveGateCommand {
       this.wires.push(w);
     }
 
+
+    for (const [parent, childrenSnapshot] of this.dependentWireSnapshots) {
+      restoreDependents(parent, childrenSnapshot, this.wireDependents);
+    }
+    
     rebuildNodeMap(this.renderNodes, this.nodeMap);
   }
 }
@@ -95,12 +115,14 @@ export class RemoveGateCommand {
 
 /** @implements {Command} */
 export class RemoveBusCommand {
-  constructor(busNodes, wires, circuit, busNode, busMap) {
+  constructor(busNodes, wires, circuit, busNode, busMap, nodeMap, wireDependents) {
     this.busNodes = busNodes;
     this.wires = wires;
     this.circuit = circuit;
     this.busNode = busNode;
     this.busMap = busMap;
+    this.nodeMap = nodeMap;
+    this.wireDependents = wireDependents;
   }
 
   do() {
@@ -108,12 +130,25 @@ export class RemoveBusCommand {
     const busId = this.busNode.bus.id;
 
     const wiresToRemove = this.wires.filter(n => n.wire.from.id === busId || n.wire.to.id === busId);
+
+    this.dependentWireSnapshots = new Map();
+
+    wiresToRemove.forEach(w => {
+      const children = this.wireDependents.get(w) ?? [];
+      const childrenSnapshot = reparentDependents(
+        w,
+        children,
+        this.wireDependents,
+        this.nodeMap,
+        this.busMap,
+      );
+      this.dependentWireSnapshots.set(w, childrenSnapshot);
+      this.wireDependents.delete(w);
+      this.wires.splice(this.wires.indexOf(w), 1);
+    });
     
     this.circuit.removeBus(busId);
     this.busNodes.splice(busIndex, 1);
-
-    wiresToRemove.forEach(w => this.wires.splice(this.wires.indexOf(w), 1));
-
     rebuildBusMap(this.busNodes, this.busMap);
     this.wiresRemoved = wiresToRemove;
     return true;
@@ -150,6 +185,10 @@ export class RemoveBusCommand {
       this.wires.push(w);
     }
 
+    for (const [parent, childrenSnapshot] of this.dependentWireSnapshots) {
+      restoreDependents(parent, childrenSnapshot, this.wireDependents);
+    }
+
     rebuildBusMap(this.busNodes, this.busMap);
   }
 }
@@ -157,7 +196,7 @@ export class RemoveBusCommand {
 
 /** @implements {Command} */
 export class GateConnectionCommand {
-  constructor(circuit, fromGate, toGate, inputIndex, outputIndex, ghostWire, wires, isWireBranch = false, source = null) {
+  constructor(circuit, fromGate, toGate, inputIndex, outputIndex, ghostWire, wires, wireDependents, isWireBranch = false, source = null) {
     this.circuit = circuit;
     this.fromGate = fromGate;
     this.toGate = toGate;
@@ -165,6 +204,7 @@ export class GateConnectionCommand {
     this.outputIndex = outputIndex;
     this.ghostWire = ghostWire;
     this.wires = wires;
+    this.wireDependents = wireDependents;
     this.isWireBranch = isWireBranch;
     this.source = source;
     this.connection = null;
@@ -184,10 +224,20 @@ export class GateConnectionCommand {
       this.connection = new GateConnectionView({ wire, waypoints: this.ghostWire, isWireBranch: this.isWireBranch, source: this.source });
     }
     this.wires.push(this.connection);
+
+    if (this.isWireBranch) {
+      if (!(this.wireDependents.has(this.source.conn))) {
+        this.wireDependents.set(this.source.conn, new Set());
+      }
+      this.wireDependents.get(this.source.conn).add(this.connection);
+    }
     return true;
   }
 
   undo() {
+    if (this.isWireBranch) {
+      this.wireDependents.get(this.source.conn).delete(this.connection);
+    }
     this.circuit.removeWire(this.connection.wire);
     this.wires.splice(this.wires.indexOf(this.connection), 1);
   }
@@ -196,7 +246,7 @@ export class GateConnectionCommand {
 
 /** @implements {Command} */
 export class BusConnectionCommand {
-  constructor(circuit, gate, bus, ghostWire, wires, direction, index, tapRef, isWireBranch = false, source = null) {
+  constructor(circuit, gate, bus, ghostWire, wires, direction, index, tapRef, wireDependents, isWireBranch = false, source = null) {
     this.circuit = circuit;
     this.gate = gate;
     this.bus = bus;
@@ -205,6 +255,7 @@ export class BusConnectionCommand {
     this.direction = direction;
     this.index = index;
     this.tapRef = tapRef;
+    this.wireDependents = wireDependents;
     this.isWireBranch = isWireBranch;
     this.source = source;
     this.connection = null;
@@ -243,10 +294,20 @@ export class BusConnectionCommand {
     }
 
     this.wires.push(this.connection);
+
+    if (this.isWireBranch) {
+      if (!(this.wireDependents.has(this.source.conn))) {
+        this.wireDependents.set(this.source.conn, new Set());
+      }
+      this.wireDependents.get(this.source.conn).add(this.connection);
+    }
     return true;
   }
 
   undo() {
+    if (this.isWireBranch) {
+      this.wireDependents.get(this.source.conn).delete(this.connection);
+    }
     this.circuit.removeWire(this.connection.wire);
     this.wires.splice(this.wires.indexOf(this.connection), 1);
   }
@@ -255,13 +316,25 @@ export class BusConnectionCommand {
 
 /** @implements {Command} */
 export class RemoveWireCommand {
-  constructor(circuit, wires, wireInfo) {
+  constructor(circuit, wires, wireInfo, wireDependents, nodeMap, busMap) {
     this.circuit = circuit;
     this.wires = wires;
     this.wireInfo = wireInfo;
+    this.wireDependents = wireDependents;
+    this.nodeMap = nodeMap;
+    this.busMap = busMap;
   }
 
   do() {
+    const children = this.wireDependents.get(this.wireInfo) ?? [];
+    this.childrenSnapshot = reparentDependents(
+      this.wireInfo,
+      children,
+      this.wireDependents,
+      this.nodeMap,
+      this.busMap,
+    );
+    this.wireDependents.delete(this.wireInfo);
     this.circuit.removeWire(this.wireInfo.wire);
     this.wires.splice(this.wires.indexOf(this.wireInfo), 1);
     return true;
@@ -278,6 +351,10 @@ export class RemoveWireCommand {
 
     this.wireInfo.wire = result.wire;
     this.wires.push(this.wireInfo);
+
+    this.wireDependents.set(this.wireInfo, new Set());
+
+    restoreDependents(this.wireInfo, this.childrenSnapshot, this.wireDependents);
   }
 }
 
@@ -336,11 +413,12 @@ export class PlaceBusCommand {
 
 /** @implements {Command} */
 export class ChangeWaypointCommand {
-  constructor(waypointSnapshot, changingWaypoint) {
+  constructor(waypointSnapshot, waypointRef) {
     this.waypointSnapshot = waypointSnapshot;
     this.fromWaypoint = this.waypointSnapshot.fromWaypoint;
     this.toWaypoint = this.waypointSnapshot.toWaypoint;
-    this.liveWaypoint = changingWaypoint;
+    this.waypointRef = waypointRef;
+    this.liveWaypoint = this.waypointRef.source.waypoints[this.waypointRef.waypointIndex];
   }
 
   do() {
@@ -352,5 +430,99 @@ export class ChangeWaypointCommand {
   undo() {
     this.liveWaypoint.x = this.fromWaypoint.x;
     this.liveWaypoint.y = this.fromWaypoint.y;
+  }
+}
+
+
+function reparentDependents(parent, children, wireDependents, nodeMap, busMap) {
+  const childrenSnapshot = [];
+  for (const child of children) {
+    const snapEntry = {
+      child,
+      originalWaypoints: [...child.waypoints],
+      originalSource: child.source,
+      originalIsWireBranch: child.isWireBranch,
+      reParentedTo: null,
+      prependedCount: 0,
+    };
+    childrenSnapshot.push(snapEntry);
+
+    const childOffset = child.source.tapRef.segmentIndex;
+    const parentPrefix = parent.waypoints.slice(0, childOffset);
+    const branchPoint = getTapPointFromElement(
+      child.source.conn,
+      child.source.tapRef,
+      nodeMap,
+      busMap,
+    );
+
+    if (parent.isWireBranch && parent.source) {
+      // Parent is itself a branch, re-parent child to grandparent
+      const grandparent = parent.source.conn;
+      const startPoint = getTapPointFromElement(
+        grandparent,
+        parent.source.tapRef,
+        nodeMap,
+        busMap,
+      );
+      child.waypoints = [startPoint, ...parentPrefix, branchPoint, ...child.waypoints];
+      child.source = { conn: grandparent, tapRef: { ...parent.source.tapRef } };
+
+      if (!wireDependents.has(grandparent)) {
+        wireDependents.set(grandparent, new Set());
+      }
+      wireDependents.get(grandparent).add(child);
+      snapEntry.reParentedTo = grandparent;
+      snapEntry.prependedCount = childOffset + 2;
+    } else {
+      // Parent is standalone, flatten child
+      child.waypoints = [...parentPrefix, branchPoint, ...child.waypoints];
+      child.isWireBranch = false;
+      child.source = null;
+      snapEntry.prependedCount = childOffset + 1;
+    }
+
+    if (
+      parent instanceof BusConnectionView &&
+      parent.direction === "out" &&
+      parent.tapRef
+    ) {
+      snapEntry.originalTapRef = child.tapRef;
+      child.tapRef = parent.tapRef;
+    }
+
+    const grandChildren = wireDependents.get(child) ?? [];
+    for (const grandChild of grandChildren) {
+      grandChild.source.tapRef.segmentIndex += snapEntry.prependedCount;
+    }
+  }
+  return childrenSnapshot;
+}
+
+
+function restoreDependents(parent, childrenSnapshot, wireDependents) {
+  for (const snap of childrenSnapshot) {
+    if (snap.reParentedTo) {
+      const gpSet = wireDependents.get(snap.reParentedTo);
+      if (gpSet) gpSet.delete(snap.child);
+    }
+
+    if (snap.originalTapRef) {
+      snap.child.tapRef = snap.originalTapRef;
+    }
+
+    snap.child.waypoints = snap.originalWaypoints;
+    snap.child.source = snap.originalSource;
+    snap.child.isWireBranch = snap.originalIsWireBranch;
+
+    if (!wireDependents.has(parent)) {
+      wireDependents.set(parent, new Set());
+    }
+    wireDependents.get(parent).add(snap.child);
+
+    const grandChildren = wireDependents.get(snap.child) ?? [];
+    for (const grandChild of grandChildren) {
+      grandChild.source.tapRef.segmentIndex -= snap.prependedCount;
+    }
   }
 }

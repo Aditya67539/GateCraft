@@ -34,7 +34,7 @@ function cleanupWireEditor() {
 export const nodeMap = new Map();
 export const busMap = new Map();
 
-export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) {
+export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, wireDependents) {
   const canvasHost = document.querySelector(".canvas-host");
   const canvas = canvasHost.querySelector("canvas");
   const wireCtxMenu = document.getElementById("wire-context-menu");
@@ -86,6 +86,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
                 outputIndex,
                 state.ghostWire,
                 wires,
+                wireDependents,
               );
               performCommand(connectGateCommand);
             } else if (connInfo?.destinationType === "bus") {
@@ -104,6 +105,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
                 "in",
                 outputIndex,
                 connInfo.destination.tapRef,
+                wireDependents,
               );
               performCommand(busConnectionCommand);
             }
@@ -122,6 +124,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
                 "out",
                 inputIndex,
                 state.drawingWire.source.tapRef,
+                wireDependents,
               );
               performCommand(busConnectionCommand);
             }
@@ -143,6 +146,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
                   outputIndex,
                   state.ghostWire,
                   wires,
+                  wireDependents,
                   true,
                   state.drawingWire.source,
                 );
@@ -163,6 +167,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
                   "in",
                   outputIndex,
                   connInfo.destination.tapRef,
+                  wireDependents,
                   true,
                   state.drawingWire.source,
                 );
@@ -186,6 +191,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
                     outputIndex,
                     state.ghostWire,
                     wires,
+                    wireDependents,
                     true,
                     state.drawingWire.source,
                   );
@@ -206,6 +212,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
                     "in",
                     outputIndex,
                     connInfo.destination.tapRef,
+                    wireDependents,
                     true,
                     state.drawingWire.source,
                   );
@@ -228,6 +235,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
                     "out",
                     inputIndex,
                     state.drawingWire.source.tapRef,
+                    wireDependents,
                     true,
                     state.drawingWire.source,
                   );
@@ -240,8 +248,8 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
           cleanupGhostWire();
         } else {
           if (state.wireEditing) {
-            state.changingWaypoint = findNearWaypoint(world.x, world.y, wires, busNodes);
-            if (!state.changingWaypoint) {
+            state.waypointRef = findNearWaypoint(world.x, world.y, wires, busNodes);
+            if (!state.waypointRef) {
               cleanupWireEditor();
             }
           } else state.drawingWire = findWireOrigin(world.x, world.y, renderNodes, busNodes, wires, nodeMap, busMap);
@@ -249,16 +257,16 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
           // ── Update persistent selection ──────────────────────────
           if (state.dragging) {
             state.selectedNode = state.dragging;
-          } else if (!state.drawingWire && !state.changingWaypoint) {
+          } else if (!state.drawingWire && !state.waypointRef) {
             // Clicked empty space or a wire — deselect
             state.selectedNode = null;
           }
 
-          if (!state.drawingWire && !state.changingWaypoint && state.dragging) {
+          if (!state.drawingWire && !state.waypointRef && state.dragging) {
             const { x, y } = snapPointToGrid(world.x, world.y);
             state.offsetX = x - state.dragging.x;
             state.offsetY = y - state.dragging.y;
-          } else if (state.drawingWire && !state.changingWaypoint && !state.dragging) {
+          } else if (state.drawingWire && !state.waypointRef && !state.dragging) {
             const connection = state.drawingWire.source;
             if (state.drawingWire.originType === "gate") {
               const fromNode = connection.fromNode;
@@ -284,11 +292,12 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
               state.ghostWire = waypoints;
               state.ghostWireCleanup = cleanup;
             }
-          } else if (!state.drawingWire && !state.changingWaypoint && !state.dragging) {
+          } else if (!state.drawingWire && !state.waypointRef && !state.dragging) {
             state.isPanning = true;
-          } else if (state.changingWaypoint) {
+          } else if (state.waypointRef) {
             state.waypointSnapshot = {};
-            state.waypointSnapshot.fromWaypoint = structuredClone(state.changingWaypoint);
+            const fromWaypoint = state.waypointRef.source.waypoints[state.waypointRef.waypointIndex];
+            state.waypointSnapshot.fromWaypoint = structuredClone(fromWaypoint);
           }
         }
       } else if (state.mode === "run") {
@@ -411,9 +420,10 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
         const { x, y } = snapPointToGrid(worldDrag.x, worldDrag.y);
         state.dragging.x = x - state.offsetX;
         state.dragging.y = y - state.offsetY;
-      } else if (state.changingWaypoint) {
-        state.changingWaypoint.x = worldDrag.x;
-        state.changingWaypoint.y = worldDrag.y;
+      } else if (state.waypointRef) {
+        const originalWaypoint = state.waypointRef.source.waypoints[state.waypointRef.waypointIndex];
+        originalWaypoint.x = worldDrag.x;
+        originalWaypoint.y = worldDrag.y;
       } else if (state.isPanning) {
         state.cameraX += (p.mouseX - p.pmouseX);
         state.cameraY += (p.mouseY - p.pmouseY);
@@ -436,11 +446,12 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
         );
         performCommand(moveNodeCommand);
       }
-    } else if (state.changingWaypoint) {
-      state.waypointSnapshot.toWaypoint = structuredClone(state.changingWaypoint);
+    } else if (state.waypointRef) {
+      const toWaypoint = state.waypointRef.source.waypoints[state.waypointRef.waypointIndex];
+      state.waypointSnapshot.toWaypoint = structuredClone(toWaypoint);
       const changeWaypointCommand = new ChangeWaypointCommand(
         state.waypointSnapshot,
-        state.changingWaypoint,
+        state.waypointRef,
       );
       performCommand(changeWaypointCommand);
     }
@@ -452,7 +463,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
     state.changingPos = false;
     state.isPanning = false;
     state.waypointSnapshot = null;
-    state.changingWaypoint = null;
+    state.waypointRef = null;
   }
 
   p.mouseWheel = function(event) {
@@ -531,13 +542,20 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes) 
       if (!target) return;
 
       if (target.type === "wire") {
-        const removeWireCommand = new RemoveWireCommand(circuit, wires, target.source);
+        const removeWireCommand = new RemoveWireCommand(
+          circuit,
+          wires,
+          target.source,
+          wireDependents,
+          nodeMap,
+          busMap,
+        );
         performCommand(removeWireCommand);
       } else if (target.type === "bus") {
-        const removeBusCommand = new RemoveBusCommand(busNodes, wires, circuit, target.source, busMap);
+        const removeBusCommand = new RemoveBusCommand(busNodes, wires, circuit, target.source, busMap, nodeMap, wireDependents);
         performCommand(removeBusCommand);
       } else if (target.type === "gate") {
-        const removeGateCommand = new RemoveGateCommand(renderNodes, wires, circuit, target.source, nodeMap);
+        const removeGateCommand = new RemoveGateCommand(renderNodes, wires, circuit, target.source, nodeMap, wireDependents);
         performCommand(removeGateCommand);
       }
     });
@@ -708,7 +726,7 @@ function findNearWaypoint(mx, my, wires, busNodes) {
     const waypointCount = wires[i].waypoints.length;
     for (let j = 0; j < waypointCount; j++) {
       if (isNearWaypoint(mx, my, wires[i].waypoints[j])) {
-        return wires[i].waypoints[j];
+        return { source: wires[i], waypointIndex: j };
       }
     }
   }
@@ -717,7 +735,7 @@ function findNearWaypoint(mx, my, wires, busNodes) {
     const waypointCount = busNodes[i].waypoints.length;
     for (let j = 0; j < waypointCount; j++) {
       if (isNearWaypoint(mx, my, busNodes[i].waypoints[j])) {
-        return busNodes[i].waypoints[j];
+        return { source: busNodes[i], waypointIndex: j };
       }
     }
   }
