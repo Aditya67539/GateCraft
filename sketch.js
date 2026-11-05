@@ -232,6 +232,7 @@ const sketch = (p) => {
         const points = [ start, ...waypoints, end ];
 
         let bestGhost = null;
+        state.waypointInsertionTarget = null;
 
         for (let i = 0; i < points.length - 1; i++) {
           const A = points[i];
@@ -244,6 +245,11 @@ const sketch = (p) => {
           if (!hovered && !nextHovered && !hoveredPortPosition && distSq <= 60) {
             if (!bestGhost || distSq < bestGhost.distSq) {
               bestGhost = { point: nearestPoint, distSq };
+              state.waypointInsertionTarget = {
+                source: target,
+                segmentIndex: i,
+                point: nearestPoint,
+              };
             }
           }
         }
