@@ -1,5 +1,5 @@
 import { state, screenToWorld, worldToScreen } from "../state.js";
-import { CLOCK_TIMER, FREQUENCY, GATE_CATEGORIES, GRID_SIZE, SIGNAL } from "../constants.js";
+import { CLOCK_TIMER, FREQUENCY, GATE_CATEGORIES, GRID_SIZE, PORT_DETECTION_THRESHOLD, SIGNAL } from "../constants.js";
 import { setCustomWaypoints, getPointRefFromElement, projectPointOntoSegment, dist, getTapPointFromElement, GateConnectionView, BusConnectionView, getGhostWireStartPoint, getGhostWireEndPoint } from "../render/wireGeometry.js";
 import { createPrimitiveNode, createCompositeNode, snapPointToGrid, wouldOverlap, wouldBusOverlap } from "../render/RenderNode.js";
 import { showToast } from "../ui/toast.js";
@@ -598,14 +598,9 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
   });
 }
 
-export function isNearPort(mouseX, mouseY, port) {
-  const d = dist(mouseX, mouseY, port.x, port.y);
-  return d < 15;
-}
-
-export function isNearWaypoint(mx, my, waypoint) {
-  const d = dist(mx, my, waypoint.x, waypoint.y);
-  return d < 10;
+export function isNearPoint(mx, my, point, threshold) {
+  const d = dist(mx, my, point.x, point.y);
+  return d <= threshold;
 }
 
 function findNearOutput(mx, my, renderNodes) {
@@ -615,13 +610,13 @@ function findNearOutput(mx, my, renderNodes) {
     if (gate.category === GATE_CATEGORIES.COMPOSITE) {
       for (let j = 0; j < gate.outputCount; j++) {
         const port = renderNodes[i].getOutputPortPositionByIndex(j, gate.outputCount);
-        if (isNearPort(mx, my, port)) {
+        if (isNearPoint(mx, my, port, PORT_DETECTION_THRESHOLD)) {
           return { fromNode: renderNodes[i], fromOutputIndex: j };
         }
       }
     }
     const port = renderNodes[i].getOutputPortPosition();
-    if (isNearPort(mx, my, port)) {
+    if (isNearPoint(mx, my, port, PORT_DETECTION_THRESHOLD)) {
       return { fromNode: renderNodes[i], fromOutputIndex: null };
     }
   }
@@ -636,7 +631,7 @@ function findNearInput(mx, my, renderNodes) {
 
     for (let j = 0; j < totalInputs; j++) {
       const port = renderNodes[i].getInputPortPositionByIndex(j, totalInputs);
-      if (isNearPort(mx, my, port)) {
+      if (isNearPoint(mx, my, port, PORT_DETECTION_THRESHOLD)) {
         return { toNode: renderNodes[i], index: j };
       }
     }
@@ -741,7 +736,7 @@ function findNearWaypoint(mx, my, wires, busNodes) {
   for (let i = 0; i < wires.length; i++) {
     const waypointCount = wires[i].waypoints.length;
     for (let j = 0; j < waypointCount; j++) {
-      if (isNearWaypoint(mx, my, wires[i].waypoints[j])) {
+      if (isNearPoint(mx, my, wires[i].waypoints[j], PORT_DETECTION_THRESHOLD)) {
         return { source: wires[i], waypointIndex: j };
       }
     }
@@ -750,7 +745,7 @@ function findNearWaypoint(mx, my, wires, busNodes) {
   for (let i = 0; i < busNodes.length; i++) {
     const waypointCount = busNodes[i].waypoints.length;
     for (let j = 0; j < waypointCount; j++) {
-      if (isNearWaypoint(mx, my, busNodes[i].waypoints[j])) {
+      if (isNearPoint(mx, my, busNodes[i].waypoints[j], PORT_DETECTION_THRESHOLD)) {
         return { source: busNodes[i], waypointIndex: j };
       }
     }

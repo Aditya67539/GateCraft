@@ -1,7 +1,7 @@
 import p5 from "p5";
 import { state, screenToWorld } from "./state.js";
 import { drawGate, drawWaypoint, drawWire, drawPortTooltip, setFont, drawDynamicGrid, drawGhostPath, drawBus, drawGhostBus } from "./render/draw.js";
-import { registerMouseHandlers, isNearWaypoint, isNearPort, busMap, nodeMap, getWireAtPoint, getBusAtPoint, getEffectiveMousePosition } from "./input/mouseHandlers.js";
+import { registerMouseHandlers, isNearPoint, busMap, nodeMap, getWireAtPoint, getBusAtPoint, getEffectiveMousePosition } from "./input/mouseHandlers.js";
 import { initToolbar } from "./ui/toolbar.js";
 import { getActiveTheme, applyTheme } from "./render/theme.js";
 import { CircuitBuilder } from "./logic/CircuitBuilder.js";
@@ -109,7 +109,7 @@ const sketch = (p) => {
       if (totalInputs !== 0) {
         for (let j = 0; j < totalInputs; j++) {
           const portPosition = renderNodes[i].getInputPortPositionByIndex(j, totalInputs);
-          if (isNearPort(mouse.x, mouse.y, portPosition)) {
+          if (isNearPoint(mouse.x, mouse.y, portPosition, PORT_DETECTION_THRESHOLD)) {
             hoveredNode = renderNodes[i];
             hoveredPortIndex = j;
             hoveredPortPosition = portPosition;
@@ -138,7 +138,7 @@ const sketch = (p) => {
       if (totalOutputs !== 0) {
         for (let j = 0; j < totalOutputs; j++) {
           const portPosition = renderNodes[i].getOutputPortPositionByIndex(j, totalOutputs);
-          if (isNearPort(mouse.x, mouse.y, portPosition)) {
+          if (isNearPoint(mouse.x, mouse.y, portPosition, PORT_DETECTION_THRESHOLD)) {
             hoveredNode = renderNodes[i];
             hoveredPortIndex = j;
             hoveredPortPosition = portPosition;

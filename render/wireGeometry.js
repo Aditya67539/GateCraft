@@ -1,5 +1,5 @@
-import { GATE_CATEGORIES } from "../constants.js";
-import { isNearWaypoint } from "../input/mouseHandlers.js";
+import { GATE_CATEGORIES, PORT_DETECTION_THRESHOLD } from "../constants.js";
+import { isNearPoint } from "../input/mouseHandlers.js";
 import { screenToWorld } from "../state.js";
 import { BusNode } from "./BusNode.js";
 
@@ -152,8 +152,8 @@ export function setCustomWaypoints(p, startPort) {
       }
 
       if (waypoints.length !== 0) {
-        const waypoint_count = waypoints.length;
-        if (!isNearWaypoint(wx, wy, waypoints[waypoint_count - 1])) {
+        const waypointCount = waypoints.length;
+        if (!isNearPoint(wx, wy, waypoints[waypointCount - 1], PORT_DETECTION_THRESHOLD)) {
           waypoints.push({ x: wx, y: wy });
         }
       } else {

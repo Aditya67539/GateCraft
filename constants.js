@@ -95,3 +95,7 @@ export const LABEL_PADDING_Y = 3;
 export const LABEL_CORNER_RADIUS = 4;
 export const LABEL_BG_ALPHA = 0.15;
 export const LABEL_OFFSET_Y = GRID_SIZE;
+
+// Click and hover detection threshold
+export const PORT_DETECTION_THRESHOLD = 15;
+export const WAYPOINT_DETECTION_THRESHOLD = 10;
