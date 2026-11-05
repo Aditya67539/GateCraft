@@ -434,6 +434,29 @@ export class ChangeWaypointCommand {
 }
 
 
+/** @implements {Command} */
+export class AddWaypointCommand {
+  constructor(source, index, newWaypointPosition) {
+    this.source = source;
+    this.index = index;
+    this.newWaypointPosition = newWaypointPosition;
+  }
+
+  do() {
+    this.source.waypoints = [
+      ...this.source.waypoints.slice(0, this.index),
+      this.newWaypointPosition,
+      ...this.source.waypoints.slice(this.index),
+    ];
+    return true;
+  }
+
+  undo() {
+    this.source.waypoints.splice(this.index, 1);
+  }
+}
+
+
 function reparentDependents(parent, children, wireDependents, nodeMap, busMap) {
   const childrenSnapshot = [];
   for (const child of children) {

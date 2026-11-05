@@ -3,7 +3,7 @@ import { CLOCK_TIMER, FREQUENCY, GATE_CATEGORIES, GRID_SIZE, PORT_DETECTION_THRE
 import { setCustomWaypoints, getPointRefFromElement, projectPointOntoSegment, dist, getTapPointFromElement, GateConnectionView, BusConnectionView, getGhostWireStartPoint, getGhostWireEndPoint } from "../render/wireGeometry.js";
 import { createPrimitiveNode, createCompositeNode, snapPointToGrid, wouldOverlap, wouldBusOverlap } from "../render/RenderNode.js";
 import { showToast } from "../ui/toast.js";
-import { GateConnectionCommand, MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand, PlaceBusCommand, RemoveBusCommand, BusConnectionCommand } from "../history/commands.js";
+import { GateConnectionCommand, MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand, PlaceBusCommand, RemoveBusCommand, BusConnectionCommand, AddWaypointCommand } from "../history/commands.js";
 import { performCommand } from "../history/history.js";
 import { loadCompositeGate, buildCircuitFromData } from "../persistence.js";
 import { canWireConnectToTarget } from "../logic/wire.js";
@@ -248,6 +248,14 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
           cleanupGhostWire();
         } else {
           if (state.wireEditing) {
+            if (state.waypointInsertionTarget) {
+              const source = state.waypointInsertionTarget.source;
+              const index = state.waypointInsertionTarget.segmentIndex;
+              const newWaypoint = state.waypointInsertionTarget.point;
+
+              const addWaypointCommand = new AddWaypointCommand(source, index, newWaypoint);
+              performCommand(addWaypointCommand);
+            }
             state.waypointRef = findNearWaypoint(world.x, world.y, wires, busNodes);
             if (!state.waypointRef) {
               cleanupWireEditor();
