@@ -2,7 +2,12 @@ const undoStack = [];
 const redoStack = [];
 
 
-export function performCommand(command) {
+export function performCommand(command, { alreadyPerformed = false } = {}) {
+  if (alreadyPerformed) {
+    undoStack.push(command);
+    redoStack.length = 0;
+    return;
+  }
   const executed = command.do();
   if (executed) {
     undoStack.push(command);

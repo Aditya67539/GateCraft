@@ -748,6 +748,22 @@ export function drawWaypoint(signal, waypoint, p, hovered = false) {
   p.strokeWeight(DEFAULT_STROKE_WEIGHT);
 }
 
+export function drawGhostWaypoint(signal, point, p) {
+  const theme = getActiveTheme();
+  const stateKey = SIGNAL_MAP[signal]?.key || "x";
+  let color = theme.wires[stateKey].hex;
+  const ctx = p.drawingContext;
+
+  p.fill(color);
+  p.strokeWeight(WAYPOINT_STROKE_WEIGHT);
+  p.stroke(theme.text.primary.hex);
+  ctx.setLineDash([3, 4]);
+  p.circle(point.x, point.y, WAYPOINT_RADIUS);
+  ctx.setLineDash([]);
+  p.stroke(0);
+  p.strokeWeight(DEFAULT_STROKE_WEIGHT);
+}
+
 export function drawDynamicGrid(p, theme, cameraX, cameraY, zoom) {
   // 1. Calculate the scaled visual spacing of the grid
   let currentGridSize = GRID_SIZE;

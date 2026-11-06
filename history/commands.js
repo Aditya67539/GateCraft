@@ -2,6 +2,7 @@ import { rebuildBusMap } from "../render/BusNode.js";
 import { rebuildNodeMap } from "../render/RenderNode.js";
 import { BusConnectionView, GateConnectionView, getTapPointFromElement } from "../render/wireGeometry.js";
 import { showToast } from "../ui/toast.js";
+import { performCommand } from "./history.js";
 
 /**
  * @typedef {Object} Command
@@ -430,6 +431,57 @@ export class ChangeWaypointCommand {
   undo() {
     this.liveWaypoint.x = this.fromWaypoint.x;
     this.liveWaypoint.y = this.fromWaypoint.y;
+  }
+}
+
+
+/** @implements {Command} */
+export class AddWaypointCommand {
+  constructor(source, index, newWaypointPosition) {
+    this.source = source;
+    this.index = index;
+    this.newWaypointPosition = newWaypointPosition;
+  }
+
+  do() {
+    this.source.waypoints = [
+      ...this.source.waypoints.slice(0, this.index),
+      this.newWaypointPosition,
+      ...this.source.waypoints.slice(this.index),
+    ];
+    return true;
+  }
+
+  undo() {
+    this.source.waypoints.splice(this.index, 1);
+  }
+}
+
+
+/** @implements {Command} */
+export class CompositeCommand {
+  constructor(commands) {
+    this.commands = commands;
+  }
+
+  do() {
+    const done = [];
+    for (const command of this.commands) {
+      if (!command.do()) {
+        for (let i = done.length - 1; i >= 0; i--) {
+          done[i].undo();
+        }
+        return false;
+      }
+      done.push(command);
+    }
+    return true;
+  }
+
+  undo() {
+    for (let i = this.commands.length - 1; i >= 0; i--) {
+      this.commands[i].undo();
+    }
   }
 }
 

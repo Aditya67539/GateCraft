@@ -1,16 +1,16 @@
 import p5 from "p5";
 import { state, screenToWorld } from "./state.js";
-import { drawGate, drawWaypoint, drawWire, drawPortTooltip, setFont, drawDynamicGrid, drawGhostPath, drawBus, drawGhostBus } from "./render/draw.js";
-import { registerMouseHandlers, isNearWaypoint, isNearPort, busMap, nodeMap, getWireAtPoint, getBusAtPoint, getEffectiveMousePosition } from "./input/mouseHandlers.js";
+import { drawGate, drawWaypoint, drawWire, drawPortTooltip, setFont, drawDynamicGrid, drawGhostPath, drawBus, drawGhostBus, drawGhostWaypoint } from "./render/draw.js";
+import { registerMouseHandlers, isNearPoint, busMap, nodeMap, getWireAtPoint, getBusAtPoint, getEffectiveMousePosition } from "./input/mouseHandlers.js";
 import { initToolbar } from "./ui/toolbar.js";
 import { getActiveTheme, applyTheme } from "./render/theme.js";
 import { CircuitBuilder } from "./logic/CircuitBuilder.js";
 import { snapPointToGrid, wouldBusOverlap, wouldOverlap } from "./render/RenderNode.js";
 import { registerKeyboardHandlers } from "./input/keyboardHandlers.js";
 import { drawMinimap } from "./render/minimap.js";
-import { getGhostWireEndPoint, getGhostWireStartPoint } from "./render/wireGeometry.js";
+import { getGhostWireEndPoint, getGhostWireStartPoint, projectPointOntoSegment } from "./render/wireGeometry.js";
 import { canWireConnectToTarget } from "./logic/wire.js";
-import { GATE_CATEGORIES } from "./constants.js";
+import { GATE_CATEGORIES, WAYPOINT_DETECTION_THRESHOLD, PORT_DETECTION_THRESHOLD, WAYPOINT_INSERTION_THRESHOLD_SQ } from "./constants.js";
 
 applyTheme(getActiveTheme());
 
@@ -109,7 +109,7 @@ const sketch = (p) => {
       if (totalInputs !== 0) {
         for (let j = 0; j < totalInputs; j++) {
           const portPosition = renderNodes[i].getInputPortPositionByIndex(j, totalInputs);
-          if (isNearPort(mouse.x, mouse.y, portPosition)) {
+          if (isNearPoint(mouse.x, mouse.y, portPosition, PORT_DETECTION_THRESHOLD)) {
             hoveredNode = renderNodes[i];
             hoveredPortIndex = j;
             hoveredPortPosition = portPosition;
@@ -138,7 +138,7 @@ const sketch = (p) => {
       if (totalOutputs !== 0) {
         for (let j = 0; j < totalOutputs; j++) {
           const portPosition = renderNodes[i].getOutputPortPositionByIndex(j, totalOutputs);
-          if (isNearPort(mouse.x, mouse.y, portPosition)) {
+          if (isNearPoint(mouse.x, mouse.y, portPosition, PORT_DETECTION_THRESHOLD)) {
             hoveredNode = renderNodes[i];
             hoveredPortIndex = j;
             hoveredPortPosition = portPosition;
@@ -228,9 +228,34 @@ const sketch = (p) => {
         : busNodes.find(n => n.bus.id === state.editorTarget.source.bus.id);
 
       if (target) {
-        for (const waypoint of target.waypoints) {
-          const hovered = isNearWaypoint(mouse.x, mouse.y, waypoint);
-          drawWaypoint(signal, waypoint, p, hovered);
+        const { start, waypoints, end } = target.getPoints(nodeMap, busMap);
+        const points = [ start, ...waypoints, end ];
+
+        let bestGhost = null;
+        state.waypointInsertionTarget = null;
+
+        for (let i = 0; i < points.length - 1; i++) {
+          const A = points[i];
+          const B = points[i + 1];
+
+          const hovered = isNearPoint(mouse.x, mouse.y, points[i], WAYPOINT_DETECTION_THRESHOLD);
+          const nextHovered = isNearPoint(mouse.x, mouse.y, points[i + 1], WAYPOINT_DETECTION_THRESHOLD);
+          const { point: nearestPoint, distSq } = projectPointOntoSegment(A, B, mouse);
+          if (i !== 0) drawWaypoint(signal, points[i], p, hovered);
+          if (!hovered && !nextHovered && !hoveredPortPosition && distSq <= WAYPOINT_INSERTION_THRESHOLD_SQ) {
+            if (!bestGhost || distSq < bestGhost.distSq) {
+              bestGhost = { point: nearestPoint, distSq };
+              state.waypointInsertionTarget = {
+                source: target,
+                segmentIndex: i,
+                point: nearestPoint,
+              };
+            }
+          }
+        }
+
+        if (bestGhost) {
+          drawGhostWaypoint(signal, bestGhost.point, p);
         }
       }
     }
