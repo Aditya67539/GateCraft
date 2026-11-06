@@ -27,6 +27,7 @@ const _state = {
   zoom: 1,
   isPanning: false,
   waypointInsertionTarget: null,
+  pendingAddWaypointCommand: null,
 };
 
 /**

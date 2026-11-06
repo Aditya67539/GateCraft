@@ -3,7 +3,7 @@ import { CLOCK_TIMER, FREQUENCY, GATE_CATEGORIES, GRID_SIZE, PORT_DETECTION_THRE
 import { setCustomWaypoints, getPointRefFromElement, projectPointOntoSegment, dist, getTapPointFromElement, GateConnectionView, BusConnectionView, getGhostWireStartPoint, getGhostWireEndPoint } from "../render/wireGeometry.js";
 import { createPrimitiveNode, createCompositeNode, snapPointToGrid, wouldOverlap, wouldBusOverlap } from "../render/RenderNode.js";
 import { showToast } from "../ui/toast.js";
-import { GateConnectionCommand, MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand, PlaceBusCommand, RemoveBusCommand, BusConnectionCommand, AddWaypointCommand } from "../history/commands.js";
+import { GateConnectionCommand, MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand, PlaceBusCommand, RemoveBusCommand, BusConnectionCommand, AddWaypointCommand, CompositeCommand } from "../history/commands.js";
 import { performCommand } from "../history/history.js";
 import { loadCompositeGate, buildCircuitFromData } from "../persistence.js";
 import { canWireConnectToTarget } from "../logic/wire.js";
@@ -254,11 +254,13 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
               const newWaypoint = state.waypointInsertionTarget.point;
 
               const addWaypointCommand = new AddWaypointCommand(source, index, newWaypoint);
-              performCommand(addWaypointCommand);
+              addWaypointCommand.do();
+              state.pendingAddWaypointCommand = addWaypointCommand;
             }
             state.waypointRef = findNearWaypoint(world.x, world.y, wires, busNodes);
             if (!state.waypointRef) {
               cleanupWireEditor();
+              performCommand(state.pendingAddWaypointCommand, { alreadyPerformed: true });
             }
           } else state.drawingWire = findWireOrigin(world.x, world.y, renderNodes, busNodes, wires, nodeMap, busMap);
 
@@ -461,7 +463,15 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
         state.waypointSnapshot,
         state.waypointRef,
       );
-      performCommand(changeWaypointCommand);
+      if (state.pendingAddWaypointCommand) {
+        const compositeCommand = new CompositeCommand(
+          [state.pendingAddWaypointCommand, changeWaypointCommand]
+        );
+        changeWaypointCommand.do();
+        performCommand(compositeCommand, { alreadyPerformed: true });
+      } else {
+        performCommand(changeWaypointCommand);
+      }
     }
     state.dragging = null;
     state.offsetX = 0;
