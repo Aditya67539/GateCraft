@@ -10,7 +10,7 @@ import { registerKeyboardHandlers } from "./input/keyboardHandlers.js";
 import { drawMinimap } from "./render/minimap.js";
 import { getGhostWireEndPoint, getGhostWireStartPoint, projectPointOntoSegment } from "./render/wireGeometry.js";
 import { canWireConnectToTarget } from "./logic/wire.js";
-import { GATE_CATEGORIES, WAYPOINT_DETECTION_THRESHOLD, PORT_DETECTION_THRESHOLD } from "./constants.js";
+import { GATE_CATEGORIES, WAYPOINT_DETECTION_THRESHOLD, PORT_DETECTION_THRESHOLD, WAYPOINT_INSERTION_THRESHOLD_SQ } from "./constants.js";
 
 applyTheme(getActiveTheme());
 
@@ -242,7 +242,7 @@ const sketch = (p) => {
           const nextHovered = isNearPoint(mouse.x, mouse.y, points[i + 1], WAYPOINT_DETECTION_THRESHOLD);
           const { point: nearestPoint, distSq } = projectPointOntoSegment(A, B, mouse);
           if (i !== 0) drawWaypoint(signal, points[i], p, hovered);
-          if (!hovered && !nextHovered && !hoveredPortPosition && distSq <= 60) {
+          if (!hovered && !nextHovered && !hoveredPortPosition && distSq <= WAYPOINT_INSERTION_THRESHOLD_SQ) {
             if (!bestGhost || distSq < bestGhost.distSq) {
               bestGhost = { point: nearestPoint, distSq };
               state.waypointInsertionTarget = {
