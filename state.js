@@ -14,11 +14,10 @@ const _state = {
 
   ghost: {
     node: null,
+    wire: null, wireCleanup: null,
   },
   ghostBus: null,
   ghostBusCleanup: null,
-  ghostWire: null,
-  ghostWireCleanup: null,
   selectedNode: null,
   contextMenuTarget: null, // { type: "wire"|"bus", wire?, bus?, wireInfo?, busInfo? }
   editorTarget: null,

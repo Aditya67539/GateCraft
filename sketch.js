@@ -57,7 +57,7 @@ const sketch = (p) => {
     const mouse = getEffectiveMousePosition(
       world,
       state.interaction.wireCreation,
-      state.ghostWire,
+      state.ghost.wire,
       circuit,
       renderNodes,
       busNodes,
@@ -303,11 +303,11 @@ const sketch = (p) => {
       const endPoint = getGhostWireEndPoint(
         mouse,
         startPoint,
-        state.ghostWire,
+        state.ghost.wire,
         useSnap,
       );
 
-      drawGhostPath(startPoint, state.ghostWire, endPoint, p);
+      drawGhostPath(startPoint, state.ghost.wire, endPoint, p);
     }
 
     // ── Draw tooltip last so it renders on top of everything ──

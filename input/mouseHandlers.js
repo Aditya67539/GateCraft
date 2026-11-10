@@ -11,11 +11,11 @@ import { canWireConnectToTarget } from "../logic/wire.js";
 const { LOW, HIGH, X, Z, E } = SIGNAL;
 
 function cleanupGhostWire() {
-  if (state.ghostWireCleanup) {
-    state.ghostWireCleanup();
-    state.ghostWireCleanup = null;
+  if (state.ghost.wireCleanup) {
+    state.ghost.wireCleanup();
+    state.ghost.wireCleanup = null;
   }
-  state.ghostWire = null;
+  state.ghost.wire = null;
 }
 
 function cleanupGhostBus() {
@@ -62,7 +62,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
           const endPoint = getGhostWireEndPoint(
             world,
             startPoint,
-            state.ghostWire,
+            state.ghost.wire,
             useSnap,
           );
           const destinationInfo = findWireDestination(endPoint.x, endPoint.y, renderNodes, busNodes, nodeMap, busMap);
@@ -73,7 +73,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
               circuit,
               wires,
               wireDependents,
-              state.ghostWire,
+              state.ghost.wire,
             );
             if (connectionCommand) {
               performCommand(connectionCommand);
@@ -133,8 +133,8 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
 
               const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
 
-              state.ghostWire = waypoints;
-              state.ghostWireCleanup = cleanup;
+              state.ghost.wire = waypoints;
+              state.ghost.wireCleanup = cleanup;
             } else if (originType === "bus") {
               const fromBus = origin.busNode;
               const tapRef = getPointRefFromElement(fromBus, world.x, world.y, nodeMap, busMap);
@@ -142,16 +142,16 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
 
               const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
 
-              state.ghostWire = waypoints;
-              state.ghostWireCleanup = cleanup;
+              state.ghost.wire = waypoints;
+              state.ghost.wireCleanup = cleanup;
             } else if (originType === "wire") {
               const conn = origin.conn;
               const startPoint = getTapPointFromElement(conn, origin.tapRef, nodeMap, busMap);
 
               const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
 
-              state.ghostWire = waypoints;
-              state.ghostWireCleanup = cleanup;
+              state.ghost.wire = waypoints;
+              state.ghost.wireCleanup = cleanup;
             }
           } else if (!state.interaction.wireCreation && !state.waypointRef && !state.interaction.target) {
             state.camera.isPanning = true;
