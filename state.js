@@ -1,21 +1,25 @@
 const _state = {
   _mode: "edit",
   camera: { x: 0, y: 0, zoom: 1, isPanning: false },
+
+  interaction: {
+    target: null,
+    dragging: {
+      active: false,
+      originalPos: { x: 0, y: 0 },
+      offset: { x: 0, y: 0 },
+    },
+  },
+
   justPlacedFromToolbar: false,
   ghostBus: null,
   ghostBusCleanup: null,
   ghostNode: null,
   ghostWire: null,
   ghostWireCleanup: null,
-  dragging: null,
   selectedNode: null,
   contextMenuTarget: null, // { type: "wire"|"bus", wire?, bus?, wireInfo?, busInfo? }
   editorTarget: null,
-  offsetX: 0,
-  offsetY: 0,
-  currentX: 0,
-  currentY: 0,
-  changingPos: false,
   drawingWire: null,
   waypointRef: null,
   waypointSnapshot: null,

@@ -48,8 +48,8 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
     }
 
     const world = screenToWorld(p.mouseX, p.mouseY);
-    state.dragging = renderNodes.find(n => n.containsPoint(world.x, world.y));
-    bringToFront(renderNodes, state.dragging);
+    state.interaction.target = renderNodes.find(n => n.containsPoint(world.x, world.y));
+    bringToFront(renderNodes, state.interaction.target);
 
     if (p.mouseButton.left) {
       if (state.mode === "edit") {
@@ -265,18 +265,18 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
           } else state.drawingWire = findWireOrigin(world.x, world.y, renderNodes, busNodes, wires, nodeMap, busMap);
 
           // ── Update persistent selection ──────────────────────────
-          if (state.dragging) {
-            state.selectedNode = state.dragging;
+          if (state.interaction.target) {
+            state.selectedNode = state.interaction.target;
           } else if (!state.drawingWire && !state.waypointRef) {
             // Clicked empty space or a wire — deselect
             state.selectedNode = null;
           }
 
-          if (!state.drawingWire && !state.waypointRef && state.dragging) {
+          if (!state.drawingWire && !state.waypointRef && state.interaction.target) {
             const { x, y } = snapPointToGrid(world.x, world.y);
-            state.offsetX = x - state.dragging.x;
-            state.offsetY = y - state.dragging.y;
-          } else if (state.drawingWire && !state.waypointRef && !state.dragging) {
+            state.interaction.dragging.offset.x = x - state.interaction.target.x;
+            state.interaction.dragging.offset.y = y - state.interaction.target.y;
+          } else if (state.drawingWire && !state.waypointRef && !state.interaction.target) {
             const connection = state.drawingWire.source;
             if (state.drawingWire.originType === "gate") {
               const fromNode = connection.fromNode;
@@ -302,7 +302,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
               state.ghostWire = waypoints;
               state.ghostWireCleanup = cleanup;
             }
-          } else if (!state.drawingWire && !state.waypointRef && !state.dragging) {
+          } else if (!state.drawingWire && !state.waypointRef && !state.interaction.target) {
             state.camera.isPanning = true;
           } else if (state.waypointRef) {
             state.waypointSnapshot = {};
@@ -312,33 +312,33 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
         }
       } else if (state.mode === "run") {
         if (
-          state.dragging &&
-          state.dragging.gate.category === GATE_CATEGORIES.PRIMITIVE &&
-          state.dragging.gate.type === "input"
+          state.interaction.target &&
+          state.interaction.target.gate.category === GATE_CATEGORIES.PRIMITIVE &&
+          state.interaction.target.gate.type === "input"
         ) {
-          const signal = state.dragging.gate.output === LOW ? HIGH : LOW;
-          state.dragging.gate.setValue(signal);
+          const signal = state.interaction.target.gate.output === LOW ? HIGH : LOW;
+          state.interaction.target.gate.setValue(signal);
           circuit.evaluate();
         } else if (
-          state.dragging &&
-          state.dragging.gate.category === GATE_CATEGORIES.PRIMITIVE &&
-          state.dragging.gate.type === "clock"
+          state.interaction.target &&
+          state.interaction.target.gate.category === GATE_CATEGORIES.PRIMITIVE &&
+          state.interaction.target.gate.type === "clock"
         ) {
-          if (state.dragging.intervalId != null) {
-            clearInterval(state.dragging.intervalId);
-            state.dragging.intervalId = null;
+          if (state.interaction.target.intervalId != null) {
+            clearInterval(state.interaction.target.intervalId);
+            state.interaction.target.intervalId = null;
             return;
           }
-          const clockNode = state.dragging;
+          const clockNode = state.interaction.target;
           const timeInterval = 1000 / (2 * FREQUENCY);
-          state.dragging.intervalId = setInterval(() => {
+          state.interaction.target.intervalId = setInterval(() => {
             clockNode.gate.tick();
             circuit.evaluate();
           }, timeInterval);
 
           setTimeout(() => {
-            clearInterval(state.dragging.intervalId);
-            state.dragging.intervalId = null;
+            clearInterval(state.interaction.target.intervalId);
+            state.interaction.target.intervalId = null;
           }, CLOCK_TIMER);
         }
       } else if (state.mode === "placing") {
@@ -421,15 +421,15 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
   p.mouseDragged = function () {
     if (state.mode === "edit") {
       const worldDrag = screenToWorld(p.mouseX, p.mouseY);
-      if (state.dragging) {
-        if (!state.changingPos) {
-          state.currentX = state.dragging.x;
-          state.currentY = state.dragging.y;
-          state.changingPos = true;
+      if (state.interaction.target) {
+        if (!state.interaction.dragging.active) {
+          state.interaction.dragging.originalPos.x = state.interaction.target.x;
+          state.interaction.dragging.originalPos.y = state.interaction.target.y;
+          state.interaction.dragging.active = true;
         }
         const { x, y } = snapPointToGrid(worldDrag.x, worldDrag.y);
-        state.dragging.x = x - state.offsetX;
-        state.dragging.y = y - state.offsetY;
+        state.interaction.target.x = x - state.interaction.dragging.offset.x;
+        state.interaction.target.y = y - state.interaction.dragging.offset.y;
       } else if (state.waypointRef) {
         const originalWaypoint = state.waypointRef.source.waypoints[state.waypointRef.waypointIndex];
         originalWaypoint.x = worldDrag.x;
@@ -442,17 +442,24 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
   }
 
   p.mouseReleased = function () {
-    if (state.dragging) {
-      if (wouldOverlap(state.dragging, renderNodes, busNodes, state.dragging.gate.id)) {
-        state.dragging.x = state.currentX;
-        state.dragging.y = state.currentY;
-      } else if (state.changingPos) {
+    if (state.interaction.target) {
+      if (
+        wouldOverlap(
+          state.interaction.target,
+          renderNodes,
+          busNodes,
+          state.interaction.target.gate.id
+        )
+      ) {
+        state.interaction.target.x = state.interaction.dragging.originalPos.x;
+        state.interaction.target.y = state.interaction.dragging.originalPos.y;
+      } else if (state.interaction.dragging.active) {
         const moveNodeCommand = new MoveNodeCommand(
-          state.dragging,
-          state.currentX,
-          state.currentY,
-          state.dragging.x,
-          state.dragging.y,
+          state.interaction.target,
+          state.interaction.dragging.originalPos.x,
+          state.interaction.dragging.originalPos.y,
+          state.interaction.target.x,
+          state.interaction.target.y,
         );
         performCommand(moveNodeCommand);
       }
@@ -473,12 +480,12 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
         performCommand(changeWaypointCommand);
       }
     }
-    state.dragging = null;
-    state.offsetX = 0;
-    state.offsetY = 0;
-    state.currentX = 0;
-    state.currentY = 0;
-    state.changingPos = false;
+    state.interaction.target = null;
+    state.interaction.dragging.offset.x = 0;
+    state.interaction.dragging.offset.y = 0;
+    state.interaction.dragging.originalPos.x = 0;
+    state.interaction.dragging.originalPos.y = 0;
+    state.interaction.dragging.active = false;
     state.camera.isPanning = false;
     state.waypointSnapshot = null;
     state.waypointRef = null;

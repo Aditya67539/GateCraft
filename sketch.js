@@ -75,7 +75,7 @@ const sketch = (p) => {
     setFont(theme, p);
 
     const hoveredBus = getBusAtPoint(mouse.x, mouse.y, busNodes);
-    const isIdle = !state.ghostNode && !state.ghostBus && !state.dragging;
+    const isIdle = !state.ghostNode && !state.ghostBus && !state.interaction.target;
 
     for (let i = 0; i < busNodes.length; i++) {
       const busNode = busNodes[i];
@@ -178,9 +178,9 @@ const sketch = (p) => {
       let nodeStatus = null;
       const isContextTarget = state.contextMenuTarget?.type === "gate" &&
         state.contextMenuTarget.source.gate.id === node.gate.id;
-      if (state.dragging && node === state.dragging) {
+      if (state.interaction.target && node === state.interaction.target) {
         // Actively dragging — show overlap feedback
-        nodeStatus = wouldOverlap(state.dragging, renderNodes, busNodes, state.dragging.gate.id)
+        nodeStatus = wouldOverlap(state.interaction.target, renderNodes, busNodes, state.interaction.target.gate.id)
           ? "invalid"
           : "selected";
       } else if (
