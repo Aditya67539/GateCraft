@@ -25,13 +25,13 @@ export function registerKeyboardHandlers(p, circuit, renderNodes, wires, actions
   }
 
   p.keyPressed = function (event) {
-    if (state.labelEditing) return;
+    if (state.ui.labelEditing) return;
     if (document.activeElement?.tagName === "INPUT" && event.key !== "Escape") return;
 
     const combo = buildKeyCombo(p);
     if (shortcuts[combo]) {
       event.preventDefault();
-      if (state.wireEditing) state.wireEditing = false;
+      if (state.ui.wireEditing) state.ui.wireEditing = false;
       shortcuts[combo]();
     }
   };
@@ -39,7 +39,7 @@ export function registerKeyboardHandlers(p, circuit, renderNodes, wires, actions
   // 2. Native Global Escape Listener
   // This runs independently of p5 canvas focus, catching Escape even inside active inputs!
   window.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && state.isAnyModalOpen) {
+    if (e.key === "Escape" && state.ui.isAnyModalOpen) {
       e.preventDefault();
       actions.closeAllModals();
     }

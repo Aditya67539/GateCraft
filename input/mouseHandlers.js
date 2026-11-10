@@ -27,8 +27,8 @@ function cleanupGhostBus() {
 }
 
 function cleanupWireEditor() {
-  state.wireEditing = false;
-  state.editorTarget = null;
+  state.ui.wireEditing = false;
+  state.ui.editorTarget = null;
 }
 
 export const nodeMap = new Map();
@@ -41,8 +41,8 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
   const gateCtxMenu = document.getElementById("gate-context-menu");
 
   p.mousePressed = function (event) {
-    if (state.labelEditing) return;
-    if (state.isAnyModalOpen) return;
+    if (state.ui.labelEditing) return;
+    if (state.ui.isAnyModalOpen) return;
 
     const world = screenToWorld(p.mouseX, p.mouseY);
     state.interaction.target = renderNodes.find(n => n.containsPoint(world.x, world.y));
@@ -82,7 +82,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
           state.interaction.wireCreation = null;
           cleanupGhostWire();
         } else {
-          if (state.wireEditing) {
+          if (state.ui.wireEditing) {
             if (state.waypointInsertionTarget) {
               const source = state.waypointInsertionTarget.source;
               const index = state.waypointInsertionTarget.segmentIndex;
@@ -241,7 +241,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
     }
 
     else if (p.mouseButton.right) {
-      if (state.mode !== "edit" || state.labelEditing) return;
+      if (state.mode !== "edit" || state.ui.labelEditing) return;
       
       const rect = canvas.getBoundingClientRect();
       const clientX = rect.left + (p.mouseX / p.width) * rect.width;
@@ -344,7 +344,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
 
   p.mouseWheel = function(event) {
     // Dismiss label editor on zoom — blur triggers commit → cleanup
-    if (state.labelEditing) {
+    if (state.ui.labelEditing) {
       document.activeElement?.blur();
     }
 
@@ -379,7 +379,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
         labelBtnDiv.innerHTML = "Add Label";
       }
     }
-    state.contextMenuTarget = target;
+    state.ui.contextMenuTarget = target;
     contextMenu.classList.add("open");
     contextMenu.style.left = `${clientX}px`;
     contextMenu.style.top = `${clientY}px`;
@@ -391,28 +391,28 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
     if (rect.right > window.innerWidth) {
       contextMenu.style.left = `${Math.max(0, clientX - rect.width)}px`;
     }
-    state.isAnyModalOpen = true;
+    state.ui.isAnyModalOpen = true;
   }
 
   function hideContextMenu(contextMenu) {
     if (!contextMenu.classList.contains("open")) return;
     contextMenu.classList.remove("open");
-    state.contextMenuTarget = null;
-    state.isAnyModalOpen = false;
+    state.ui.contextMenuTarget = null;
+    state.ui.isAnyModalOpen = false;
   }
 
   // Wire and Bus edit button
   document.getElementById("ctx-wire-edit").addEventListener("click", () => {
-    state.editorTarget = structuredClone(state.contextMenuTarget);
+    state.ui.editorTarget = structuredClone(state.ui.contextMenuTarget);
     hideContextMenu(wireCtxMenu);
-    if (!state.editorTarget) return;
-    state.wireEditing = true;
+    if (!state.ui.editorTarget) return;
+    state.ui.wireEditing = true;
   });
 
   // Delete button
   document.querySelectorAll(".ctx-delete-target").forEach(element => {
     element.addEventListener("click", () => {
-      const target = state.contextMenuTarget;
+      const target = state.ui.contextMenuTarget;
       hideContextMenu(wireCtxMenu);
       hideContextMenu(gateCtxMenu);
       if (!target) return;
@@ -455,7 +455,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
 
   // Label button for gates
   document.getElementById("ctx-gate-edit").addEventListener("click", () => {
-    const target = state.contextMenuTarget;
+    const target = state.ui.contextMenuTarget;
     if (!target || target.type !== "gate") return;
 
     openLabelEditor(target.source, p);
@@ -701,7 +701,7 @@ function openLabelEditor(renderNode, p) {
     showToast("Zoom in to edit label", { type: "warning" });
     return;
   }
-  state.labelEditing = true;
+  state.ui.labelEditing = true;
   const canvasHost = document.querySelector(".canvas-host");
   const canvas = canvasHost.querySelector("canvas");
   // Map p5 canvas coords → CSS pixels on the canvas element
@@ -750,7 +750,7 @@ function openLabelEditor(renderNode, p) {
     input.removeEventListener("keydown", onKeyDown);
     input.removeEventListener("blur", onBlur);
     input.remove();
-    state.labelEditing = false;
+    state.ui.labelEditing = false;
   }
   function onKeyDown(e) {
     if (e.key === "Enter") {

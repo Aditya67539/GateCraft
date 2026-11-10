@@ -79,14 +79,14 @@ const sketch = (p) => {
 
     for (let i = 0; i < busNodes.length; i++) {
       const busNode = busNodes[i];
-      const isContextTarget = state.contextMenuTarget?.type === "bus" &&
-        state.contextMenuTarget.source.bus.id === busNode.bus.id;
-      const isEditorTarget = state.editorTarget?.type === "bus" &&
-        state.editorTarget.source.bus.id === busNode.bus.id;
+      const isContextTarget = state.ui.contextMenuTarget?.type === "bus" &&
+        state.ui.contextMenuTarget.source.bus.id === busNode.bus.id;
+      const isEditorTarget = state.ui.editorTarget?.type === "bus" &&
+        state.ui.editorTarget.source.bus.id === busNode.bus.id;
       const isHovered = hoveredBus?.bus.id === busNode.bus.id;
       const highlighted = isContextTarget || (
-        !state.contextMenuTarget && isIdle &&
-        (state.wireEditing ? isEditorTarget : isHovered) &&
+        !state.ui.contextMenuTarget && isIdle &&
+        (state.ui.wireEditing ? isEditorTarget : isHovered) &&
         (
           !state.interaction.wireCreation || 
           canWireConnectToTarget(
@@ -180,8 +180,8 @@ const sketch = (p) => {
     for (let i = 0; i < renderNodes.length; i++) {
       const node = renderNodes[i];
       let nodeStatus = null;
-      const isContextTarget = state.contextMenuTarget?.type === "gate" &&
-        state.contextMenuTarget.source.gate.id === node.gate.id;
+      const isContextTarget = state.ui.contextMenuTarget?.type === "gate" &&
+        state.ui.contextMenuTarget.source.gate.id === node.gate.id;
       if (state.interaction.target && node === state.interaction.target) {
         // Actively dragging — show overlap feedback
         nodeStatus = wouldOverlap(state.interaction.target, renderNodes, busNodes, state.interaction.target.gate.id)
@@ -211,25 +211,25 @@ const sketch = (p) => {
 
     for (let i = 0; i < wires.length; i++) {
       const conn = wires[i];
-      const isContextTarget = state.contextMenuTarget?.type === "wire" &&
-        state.contextMenuTarget.source.wire.id === conn.wire.id;
-      const isEditorTarget = state.editorTarget?.type === "wire" &&
-        state.editorTarget.source.wire.id === conn.wire.id;
+      const isContextTarget = state.ui.contextMenuTarget?.type === "wire" &&
+        state.ui.contextMenuTarget.source.wire.id === conn.wire.id;
+      const isEditorTarget = state.ui.editorTarget?.type === "wire" &&
+        state.ui.editorTarget.source.wire.id === conn.wire.id;
       const isHovered = hoveredWire?.conn.wire.id === conn.wire.id;
       const highlighted = isContextTarget || (
-        !state.contextMenuTarget && !state.interaction.wireCreation && isIdle &&
-        (state.wireEditing ? isEditorTarget : isHovered)
+        !state.ui.contextMenuTarget && !state.interaction.wireCreation && isIdle &&
+        (state.ui.wireEditing ? isEditorTarget : isHovered)
       );
       drawWire(conn, nodeMap, busMap, p, highlighted);
     }
 
-    if (state.wireEditing) {
-      const signal = state.editorTarget.type === "wire"
-        ? state.editorTarget.source.wire.signal
-        : state.editorTarget.source.bus.output;
-      const target = state.editorTarget.type === "wire"
-        ? wires.find(n => n.wire.id === state.editorTarget.source.wire.id)
-        : busNodes.find(n => n.bus.id === state.editorTarget.source.bus.id);
+    if (state.ui.wireEditing) {
+      const signal = state.ui.editorTarget.type === "wire"
+        ? state.ui.editorTarget.source.wire.signal
+        : state.ui.editorTarget.source.bus.output;
+      const target = state.ui.editorTarget.type === "wire"
+        ? wires.find(n => n.wire.id === state.ui.editorTarget.source.wire.id)
+        : busNodes.find(n => n.bus.id === state.ui.editorTarget.source.bus.id);
 
       if (target) {
         const { start, waypoints, end } = target.getPoints(nodeMap, busMap);

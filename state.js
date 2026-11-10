@@ -17,15 +17,18 @@ const _state = {
     wire: null, wireCleanup: null,
     bus: null, busCleanup: null,
   },
+
+  ui: {
+    contextMenuTarget: null,
+    editorTarget: null,
+    labelEditing: false,
+    wireEditing: false,
+    isAnyModalOpen: false,
+  },
+
   selectedNode: null,
-  contextMenuTarget: null, // { type: "wire"|"bus", wire?, bus?, wireInfo?, busInfo? }
-  editorTarget: null,
   waypointRef: null,
   waypointSnapshot: null,
-  labelEditing: false,
-  wireEditing: false,
-  wireEditorCleanup: null,
-  isAnyModalOpen: false,
   waypointInsertionTarget: null,
   pendingAddWaypointCommand: null,
 };

@@ -169,12 +169,12 @@ function openSignalColorsPanel() {
   settingsOverlay.classList.remove("open");
   signalColorsOverlay.classList.add("open");
   renderSignalColorGrid();
-  state.isAnyModalOpen = true;
+  state.ui.isAnyModalOpen = true;
 }
 
 function closeSignalColorsPanel() {
   signalColorsOverlay.classList.remove("open");
-  state.isAnyModalOpen = false;
+  state.ui.isAnyModalOpen = false;
 }
 
 function backToSettings() {
@@ -267,7 +267,7 @@ function showContextMenu(e, name) {
   // Position the menu near the cursor, clamped to viewport
   positionMenu(ctxMenu, e.clientX, e.clientY);
 
-  state.isAnyModalOpen = true;
+  state.ui.isAnyModalOpen = true;
 }
 
 function hideContextMenu() {
@@ -278,7 +278,7 @@ function hideContextMenu() {
   ctxFolderSubmenu.classList.remove("open");
   _ctxTargetName = null;
 
-  state.isAnyModalOpen = false;
+  state.ui.isAnyModalOpen = false;
 }
 
 // ─── Folder context menu ────────────────────────────────────────
@@ -295,7 +295,7 @@ function showFolderContextMenu(e, folderName) {
 
   positionMenu(folderCtxMenu, e.clientX, e.clientY);
 
-  state.isAnyModalOpen = true;
+  state.ui.isAnyModalOpen = true;
 }
 
 function hideFolderContextMenu() {
@@ -304,7 +304,7 @@ function hideFolderContextMenu() {
   folderCtxMenu.classList.remove("open");
   _ctxTargetFolder = null;
 
-  state.isAnyModalOpen = false;
+  state.ui.isAnyModalOpen = false;
 }
 
 // Folder context menu actions
@@ -322,13 +322,13 @@ document.getElementById("ctx-folder-rename").addEventListener("click", () => {
   renameFolderModal.classList.add("open");
   renameFolderInput.focus();
   renameFolderInput.select();
-  state.isAnyModalOpen = true;
+  state.ui.isAnyModalOpen = true;
 
   const doRename = () => {
     const newName = renameFolderInput.value.trim();
     if (!newName || newName === folderName) {
       renameFolderModal.classList.remove("open");
-      state.isAnyModalOpen = false;
+      state.ui.isAnyModalOpen = false;
       cleanup();
       return;
     }
@@ -341,13 +341,13 @@ document.getElementById("ctx-folder-rename").addEventListener("click", () => {
       refreshCompositeSection();
     }
     renameFolderModal.classList.remove("open");
-    state.isAnyModalOpen = false;
+    state.ui.isAnyModalOpen = false;
     cleanup();
   };
 
   const doCancel = () => {
     renameFolderModal.classList.remove("open");
-    state.isAnyModalOpen = false;
+    state.ui.isAnyModalOpen = false;
     cleanup();
   };
 
@@ -383,20 +383,20 @@ document.getElementById("ctx-folder-delete").addEventListener("click", () => {
   const confirmBtn = document.getElementById("delete-folder-confirm-btn");
 
   deleteModal.classList.add("open");
-  state.isAnyModalOpen = true;
+  state.ui.isAnyModalOpen = true;
 
   const doDelete = () => {
     _collapsedFolders.delete(folderName);
     deleteCompositeFolder(folderName);
     refreshCompositeSection();
     deleteModal.classList.remove("open");
-    state.isAnyModalOpen = false;
+    state.ui.isAnyModalOpen = false;
     cleanup();
   };
 
   const doCancel = () => {
     deleteModal.classList.remove("open");
-    state.isAnyModalOpen = false;
+    state.ui.isAnyModalOpen = false;
     cleanup();
   };
   
@@ -755,12 +755,12 @@ function openNewFolderModal() {
   newFolderModal.classList.add("open");
   newFolderNameInput.value = "";
   newFolderNameInput.focus();
-  state.isAnyModalOpen = true;
+  state.ui.isAnyModalOpen = true;
 }
 
 function closeNewFolderModal() {
   newFolderModal.classList.remove("open");
-  state.isAnyModalOpen = false;
+  state.ui.isAnyModalOpen = false;
 }
 
 function confirmNewFolder() {
