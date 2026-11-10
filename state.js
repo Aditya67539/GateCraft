@@ -12,9 +12,11 @@ const _state = {
     wireCreation: null,
   },
 
+  ghost: {
+    node: null,
+  },
   ghostBus: null,
   ghostBusCleanup: null,
-  ghostNode: null,
   ghostWire: null,
   ghostWireCleanup: null,
   selectedNode: null,

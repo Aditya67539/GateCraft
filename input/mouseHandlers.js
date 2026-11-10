@@ -193,27 +193,27 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
           }, CLOCK_TIMER);
         }
       } else if (state.mode === "placing") {
-        if (state.ghostNode) {
-          if (wouldOverlap(state.ghostNode, renderNodes, busNodes, null)) return;
-          const placeGateCommand = new PlaceGateCommand(circuit, renderNodes, state.ghostNode, nodeMap);
+        if (state.ghost.node) {
+          if (wouldOverlap(state.ghost.node, renderNodes, busNodes, null)) return;
+          const placeGateCommand = new PlaceGateCommand(circuit, renderNodes, state.ghost.node, nodeMap);
           performCommand(placeGateCommand);
 
           if (event.shiftKey) {
-            const gateCategory = state.ghostNode.gate.category;
-            const gateType = state.ghostNode.gate.type;
+            const gateCategory = state.ghost.node.gate.category;
+            const gateType = state.ghost.node.gate.type;
             const { x, y } = snapPointToGrid(world.x, world.y);
             if (gateCategory === GATE_CATEGORIES.PRIMITIVE) {
-              state.ghostNode = createPrimitiveNode(gateType, x, y);
+              state.ghost.node = createPrimitiveNode(gateType, x, y);
             } else {
               const saved = loadCompositeGate(gateType);
               if (saved) {
                 const freshCircuit = buildCircuitFromData(saved.circuitData, saved.renderData);
-                state.ghostNode = createCompositeNode(gateType, freshCircuit, x, y);
+                state.ghost.node = createCompositeNode(gateType, freshCircuit, x, y);
               }
             }
           } else {
             state.mode = "edit";
-            state.ghostNode = null;
+            state.ghost.node = null;
             document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
             document.getElementById("btn-edit").classList.add("active");
           }

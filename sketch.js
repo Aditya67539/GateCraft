@@ -75,7 +75,7 @@ const sketch = (p) => {
     setFont(theme, p);
 
     const hoveredBus = getBusAtPoint(mouse.x, mouse.y, busNodes);
-    const isIdle = !state.ghostNode && !state.ghostBus && !state.interaction.target;
+    const isIdle = !state.ghost.node && !state.ghostBus && !state.interaction.target;
 
     for (let i = 0; i < busNodes.length; i++) {
       const busNode = busNodes[i];
@@ -264,13 +264,13 @@ const sketch = (p) => {
       }
     }
 
-    if (state.ghostNode) {
-      let status = wouldOverlap(state.ghostNode, renderNodes, busNodes, null) ? "invalid" : "valid";
-      drawGate(state.ghostNode, p, status);
+    if (state.ghost.node) {
+      let status = wouldOverlap(state.ghost.node, renderNodes, busNodes, null) ? "invalid" : "valid";
+      drawGate(state.ghost.node, p, status);
       if (state.mode === "placing") {
         const { x, y } = snapPointToGrid(mouse.x, mouse.y);
-        state.ghostNode.x = x;
-        state.ghostNode.y = y;
+        state.ghost.node.x = x;
+        state.ghost.node.y = y;
       }
     }
     if (state.ghostBus) {
