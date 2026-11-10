@@ -18,13 +18,13 @@ export function canWireConnectToTarget(circuit, wire, target) {
   let from, to, fromOutputIndex = null, toInputIndex = null;
 
   if (wire.originType === "gate") {
-    from = wire.source.fromNode.gate;
-    fromOutputIndex = wire.source.fromOutputIndex;
+    from = wire.origin.fromNode.gate;
+    fromOutputIndex = wire.origin.fromOutputIndex;
   } else if (wire.originType === "wire") {
-    from = wire.source.conn.wire.from;
-    fromOutputIndex = wire.source.conn.wire.fromOutputIndex;
+    from = wire.origin.conn.wire.from;
+    fromOutputIndex = wire.origin.conn.wire.fromOutputIndex;
   } else if (wire.originType === "bus") {
-    from = wire.source.busNode.bus;
+    from = wire.origin.busNode.bus;
   }
 
   if (target.destinationType === "gate") {

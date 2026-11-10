@@ -791,7 +791,7 @@ export function getEffectiveMousePosition(
     const useSnap = p.keyIsDown(p.SHIFT);
     const startPoint = getGhostWireStartPoint(
       wireOrigin.originType,
-      wireOrigin.source,
+      wireOrigin.origin,
       nodeMap,
       busMap,
     );
