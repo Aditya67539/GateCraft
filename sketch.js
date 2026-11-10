@@ -75,7 +75,7 @@ const sketch = (p) => {
     setFont(theme, p);
 
     const hoveredBus = getBusAtPoint(mouse.x, mouse.y, busNodes);
-    const isIdle = !state.ghost.node && !state.ghostBus && !state.interaction.target;
+    const isIdle = !state.ghost.node && !state.ghost.bus && !state.interaction.target;
 
     for (let i = 0; i < busNodes.length; i++) {
       const busNode = busNodes[i];
@@ -273,24 +273,24 @@ const sketch = (p) => {
         state.ghost.node.y = y;
       }
     }
-    if (state.ghostBus) {
+    if (state.ghost.bus) {
       if (state.mode === "placing") {
         const { x, y } = snapPointToGrid(mouse.x, mouse.y);
-        if (!state.ghostBus.startPointPlaced && !state.ghostBus.endPointPlaced) {
-          state.ghostBus.startPoint.x = state.ghostBus.endPoint.x = x;
-          state.ghostBus.startPoint.y = state.ghostBus.endPoint.y = y;
-        } else if (state.ghostBus.startPointPlaced && !state.ghostBus.endPointPlaced) {
+        if (!state.ghost.bus.startPointPlaced && !state.ghost.bus.endPointPlaced) {
+          state.ghost.bus.startPoint.x = state.ghost.bus.endPoint.x = x;
+          state.ghost.bus.startPoint.y = state.ghost.bus.endPoint.y = y;
+        } else if (state.ghost.bus.startPointPlaced && !state.ghost.bus.endPointPlaced) {
           const useSnap = p.keyIsDown(p.SHIFT);
-          state.ghostBus.endPoint = getGhostWireEndPoint(
+          state.ghost.bus.endPoint = getGhostWireEndPoint(
             { x, y },
-            state.ghostBus.startPoint,
-            state.ghostBus.waypoints,
+            state.ghost.bus.startPoint,
+            state.ghost.bus.waypoints,
             useSnap,
           );
         }
       }
-      let status = wouldBusOverlap(state.ghostBus, renderNodes, busNodes) ? "invalid" : "valid";
-      drawGhostBus(state.ghostBus, p, status);
+      let status = wouldBusOverlap(state.ghost.bus, renderNodes, busNodes) ? "invalid" : "valid";
+      drawGhostBus(state.ghost.bus, p, status);
     }
     if (state.interaction.wireCreation) {
       const startPoint = getGhostWireStartPoint(

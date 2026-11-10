@@ -15,9 +15,8 @@ const _state = {
   ghost: {
     node: null,
     wire: null, wireCleanup: null,
+    bus: null, busCleanup: null,
   },
-  ghostBus: null,
-  ghostBusCleanup: null,
   selectedNode: null,
   contextMenuTarget: null, // { type: "wire"|"bus", wire?, bus?, wireInfo?, busInfo? }
   editorTarget: null,

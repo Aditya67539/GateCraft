@@ -19,11 +19,11 @@ function cleanupGhostWire() {
 }
 
 function cleanupGhostBus() {
-  if (state.ghostBusCleanup) {
-    state.ghostBusCleanup();
-    state.ghostBusCleanup = null;
+  if (state.ghost.busCleanup) {
+    state.ghost.busCleanup();
+    state.ghost.busCleanup = null;
   }
-  state.ghostBus = null;
+  state.ghost.bus = null;
 }
 
 function cleanupWireEditor() {
@@ -217,21 +217,21 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
             document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
             document.getElementById("btn-edit").classList.add("active");
           }
-        } else if (state.ghostBus) {
-          if (!state.ghostBus.startPointPlaced && !state.ghostBus.endPointPlaced) {
-            if (wouldBusOverlap(state.ghostBus, renderNodes, busNodes)) return;
-            state.ghostBus.startPointPlaced = true;
-            const startPoint = state.ghostBus.startPoint;
+        } else if (state.ghost.bus) {
+          if (!state.ghost.bus.startPointPlaced && !state.ghost.bus.endPointPlaced) {
+            if (wouldBusOverlap(state.ghost.bus, renderNodes, busNodes)) return;
+            state.ghost.bus.startPointPlaced = true;
+            const startPoint = state.ghost.bus.startPoint;
             const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
-            state.ghostBus.waypoints = waypoints;
-            state.ghostBusCleanup = cleanup;
-          } else if (state.ghostBus.startPointPlaced && !state.ghostBus.endPointPlaced) {
-            if (wouldBusOverlap(state.ghostBus, renderNodes, busNodes)) return;
-            const placeBusCommand = new PlaceBusCommand(circuit, busNodes, state.ghostBus, busMap);
+            state.ghost.bus.waypoints = waypoints;
+            state.ghost.busCleanup = cleanup;
+          } else if (state.ghost.bus.startPointPlaced && !state.ghost.bus.endPointPlaced) {
+            if (wouldBusOverlap(state.ghost.bus, renderNodes, busNodes)) return;
+            const placeBusCommand = new PlaceBusCommand(circuit, busNodes, state.ghost.bus, busMap);
             performCommand(placeBusCommand);
 
             state.mode = "edit";
-            state.ghostBus = null;
+            state.ghost.bus = null;
             document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
             document.getElementById("btn-edit").classList.add("active");
             cleanupGhostBus();
