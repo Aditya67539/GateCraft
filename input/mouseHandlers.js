@@ -686,17 +686,17 @@ function findWireOrigin(mx, my, renderNodes, busNodes, wires, nodeMap, busMap) {
   if (nodeConn) {
     return {
       originType: "gate",
-      source: nodeConn,
+      origin: nodeConn,
     }
   } else if (busConn) {
     return {
       originType: "bus",
-      source: busConn,
+      origin: busConn,
     }
   } else if (wireConn) {
     return {
       originType: "wire",
-      source: wireConn,
+      origin: wireConn,
     }
   }
   return null;
