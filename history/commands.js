@@ -315,6 +315,179 @@ export class BusConnectionCommand {
 }
 
 
+export function buildConnectionCommand(originInfo, destinationInfo, circuit, wires, wireDependents, ghostWire) {
+  const { originType, origin } = originInfo;
+  const { destinationType, destination } = destinationInfo;
+
+  if (originType === "gate") {
+    const fromGate = origin.fromNode.gate;
+    const outputIndex = origin.fromOutputIndex;
+
+    if (destinationType === "gate") {
+      const inputIndex = destination.index;
+      const toGate = destination.toNode.gate;
+
+      return new GateConnectionCommand(
+        circuit,
+        fromGate,
+        toGate,
+        inputIndex,
+        outputIndex,
+        ghostWire,
+        wires,
+        wireDependents,
+      );
+    } 
+    
+    if (destinationType === "bus") {
+      const bus = destination.busNode.bus;
+
+      return new BusConnectionCommand(
+        circuit,
+        fromGate,
+        bus,
+        ghostWire,
+        wires,
+        "in",
+        outputIndex,
+        destination.tapRef,
+        wireDependents,
+      );
+    }
+  }
+
+  if (originType === "bus") {
+    if (destinationType === "gate") {
+      const fromBus = origin.busNode.bus;
+      const toGate = destination.toNode.gate;
+      const inputIndex = destination.index;
+
+      return new BusConnectionCommand(
+        circuit,
+        toGate,
+        fromBus,
+        ghostWire,
+        wires,
+        "out",
+        inputIndex,
+        origin.tapRef,
+        wireDependents,
+      );
+    }
+  }
+  
+  if (originType === "wire") {
+    if (origin.conn instanceof GateConnectionView) {
+      const fromGate = origin.conn.wire.from;
+      const outputIndex = origin.conn.wire.fromOutputIndex;
+
+      if (destinationType === "gate") {
+        const toGate = destination.toNode.gate;
+        const inputIndex = destination.index;
+
+        return new GateConnectionCommand(
+          circuit,
+          fromGate,
+          toGate,
+          inputIndex,
+          outputIndex,
+          ghostWire,
+          wires,
+          wireDependents,
+          true,
+          origin,
+        );
+      }
+
+      if (destinationType === "bus") {
+        const bus = destination.busNode.bus;
+
+        return new BusConnectionCommand(
+          circuit,
+          fromGate,
+          bus,
+          ghostWire,
+          wires,
+          "in",
+          outputIndex,
+          destination.tapRef,
+          wireDependents,
+          true,
+          origin,
+        );
+      }
+    }
+
+    if (origin.conn instanceof BusConnectionView) {
+      if (origin.conn.direction === "in") {
+        const fromGate = origin.conn.wire.from;
+        const outputIndex = origin.conn.wire.fromOutputIndex;
+
+        if (destinationType === "gate") {
+          const toGate = destination.toNode.gate;
+          const inputIndex = destination.index;
+
+          return new GateConnectionCommand(
+            circuit,
+            fromGate,
+            toGate,
+            inputIndex,
+            outputIndex,
+            ghostWire,
+            wires,
+            wireDependents,
+            true,
+            origin,
+          );
+        }
+
+        if (destinationType === "bus") {
+          const bus = destination.busNode.bus;
+
+          return new BusConnectionCommand(
+            circuit,
+            fromGate,
+            bus,
+            ghostWire,
+            wires,
+            "in",
+            outputIndex,
+            destination.tapRef,
+            wireDependents,
+            true,
+            origin,
+          );
+        }
+      }
+
+      if (origin.conn.direction === "out") {
+        if (destinationType === "gate") {
+          const fromBus = origin.conn.wire.from;
+          const toGate = destination.toNode.gate;
+          const inputIndex = destination.index;
+
+          return new BusConnectionCommand(
+            circuit,
+            toGate,
+            fromBus,
+            ghostWire,
+            wires,
+            "out",
+            inputIndex,
+            origin.tapRef,
+            wireDependents,
+            true,
+            origin,
+          );
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
+
 /** @implements {Command} */
 export class RemoveWireCommand {
   constructor(circuit, wires, wireInfo, wireDependents, nodeMap, busMap) {
