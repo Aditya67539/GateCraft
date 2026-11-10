@@ -68,9 +68,9 @@ const sketch = (p) => {
     const theme = getActiveTheme();
     p.background(theme.canvas.bg.hex);
 
-    drawDynamicGrid(p, theme, state.cameraX, state.cameraY, state.zoom);
-    p.translate(state.cameraX, state.cameraY);
-    p.scale(state.zoom);
+    drawDynamicGrid(p, theme, state.camera.x, state.camera.y, state.camera.zoom);
+    p.translate(state.camera.x, state.camera.y);
+    p.scale(state.camera.zoom);
 
     setFont(theme, p);
 

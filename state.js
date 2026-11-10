@@ -1,5 +1,6 @@
 const _state = {
   _mode: "edit",
+  camera: { x: 0, y: 0, zoom: 1, isPanning: false },
   justPlacedFromToolbar: false,
   ghostBus: null,
   ghostBusCleanup: null,
@@ -22,10 +23,6 @@ const _state = {
   wireEditing: false,
   wireEditorCleanup: null,
   isAnyModalOpen: false,
-  cameraX: 0,
-  cameraY: 0,
-  zoom: 1,
-  isPanning: false,
   waypointInsertionTarget: null,
   pendingAddWaypointCommand: null,
 };
@@ -49,8 +46,8 @@ const _state = {
  */
 export function screenToWorld(sx, sy) {
   return {
-    x: (sx - _state.cameraX) / _state.zoom,
-    y: (sy - _state.cameraY) / _state.zoom,
+    x: (sx - _state.camera.x) / _state.camera.zoom,
+    y: (sy - _state.camera.y) / _state.camera.zoom,
   };
 }
 
@@ -60,8 +57,8 @@ export function screenToWorld(sx, sy) {
  */
 export function worldToScreen(wx, wy) {
   return {
-    x: wx * _state.zoom + _state.cameraX,
-    y: wy * _state.zoom + _state.cameraY,
+    x: wx * _state.camera.zoom + _state.camera.x,
+    y: wy * _state.camera.zoom + _state.camera.y,
   };
 }
 

@@ -62,7 +62,7 @@ function roundRect(ctx, x, y, w, h, r) {
 
 export function drawMinimap(p, renderNodes, busNodes, wires, state, nodeMap, busMap) {
   const theme = getActiveTheme();
-  const zoom = state.zoom || 1;
+  const zoom = state.camera.zoom || 1;
 
   // Position in bottom right corner (used only for mapData record)
   mapData.x = p.width - MAP_W - PAD;
@@ -70,8 +70,8 @@ export function drawMinimap(p, renderNodes, busNodes, wires, state, nodeMap, bus
 
   // 1. Dynamic Auto-Framing
   // Start the bounds with what the camera can currently see:
-  let minX = -state.cameraX / zoom;
-  let minY = -state.cameraY / zoom;
+  let minX = -state.camera.x / zoom;
+  let minY = -state.camera.y / zoom;
   let maxX = minX + p.width / zoom;
   let maxY = minY + p.height / zoom;
 
@@ -200,8 +200,8 @@ export function drawMinimap(p, renderNodes, busNodes, wires, state, nodeMap, bus
   }
 
   // Draw Red Viewport (What the user currently sees)
-  let vx = ((-state.cameraX / zoom) - mapData.worldMinX) * mapData.miniScale;
-  let vy = ((-state.cameraY / zoom) - mapData.worldMinY) * mapData.miniScale;
+  let vx = ((-state.camera.x / zoom) - mapData.worldMinX) * mapData.miniScale;
+  let vy = ((-state.camera.y / zoom) - mapData.worldMinY) * mapData.miniScale;
   let vw = (p.width / zoom) * mapData.miniScale;
   let vh = (p.height / zoom) * mapData.miniScale;
 

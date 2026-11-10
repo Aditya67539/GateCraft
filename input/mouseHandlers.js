@@ -303,7 +303,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
               state.ghostWireCleanup = cleanup;
             }
           } else if (!state.drawingWire && !state.waypointRef && !state.dragging) {
-            state.isPanning = true;
+            state.camera.isPanning = true;
           } else if (state.waypointRef) {
             state.waypointSnapshot = {};
             const fromWaypoint = state.waypointRef.source.waypoints[state.waypointRef.waypointIndex];
@@ -434,9 +434,9 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
         const originalWaypoint = state.waypointRef.source.waypoints[state.waypointRef.waypointIndex];
         originalWaypoint.x = worldDrag.x;
         originalWaypoint.y = worldDrag.y;
-      } else if (state.isPanning) {
-        state.cameraX += (p.mouseX - p.pmouseX);
-        state.cameraY += (p.mouseY - p.pmouseY);
+      } else if (state.camera.isPanning) {
+        state.camera.x += (p.mouseX - p.pmouseX);
+        state.camera.y += (p.mouseY - p.pmouseY);
       }
     }
   }
@@ -479,7 +479,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
     state.currentX = 0;
     state.currentY = 0;
     state.changingPos = false;
-    state.isPanning = false;
+    state.camera.isPanning = false;
     state.waypointSnapshot = null;
     state.waypointRef = null;
   }
@@ -496,16 +496,16 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
     // 2. Calculate the new zoom level
     const zoomFactor = 1.1;
     if (event.delta > 0) {
-      state.zoom /= zoomFactor; // Scroll down = Zoom out
+      state.camera.zoom /= zoomFactor; // Scroll down = Zoom out
     } else {
-      state.zoom *= zoomFactor; // Scroll up = Zoom in
+      state.camera.zoom *= zoomFactor; // Scroll up = Zoom in
     }
 
-    state.zoom = p.constrain(state.zoom, 0.3, 3);
+    state.camera.zoom = p.constrain(state.camera.zoom, 0.3, 3);
 
     // 3. Counter-pan the camera to pin the world to the mouse
-    state.cameraX = p.mouseX - (x * state.zoom);
-    state.cameraY = p.mouseY - (y * state.zoom);
+    state.camera.x = p.mouseX - (x * state.camera.zoom);
+    state.camera.y = p.mouseY - (y * state.camera.zoom);
 
     // Return false to prevent the entire web page from scrolling
     return false; 
@@ -839,7 +839,7 @@ function bringToFront(renderNodes, node) {
  * Commits on Enter or blur; cancels on Escape.
  */
 function openLabelEditor(renderNode, p) {
-  if (state.zoom < 0.6) {
+  if (state.camera.zoom < 0.6) {
     showToast("Zoom in to edit label", { type: "warning" });
     return;
   }
@@ -857,7 +857,7 @@ function openLabelEditor(renderNode, p) {
   );
   const cssX = labelPosition.x * scaleX;
   const cssY = labelPosition.y * scaleY;
-  const zoom = state.zoom;
+  const zoom = state.camera.zoom;
   const inputWidth = Math.max(renderNode.width * scaleX * zoom, 80);
   const input = document.createElement("input");
   input.type = "text";
