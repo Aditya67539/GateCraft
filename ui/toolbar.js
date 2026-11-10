@@ -655,7 +655,6 @@ function refreshCompositeSection(p = null) {
           const circuit = loadCompositeGate(name);
           if (!circuit) return;
           const compositeGate = buildCircuitFromData(circuit.circuitData, circuit.renderData);
-          state.justPlacedFromToolbar = true;
           const { x: worldMouseX, y: worldMouseY } = p ? screenToWorld(p.mouseX, p.mouseY) : { x: 0, y: 0 };
           spawnCompositeNode(name, compositeGate, worldMouseX, worldMouseY);
         });
@@ -838,7 +837,6 @@ export function initToolbar(p, circuit, renderNodes, wires, busNodes) {
     button.addEventListener("click", () => {
       const type = button.dataset.type;
       if (!type) return;          // skip composite-btn clicks (no data-type)
-      state.justPlacedFromToolbar = true;
       const { x: worldMouseX, y: worldMouseY } = screenToWorld(p.mouseX, p.mouseY);
       if (type === "bus") {
         spawnBusNode(worldMouseX, worldMouseY);

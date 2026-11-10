@@ -43,9 +43,6 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
   p.mousePressed = function (event) {
     if (state.labelEditing) return;
     if (state.isAnyModalOpen) return;
-    if (state.justPlacedFromToolbar) {
-      state.justPlacedFromToolbar = false;
-    }
 
     const world = screenToWorld(p.mouseX, p.mouseY);
     state.interaction.target = renderNodes.find(n => n.containsPoint(world.x, world.y));

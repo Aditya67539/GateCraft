@@ -11,7 +11,6 @@ const _state = {
     },
   },
 
-  justPlacedFromToolbar: false,
   ghostBus: null,
   ghostBusCleanup: null,
   ghostNode: null,
