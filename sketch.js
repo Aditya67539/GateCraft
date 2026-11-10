@@ -56,7 +56,7 @@ const sketch = (p) => {
     const world = screenToWorld(p.mouseX, p.mouseY);
     const mouse = getEffectiveMousePosition(
       world,
-      state.drawingWire,
+      state.interaction.wireCreation,
       state.ghostWire,
       circuit,
       renderNodes,
@@ -88,8 +88,12 @@ const sketch = (p) => {
         !state.contextMenuTarget && isIdle &&
         (state.wireEditing ? isEditorTarget : isHovered) &&
         (
-          !state.drawingWire || 
-          canWireConnectToTarget(circuit, state.drawingWire, { destinationType: "bus", destination: { busNode } })
+          !state.interaction.wireCreation || 
+          canWireConnectToTarget(
+            circuit,
+            state.interaction.wireCreation,
+            { destinationType: "bus", destination: { busNode } }
+          )
         )
       );
       drawBus(busNode, p, highlighted);
@@ -213,7 +217,7 @@ const sketch = (p) => {
         state.editorTarget.source.wire.id === conn.wire.id;
       const isHovered = hoveredWire?.conn.wire.id === conn.wire.id;
       const highlighted = isContextTarget || (
-        !state.contextMenuTarget && !state.drawingWire && isIdle &&
+        !state.contextMenuTarget && !state.interaction.wireCreation && isIdle &&
         (state.wireEditing ? isEditorTarget : isHovered)
       );
       drawWire(conn, nodeMap, busMap, p, highlighted);
@@ -288,10 +292,10 @@ const sketch = (p) => {
       let status = wouldBusOverlap(state.ghostBus, renderNodes, busNodes) ? "invalid" : "valid";
       drawGhostBus(state.ghostBus, p, status);
     }
-    if (state.drawingWire) {
+    if (state.interaction.wireCreation) {
       const startPoint = getGhostWireStartPoint(
-        state.drawingWire.originType,
-        state.drawingWire.source,
+        state.interaction.wireCreation.originType,
+        state.interaction.wireCreation.origin,
         nodeMap,
         busMap,
       );

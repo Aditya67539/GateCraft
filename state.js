@@ -9,6 +9,7 @@ const _state = {
       originalPos: { x: 0, y: 0 },
       offset: { x: 0, y: 0 },
     },
+    wireCreation: null,
   },
 
   ghostBus: null,
@@ -19,7 +20,6 @@ const _state = {
   selectedNode: null,
   contextMenuTarget: null, // { type: "wire"|"bus", wire?, bus?, wireInfo?, busInfo? }
   editorTarget: null,
-  drawingWire: null,
   waypointRef: null,
   waypointSnapshot: null,
   labelEditing: false,
