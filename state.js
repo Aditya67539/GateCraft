@@ -92,6 +92,14 @@ const _state = {
   },
 
   selectedNode: null,
+
+  isInteractionBlocked() {
+    return (
+      this.ui.isAnyModalOpen ||
+      this.ui.labelEditing ||
+      this.wireEditing.active
+    );
+  }
 };
 
 /**

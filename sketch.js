@@ -64,7 +64,6 @@ const sketch = (p) => {
     setFont(theme, p);
 
     const hoveredBus = getBusAtPoint(mouse.x, mouse.y, busNodes);
-    const isIdle = !state.ghost.node && !state.ghost.bus && !state.interaction.target;
 
     for (let i = 0; i < busNodes.length; i++) {
       const busNode = busNodes[i];
@@ -74,7 +73,7 @@ const sketch = (p) => {
         state.wireEditing.target.source.bus.id === busNode.bus.id;
       const isHovered = hoveredBus?.bus.id === busNode.bus.id;
       const highlighted = isContextTarget || (
-        !state.ui.contextMenuTarget && isIdle &&
+        !state.ui.contextMenuTarget && !state.isInteractionBlocked() &&
         (state.wireEditing.active ? isEditorTarget : isHovered) &&
         (
           !state.interaction.wireCreation || 
@@ -206,7 +205,9 @@ const sketch = (p) => {
         state.wireEditing.target.source.wire.id === conn.wire.id;
       const isHovered = hoveredWire?.conn.wire.id === conn.wire.id;
       const highlighted = isContextTarget || (
-        !state.ui.contextMenuTarget && !state.interaction.wireCreation && isIdle &&
+        !state.ui.contextMenuTarget &&
+        !state.interaction.wireCreation &&
+        !state.isInteractionBlocked() &&
         (state.wireEditing.active ? isEditorTarget : isHovered)
       );
       drawWire(conn, nodeMap, busMap, p, highlighted);
@@ -297,7 +298,7 @@ const sketch = (p) => {
     }
 
     // ── Draw tooltip last so it renders on top of everything ──
-    if (state.ui.tooltip.active && state.ui.tooltip.opacity > 0) {
+    if (!state.isInteractionBlocked() && state.ui.tooltip.active && state.ui.tooltip.opacity > 0) {
       drawPortTooltip(
         state.ui.tooltip.label,
         state.ui.tooltip.portPosition,
