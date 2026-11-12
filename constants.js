@@ -36,6 +36,8 @@ export const PORT_LABEL_SIZE = 14;
 export const GRID_OFFSET = 5;
 export const GRID_SIZE = 20;
 export const PORT_RADIUS = 11;
+export const MAX_ZOOM = 2;
+export const MIN_ZOOM = 0.5;
 
 // Stroke weights and thicknesses
 export const DEFAULT_STROKE_WEIGHT = 1;
