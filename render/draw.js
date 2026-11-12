@@ -764,38 +764,6 @@ export function drawGhostWaypoint(signal, point, p) {
   p.strokeWeight(DEFAULT_STROKE_WEIGHT);
 }
 
-export function drawDynamicGrid(p, theme, cameraX, cameraY, zoom) {
-  // 1. Calculate the scaled visual spacing of the grid
-  let currentGridSize = GRID_SIZE;
-  let scaledSpacing = currentGridSize * zoom;
-
-  // 2. LEVEL OF DETAIL
-  // If the user zooms out and the dots get closer than min spacing on screen, we double the grid size
-  while (scaledSpacing < GRID_MIN_SPACING) {
-    currentGridSize *= 2;
-    scaledSpacing = currentGridSize * zoom;
-  }
-
-  // 3. Modulo shift, using the new scaled spacing
-  let shiftX = cameraX % scaledSpacing;
-  let shiftY = cameraY % scaledSpacing;
-
-  // Keep the shift negative so it always safely starts offscreen
-  if (shiftX > 0) shiftX -= scaledSpacing;
-  if (shiftY > 0) shiftY -= scaledSpacing;
-
-  p.stroke(theme.canvas.grid.hex);
-
-  // By drawing this BEFORE p.scale(), the dots stay exactly fixed stroke weight
-  // regardless of how far in or out the user zooms
-  p.strokeWeight(GRID_DOT_SIZE);
-
-  for (let x = shiftX; x < p.width; x += scaledSpacing) {
-    for (let y = shiftY; y < p.height; y += scaledSpacing) {
-      p.point(x, y);
-    }
-  }
-}
 
 /**
  * Draws an animated tooltip above a port showing the parent gate's label or type.

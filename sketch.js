@@ -1,6 +1,6 @@
 import p5 from "p5";
 import { state, screenToWorld } from "./state.js";
-import { drawGate, drawWaypoint, drawWire, drawPortTooltip, setFont, drawDynamicGrid, drawGhostPath, drawBus, drawGhostBus, drawGhostWaypoint } from "./render/draw.js";
+import { drawGate, drawWaypoint, drawWire, drawPortTooltip, setFont, drawGhostPath, drawBus, drawGhostBus, drawGhostWaypoint } from "./render/draw.js";
 import { registerMouseHandlers, isNearPoint, busMap, nodeMap, getWireAtPoint, getBusAtPoint, getEffectiveMousePosition } from "./input/mouseHandlers.js";
 import { initToolbar } from "./ui/toolbar.js";
 import { getActiveTheme, applyTheme } from "./render/theme.js";
@@ -10,7 +10,7 @@ import { registerKeyboardHandlers } from "./input/keyboardHandlers.js";
 import { drawMinimap } from "./render/minimap.js";
 import { getGhostWireEndPoint, getGhostWireStartPoint, projectPointOntoSegment } from "./render/wireGeometry.js";
 import { canWireConnectToTarget } from "./logic/wire.js";
-import { GATE_CATEGORIES, WAYPOINT_DETECTION_THRESHOLD, PORT_DETECTION_THRESHOLD, WAYPOINT_INSERTION_THRESHOLD_SQ } from "./constants.js";
+import { GATE_CATEGORIES, WAYPOINT_DETECTION_THRESHOLD, PORT_DETECTION_THRESHOLD, WAYPOINT_INSERTION_THRESHOLD_SQ, GRID_SIZE, GRID_OFFSET, MAX_ZOOM, GRID_DOT_SIZE } from "./constants.js";
 
 applyTheme(getActiveTheme());
 
@@ -23,6 +23,8 @@ let wires = [];
 let busNodes = [];
 let circuit = new CircuitBuilder();
 let wireDependents = new Map();
+let gridBuffer;
+let lastZoom = state.zoom;
 
 // ── Port tooltip hover state ──────────────────────────────────
 // Tracks the currently hovered port for smooth fade-in/out animation
@@ -48,8 +50,11 @@ const sketch = (p) => {
 
     registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, wireDependents);
     registerKeyboardHandlers(p, circuit, renderNodes, wires, toolbarActions);
-
-    const theme = getActiveTheme();    
+    
+    gridBuffer = p.createGraphics(
+      WIDTH + MAX_ZOOM * GRID_SIZE * 2,
+      HEIGHT + MAX_ZOOM * GRID_SIZE * 2,
+    );
   }
 
   p.draw = function () {
@@ -66,9 +71,17 @@ const sketch = (p) => {
       p,
     );
     const theme = getActiveTheme();
-    p.background(theme.canvas.bg.hex);
 
-    drawDynamicGrid(p, theme, state.cameraX, state.cameraY, state.zoom);
+    if (state.gridDirty || state.zoom !== lastZoom) {
+      updateGridBuffer(p, gridBuffer, theme);
+      state.gridDirty = false;
+      lastZoom = state.zoom;
+    }
+
+    p.background(theme.canvas.bg.hex);
+    
+    const { x: gridX, y: gridY } = computeGridBufferCoords();
+    p.image(gridBuffer, gridX, gridY);
     p.translate(state.cameraX, state.cameraY);
     p.scale(state.zoom);
 
@@ -316,3 +329,28 @@ const sketch = (p) => {
 }
 
 new p5(sketch);
+
+
+function computeGridBufferCoords() {
+  const scaledSpacing = GRID_SIZE * state.zoom;
+  let x = state.cameraX % scaledSpacing;
+  let y = state.cameraY % scaledSpacing;
+  if (x > 0) x -= scaledSpacing;
+  if (y > 0) y -= scaledSpacing;
+  return { x, y };
+}
+
+function updateGridBuffer(p, gridBuffer, theme) {
+  const scaledSpacing = GRID_SIZE * state.zoom;
+  const scaledOffset = (GRID_OFFSET * state.zoom) % scaledSpacing;
+
+  gridBuffer.background(theme.canvas.bg.hex);
+  gridBuffer.stroke(theme.canvas.grid.hex);
+  gridBuffer.strokeWeight(GRID_DOT_SIZE);
+
+  for (let i = scaledOffset; i < gridBuffer.width; i += scaledSpacing) {
+    for (let j = scaledOffset; j < gridBuffer.height; j += scaledSpacing) {
+      gridBuffer.point(i, j);
+    }
+  }
+}

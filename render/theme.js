@@ -219,6 +219,7 @@ function hexToRGB(hex) {
 }
 
 export function applyTheme(theme) {
+  state.gridDirty = true;
   const root = document.documentElement;
 
   function flatten(obj, prefix = "theme") {
