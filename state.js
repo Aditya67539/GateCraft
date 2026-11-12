@@ -8,6 +8,14 @@ const _state = {
       active: false,
       originalPos: { x: 0, y: 0 },
       offset: { x: 0, y: 0 },
+
+      reset() {
+        this.active = false;
+        this.originalPos.x = 0;
+        this.originalPos.y = 0;
+        this.offset.x = 0;
+        this.offset.y = 0;
+      }
     },
     wireCreation: null,
   },

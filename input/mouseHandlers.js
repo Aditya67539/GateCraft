@@ -359,11 +359,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
       }
     }
     state.interaction.target = null;
-    state.interaction.dragging.offset.x = 0;
-    state.interaction.dragging.offset.y = 0;
-    state.interaction.dragging.originalPos.x = 0;
-    state.interaction.dragging.originalPos.y = 0;
-    state.interaction.dragging.active = false;
+    state.interaction.dragging.reset();
     state.camera.isPanning = false;
     state.wireEditing.waypoint.move.reset();
     state.wireEditing.waypoint.insert.reset();
