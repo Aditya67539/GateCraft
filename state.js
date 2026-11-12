@@ -30,6 +30,13 @@ const _state = {
     contextMenuTarget: null,
     labelEditing: false,
     isAnyModalOpen: false,
+    tooltip: {
+      active: false,
+      label: "",       // gate.label || gate.type
+      portPosition: { x: 0, y: 0 },
+      opacity: 0,
+      portType: "",    // input port || output port
+    },
   },
 
   wireEditing: {

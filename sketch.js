@@ -10,7 +10,7 @@ import { registerKeyboardHandlers } from "./input/keyboardHandlers.js";
 import { drawMinimap } from "./render/minimap.js";
 import { getGhostWireEndPoint, getGhostWireStartPoint, projectPointOntoSegment } from "./render/wireGeometry.js";
 import { canWireConnectToTarget } from "./logic/wire.js";
-import { GATE_CATEGORIES, WAYPOINT_DETECTION_THRESHOLD, PORT_DETECTION_THRESHOLD, WAYPOINT_INSERTION_THRESHOLD_SQ } from "./constants.js";
+import { GATE_CATEGORIES, WAYPOINT_DETECTION_THRESHOLD, PORT_DETECTION_THRESHOLD, WAYPOINT_INSERTION_THRESHOLD_SQ, TOOLTIP_FADE_SPEED } from "./constants.js";
 
 applyTheme(getActiveTheme());
 
@@ -23,17 +23,6 @@ let wires = [];
 let busNodes = [];
 let circuit = new CircuitBuilder();
 let wireDependents = new Map();
-
-// ── Port tooltip hover state ──────────────────────────────────
-// Tracks the currently hovered port for smooth fade-in/out animation
-let tooltipState = {
-  active: false,        // is a port currently hovered?
-  label: "",            // gate.label || gate.type
-  portPosition: { x: 0, y: 0 }, // port position
-  opacity: 0,           // animation progress 0 → 1
-  portType: "",         // input port || output port
-};
-const TOOLTIP_FADE_SPEED = 6; // units per second (reaches 1.0 in ~167ms)
 
 const sketch = (p) => {
   p.setup = function () {
@@ -165,15 +154,15 @@ const sketch = (p) => {
     // Update tooltip animation state
     const dt = p.deltaTime / 1000; // seconds
     if (hoveredPortPosition) {
-      tooltipState.active = true;
-      tooltipState.label = hoveredLabel;
-      tooltipState.portPosition = hoveredPortPosition;
-      tooltipState.portType = portType;
-      tooltipState.opacity = Math.min(1, tooltipState.opacity + TOOLTIP_FADE_SPEED * dt);
+      state.ui.tooltip.active = true;
+      state.ui.tooltip.label = hoveredLabel;
+      state.ui.tooltip.portPosition = hoveredPortPosition;
+      state.ui.tooltip.portType = portType;
+      state.ui.tooltip.opacity = Math.min(1, state.ui.tooltip.opacity + TOOLTIP_FADE_SPEED * dt);
     } else {
-      tooltipState.opacity = Math.max(0, tooltipState.opacity - TOOLTIP_FADE_SPEED * dt);
-      if (tooltipState.opacity <= 0) {
-        tooltipState.active = false;
+      state.ui.tooltip.opacity = Math.max(0, state.ui.tooltip.opacity - TOOLTIP_FADE_SPEED * dt);
+      if (state.ui.tooltip.opacity <= 0) {
+        state.ui.tooltip.active = false;
       }
     }
 
@@ -308,8 +297,14 @@ const sketch = (p) => {
     }
 
     // ── Draw tooltip last so it renders on top of everything ──
-    if (tooltipState.active && tooltipState.opacity > 0) {
-      drawPortTooltip(tooltipState.label, tooltipState.portPosition, tooltipState.opacity, tooltipState.portType, p);
+    if (state.ui.tooltip.active && state.ui.tooltip.opacity > 0) {
+      drawPortTooltip(
+        state.ui.tooltip.label,
+        state.ui.tooltip.portPosition,
+        state.ui.tooltip.opacity,
+        state.ui.tooltip.portType,
+        p
+      );
     }
 
     drawMinimap(p, renderNodes, busNodes, wires, state, nodeMap, busMap);

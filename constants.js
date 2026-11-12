@@ -87,6 +87,7 @@ export const TOOLTIP_ARROW_SIZE = 5;
 export const TOOLTIP_GAP = 10;
 export const TOOLTIP_SLIDE_OFFSET = 6;
 export const TOOLTIP_PORT_CLEARANCE = 2;
+export const TOOLTIP_FADE_SPEED = 6;
 
 // Gate label styling
 export const LABEL_FONT_SIZE = 16;
