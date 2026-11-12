@@ -26,11 +26,6 @@ function cleanupGhostBus() {
   state.ghost.bus = null;
 }
 
-function cleanupWireEditor() {
-  state.ui.wireEditing = false;
-  state.ui.editorTarget = null;
-}
-
 export const nodeMap = new Map();
 export const busMap = new Map();
 
@@ -82,20 +77,26 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
           state.interaction.wireCreation = null;
           cleanupGhostWire();
         } else {
-          if (state.ui.wireEditing) {
-            if (state.waypointInsertionTarget) {
-              const source = state.waypointInsertionTarget.source;
-              const index = state.waypointInsertionTarget.segmentIndex;
-              const newWaypoint = state.waypointInsertionTarget.point;
+          if (state.wireEditing.active) {
+            if (state.wireEditing.isInsertingWaypoint()) {
+              const source = state.wireEditing.target.source;
+              const index = state.wireEditing.waypoint.insert.index;
+              const newWaypoint = state.wireEditing.waypoint.insert.point;
 
               const addWaypointCommand = new AddWaypointCommand(source, index, newWaypoint);
               addWaypointCommand.do();
-              state.pendingAddWaypointCommand = addWaypointCommand;
+              state.wireEditing.waypoint.insert.pendingCommand = addWaypointCommand;
+              state.wireEditing.waypoint.move.index = index;
+            } else {
+              const waypointRef = findNearWaypoint(world.x, world.y, wires, busNodes);
+              state.wireEditing.waypoint.move.index = waypointRef ? waypointRef.waypointIndex : null;
             }
-            state.waypointRef = findNearWaypoint(world.x, world.y, wires, busNodes);
-            if (!state.waypointRef) {
-              cleanupWireEditor();
-              performCommand(state.pendingAddWaypointCommand, { alreadyPerformed: true });
+            if (!state.wireEditing.isMovingWaypoint()) {
+              const pendingCommand = state.wireEditing.waypoint.insert.pendingCommand;
+              if (pendingCommand) {
+                performCommand(pendingCommand, { alreadyPerformed: true });
+              }
+              state.wireEditing.reset();
             }
           } else {
             state.interaction.wireCreation = findWireOrigin(
@@ -112,16 +113,27 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
           // ── Update persistent selection ──────────────────────────
           if (state.interaction.target) {
             state.selectedNode = state.interaction.target;
-          } else if (!state.interaction.wireCreation && !state.waypointRef) {
+          } else if (
+            !state.interaction.wireCreation &&
+            !state.wireEditing.isMovingWaypoint()
+          ) {
             // Clicked empty space or a wire — deselect
             state.selectedNode = null;
           }
 
-          if (!state.interaction.wireCreation && !state.waypointRef && state.interaction.target) {
+          if (
+            !state.interaction.wireCreation &&
+            !state.wireEditing.isMovingWaypoint() &&
+            state.interaction.target
+          ) {
             const { x, y } = snapPointToGrid(world.x, world.y);
             state.interaction.dragging.offset.x = x - state.interaction.target.x;
             state.interaction.dragging.offset.y = y - state.interaction.target.y;
-          } else if (state.interaction.wireCreation && !state.waypointRef && !state.interaction.target) {
+          } else if (
+            state.interaction.wireCreation &&
+            !state.wireEditing.isMovingWaypoint() &&
+            !state.interaction.target
+          ) {
             const originType = state.interaction.wireCreation.originType;
             const origin = state.interaction.wireCreation.origin;
 
@@ -153,12 +165,20 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
               state.ghost.wire = waypoints;
               state.ghost.wireCleanup = cleanup;
             }
-          } else if (!state.interaction.wireCreation && !state.waypointRef && !state.interaction.target) {
+          } else if (
+            !state.interaction.wireCreation &&
+            !state.wireEditing.active &&
+            !state.interaction.target
+          ) {
             state.camera.isPanning = true;
-          } else if (state.waypointRef) {
-            state.waypointSnapshot = {};
-            const fromWaypoint = state.waypointRef.source.waypoints[state.waypointRef.waypointIndex];
-            state.waypointSnapshot.fromWaypoint = structuredClone(fromWaypoint);
+          } else if (state.wireEditing.isMovingWaypoint()) {
+            const source = state.wireEditing.target.source;
+            const waypointIndex = state.wireEditing.waypoint.move.index;
+            const fromWaypoint = source.waypoints[waypointIndex];
+
+            state.wireEditing.waypoint.move.snapshot = {
+              fromWaypoint: structuredClone(fromWaypoint),
+            };
           }
         }
       } else if (state.mode === "run") {
@@ -281,8 +301,11 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
         const { x, y } = snapPointToGrid(worldDrag.x, worldDrag.y);
         state.interaction.target.x = x - state.interaction.dragging.offset.x;
         state.interaction.target.y = y - state.interaction.dragging.offset.y;
-      } else if (state.waypointRef) {
-        const originalWaypoint = state.waypointRef.source.waypoints[state.waypointRef.waypointIndex];
+      } else if (state.wireEditing.isMovingWaypoint()) {
+        const source = state.wireEditing.target.source;
+        const waypointIndex = state.wireEditing.waypoint.move.index;
+
+        const originalWaypoint = source.waypoints[waypointIndex];
         originalWaypoint.x = worldDrag.x;
         originalWaypoint.y = worldDrag.y;
       } else if (state.camera.isPanning) {
@@ -314,16 +337,20 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
         );
         performCommand(moveNodeCommand);
       }
-    } else if (state.waypointRef) {
-      const toWaypoint = state.waypointRef.source.waypoints[state.waypointRef.waypointIndex];
-      state.waypointSnapshot.toWaypoint = structuredClone(toWaypoint);
+    } else if (state.wireEditing.isMovingWaypoint()) {
+      const source = state.wireEditing.target.source;
+      const waypointIndex = state.wireEditing.waypoint.move.index;
+
+      const toWaypoint = source.waypoints[waypointIndex];
+      state.wireEditing.waypoint.move.snapshot.toWaypoint = structuredClone(toWaypoint);
       const changeWaypointCommand = new ChangeWaypointCommand(
-        state.waypointSnapshot,
-        state.waypointRef,
+        state.wireEditing.waypoint.move.snapshot,
+        state.wireEditing.target.source,
+        state.wireEditing.waypoint.move.index,
       );
-      if (state.pendingAddWaypointCommand) {
+      if (state.wireEditing.waypoint.insert.pendingCommand) {
         const compositeCommand = new CompositeCommand(
-          [state.pendingAddWaypointCommand, changeWaypointCommand]
+          [state.wireEditing.waypoint.insert.pendingCommand, changeWaypointCommand]
         );
         changeWaypointCommand.do();
         performCommand(compositeCommand, { alreadyPerformed: true });
@@ -338,8 +365,8 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
     state.interaction.dragging.originalPos.y = 0;
     state.interaction.dragging.active = false;
     state.camera.isPanning = false;
-    state.waypointSnapshot = null;
-    state.waypointRef = null;
+    state.wireEditing.waypoint.move.reset();
+    state.wireEditing.waypoint.insert.reset();
   }
 
   p.mouseWheel = function(event) {
@@ -403,10 +430,10 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
 
   // Wire and Bus edit button
   document.getElementById("ctx-wire-edit").addEventListener("click", () => {
-    state.ui.editorTarget = structuredClone(state.ui.contextMenuTarget);
+    state.wireEditing.target = state.ui.contextMenuTarget;
     hideContextMenu(wireCtxMenu);
-    if (!state.ui.editorTarget) return;
-    state.ui.wireEditing = true;
+    if (!state.wireEditing.target) return;
+    state.wireEditing.active = true;
   });
 
   // Delete button

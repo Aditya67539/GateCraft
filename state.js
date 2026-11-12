@@ -20,17 +20,63 @@ const _state = {
 
   ui: {
     contextMenuTarget: null,
-    editorTarget: null,
     labelEditing: false,
-    wireEditing: false,
     isAnyModalOpen: false,
   },
 
+  wireEditing: {
+    active: false,
+    target: null,
+
+    waypoint: {
+      move: {
+        index: null,
+        snapshot: null,
+
+        reset() {
+          this.index = null;
+          this.snapshot = null;
+        }
+      },
+      insert: {
+        index: null,
+        point: null,
+        pendingCommand: null,
+
+        reset() {
+          this.index = null;
+          this.point = null;
+          this.pendingCommand = null;
+        }
+      },
+    },
+
+    isMovingWaypoint() {
+      return (
+        this.active &&
+        this.target !== null &&
+        this.waypoint.move.index !== null
+      );
+    },
+
+    isInsertingWaypoint() {
+      return (
+        this.active &&
+        this.target !== null &&
+        this.waypoint.insert.index !== null &&
+        this.waypoint.insert.point !== null
+      );
+    },
+
+    reset() {
+      this.active = false;
+      this.target = null;
+      this.waypoint.move.reset();
+      this.waypoint.insert.reset();
+    }
+  },
+
   selectedNode: null,
-  waypointRef: null,
-  waypointSnapshot: null,
-  waypointInsertionTarget: null,
-  pendingAddWaypointCommand: null,
 };
 
 /**

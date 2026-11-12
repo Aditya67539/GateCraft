@@ -81,12 +81,12 @@ const sketch = (p) => {
       const busNode = busNodes[i];
       const isContextTarget = state.ui.contextMenuTarget?.type === "bus" &&
         state.ui.contextMenuTarget.source.bus.id === busNode.bus.id;
-      const isEditorTarget = state.ui.editorTarget?.type === "bus" &&
-        state.ui.editorTarget.source.bus.id === busNode.bus.id;
+      const isEditorTarget = state.wireEditing.target?.type === "bus" &&
+        state.wireEditing.target.source.bus.id === busNode.bus.id;
       const isHovered = hoveredBus?.bus.id === busNode.bus.id;
       const highlighted = isContextTarget || (
         !state.ui.contextMenuTarget && isIdle &&
-        (state.ui.wireEditing ? isEditorTarget : isHovered) &&
+        (state.wireEditing.active ? isEditorTarget : isHovered) &&
         (
           !state.interaction.wireCreation || 
           canWireConnectToTarget(
@@ -213,30 +213,30 @@ const sketch = (p) => {
       const conn = wires[i];
       const isContextTarget = state.ui.contextMenuTarget?.type === "wire" &&
         state.ui.contextMenuTarget.source.wire.id === conn.wire.id;
-      const isEditorTarget = state.ui.editorTarget?.type === "wire" &&
-        state.ui.editorTarget.source.wire.id === conn.wire.id;
+      const isEditorTarget = state.wireEditing.target?.type === "wire" &&
+        state.wireEditing.target.source.wire.id === conn.wire.id;
       const isHovered = hoveredWire?.conn.wire.id === conn.wire.id;
       const highlighted = isContextTarget || (
         !state.ui.contextMenuTarget && !state.interaction.wireCreation && isIdle &&
-        (state.ui.wireEditing ? isEditorTarget : isHovered)
+        (state.wireEditing.active ? isEditorTarget : isHovered)
       );
       drawWire(conn, nodeMap, busMap, p, highlighted);
     }
 
-    if (state.ui.wireEditing) {
-      const signal = state.ui.editorTarget.type === "wire"
-        ? state.ui.editorTarget.source.wire.signal
-        : state.ui.editorTarget.source.bus.output;
-      const target = state.ui.editorTarget.type === "wire"
-        ? wires.find(n => n.wire.id === state.ui.editorTarget.source.wire.id)
-        : busNodes.find(n => n.bus.id === state.ui.editorTarget.source.bus.id);
+    if (state.wireEditing.active) {
+      const signal = state.wireEditing.target.type === "wire"
+        ? state.wireEditing.target.source.wire.signal
+        : state.wireEditing.target.source.bus.output;
+      const target = state.wireEditing.target.type === "wire"
+        ? wires.find(n => n.wire.id === state.wireEditing.target.source.wire.id)
+        : busNodes.find(n => n.bus.id === state.wireEditing.target.source.bus.id);
 
       if (target) {
         const { start, waypoints, end } = target.getPoints(nodeMap, busMap);
         const points = [ start, ...waypoints, end ];
 
         let bestGhost = null;
-        state.waypointInsertionTarget = null;
+        state.wireEditing.waypoint.insert.reset();
 
         for (let i = 0; i < points.length - 1; i++) {
           const A = points[i];
@@ -249,11 +249,8 @@ const sketch = (p) => {
           if (!hovered && !nextHovered && !hoveredPortPosition && distSq <= WAYPOINT_INSERTION_THRESHOLD_SQ) {
             if (!bestGhost || distSq < bestGhost.distSq) {
               bestGhost = { point: nearestPoint, distSq };
-              state.waypointInsertionTarget = {
-                source: target,
-                segmentIndex: i,
-                point: nearestPoint,
-              };
+              state.wireEditing.waypoint.insert.index = i;
+              state.wireEditing.waypoint.insert.point = nearestPoint;
             }
           }
         }

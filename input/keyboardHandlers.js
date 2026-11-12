@@ -31,7 +31,7 @@ export function registerKeyboardHandlers(p, circuit, renderNodes, wires, actions
     const combo = buildKeyCombo(p);
     if (shortcuts[combo]) {
       event.preventDefault();
-      if (state.ui.wireEditing) state.ui.wireEditing = false;
+      if (state.wireEditing.active) state.wireEditing.reset();
       shortcuts[combo]();
     }
   };
