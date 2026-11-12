@@ -28,6 +28,7 @@ const _state = {
   isPanning: false,
   waypointInsertionTarget: null,
   pendingAddWaypointCommand: null,
+  gridDirty: false,
 };
 
 /**

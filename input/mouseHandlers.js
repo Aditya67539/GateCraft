@@ -1,5 +1,5 @@
 import { state, screenToWorld, worldToScreen } from "../state.js";
-import { CLOCK_TIMER, FREQUENCY, GATE_CATEGORIES, GRID_SIZE, PORT_DETECTION_THRESHOLD, SIGNAL } from "../constants.js";
+import { CLOCK_TIMER, FREQUENCY, GATE_CATEGORIES, GRID_SIZE, MAX_ZOOM, MIN_ZOOM, PORT_DETECTION_THRESHOLD, SIGNAL } from "../constants.js";
 import { setCustomWaypoints, getPointRefFromElement, projectPointOntoSegment, dist, getTapPointFromElement, GateConnectionView, BusConnectionView, getGhostWireStartPoint, getGhostWireEndPoint } from "../render/wireGeometry.js";
 import { createPrimitiveNode, createCompositeNode, snapPointToGrid, wouldOverlap, wouldBusOverlap } from "../render/RenderNode.js";
 import { showToast } from "../ui/toast.js";
@@ -501,7 +501,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
       state.zoom *= zoomFactor; // Scroll up = Zoom in
     }
 
-    state.zoom = p.constrain(state.zoom, 0.3, 3);
+    state.zoom = p.constrain(state.zoom, MIN_ZOOM, MAX_ZOOM);
 
     // 3. Counter-pan the camera to pin the world to the mouse
     state.cameraX = p.mouseX - (x * state.zoom);
