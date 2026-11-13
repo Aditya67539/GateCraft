@@ -107,6 +107,7 @@ const _state = {
   },
 
   selectedNode: null,
+  gridDirty: false,
 
   isInteractionBlocked() {
     return (
