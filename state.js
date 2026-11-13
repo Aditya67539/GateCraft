@@ -32,10 +32,25 @@ const _state = {
     isAnyModalOpen: false,
     tooltip: {
       active: false,
-      label: "",       // gate.label || gate.type
-      portPosition: { x: 0, y: 0 },
+      label: "",        // gate.label || gate.type
       opacity: 0,
-      portType: "",    // input port || output port
+      port: {
+        index: null,
+        position: { x: 0, y: 0 },
+        type: "",       // input port || output port
+      },
+      node: null,
+
+      reset() {
+        this.active = false;
+        this.label = "";
+        this.opacity = 0;
+        this.port.index = 0;
+        this.port.position.x = 0;
+        this.port.position.y = 0;
+        this.port.type = "";
+        this.node = null;
+      }
     },
   },
 

@@ -155,13 +155,15 @@ const sketch = (p) => {
     if (hoveredPortPosition) {
       state.ui.tooltip.active = true;
       state.ui.tooltip.label = hoveredLabel;
-      state.ui.tooltip.portPosition = hoveredPortPosition;
-      state.ui.tooltip.portType = portType;
+      state.ui.tooltip.node = hoveredNode;
+      state.ui.tooltip.port.index = hoveredPortIndex;
+      state.ui.tooltip.port.position = hoveredPortPosition;
+      state.ui.tooltip.port.type = portType;
       state.ui.tooltip.opacity = Math.min(1, state.ui.tooltip.opacity + TOOLTIP_FADE_SPEED * dt);
     } else {
       state.ui.tooltip.opacity = Math.max(0, state.ui.tooltip.opacity - TOOLTIP_FADE_SPEED * dt);
       if (state.ui.tooltip.opacity <= 0) {
-        state.ui.tooltip.active = false;
+        state.ui.tooltip.reset();
       }
     }
 
@@ -301,9 +303,9 @@ const sketch = (p) => {
     if (!state.isInteractionBlocked() && state.ui.tooltip.active && state.ui.tooltip.opacity > 0) {
       drawPortTooltip(
         state.ui.tooltip.label,
-        state.ui.tooltip.portPosition,
+        state.ui.tooltip.port.position,
         state.ui.tooltip.opacity,
-        state.ui.tooltip.portType,
+        state.ui.tooltip.port.type,
         p
       );
     }
