@@ -1,9 +1,9 @@
 import { state, screenToWorld, worldToScreen } from "../state.js";
 import { CLOCK_TIMER, FREQUENCY, GATE_CATEGORIES, GRID_SIZE, MAX_ZOOM, MIN_ZOOM, PORT_DETECTION_THRESHOLD, SIGNAL } from "../constants.js";
-import { setCustomWaypoints, getPointRefFromElement, projectPointOntoSegment, dist, getTapPointFromElement, GateConnectionView, BusConnectionView, getGhostWireStartPoint, getGhostWireEndPoint } from "../render/wireGeometry.js";
+import { setCustomWaypoints, getPointRefFromElement, projectPointOntoSegment, dist, getTapPointFromElement, getGhostWireStartPoint, getGhostWireEndPoint } from "../render/wireGeometry.js";
 import { createPrimitiveNode, createCompositeNode, snapPointToGrid, wouldOverlap, wouldBusOverlap } from "../render/RenderNode.js";
 import { showToast } from "../ui/toast.js";
-import { GateConnectionCommand, MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand, PlaceBusCommand, RemoveBusCommand, BusConnectionCommand, AddWaypointCommand, CompositeCommand } from "../history/commands.js";
+import { MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand, PlaceBusCommand, RemoveBusCommand, AddWaypointCommand, CompositeCommand, buildConnectionCommand } from "../history/commands.js";
 import { performCommand } from "../history/history.js";
 import { loadCompositeGate, buildCircuitFromData } from "../persistence.js";
 import { canWireConnectToTarget } from "../logic/wire.js";
@@ -11,24 +11,19 @@ import { canWireConnectToTarget } from "../logic/wire.js";
 const { LOW, HIGH, X, Z, E } = SIGNAL;
 
 function cleanupGhostWire() {
-  if (state.ghostWireCleanup) {
-    state.ghostWireCleanup();
-    state.ghostWireCleanup = null;
+  if (state.ghost.wireCleanup) {
+    state.ghost.wireCleanup();
+    state.ghost.wireCleanup = null;
   }
-  state.ghostWire = null;
+  state.ghost.wire = null;
 }
 
 function cleanupGhostBus() {
-  if (state.ghostBusCleanup) {
-    state.ghostBusCleanup();
-    state.ghostBusCleanup = null;
+  if (state.ghost.busCleanup) {
+    state.ghost.busCleanup();
+    state.ghost.busCleanup = null;
   }
-  state.ghostBus = null;
-}
-
-function cleanupWireEditor() {
-  state.wireEditing = false;
-  state.editorTarget = null;
+  state.ghost.bus = null;
 }
 
 export const nodeMap = new Map();
@@ -41,346 +36,222 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
   const gateCtxMenu = document.getElementById("gate-context-menu");
 
   p.mousePressed = function (event) {
-    if (state.labelEditing) return;
-    if (state.isAnyModalOpen) return;
-    if (state.justPlacedFromToolbar) {
-      state.justPlacedFromToolbar = false;
-    }
+    if (state.ui.labelEditing) return;
+    if (state.ui.isAnyModalOpen) return;
 
     const world = screenToWorld(p.mouseX, p.mouseY);
-    state.dragging = renderNodes.find(n => n.containsPoint(world.x, world.y));
-    bringToFront(renderNodes, state.dragging);
+    state.interaction.target = renderNodes.find(n => n.containsPoint(world.x, world.y));
+    bringToFront(renderNodes, state.interaction.target);
 
     if (p.mouseButton.left) {
       if (state.mode === "edit") {
         // Check input ports
-        if (state.drawingWire) {
+        if (state.interaction.wireCreation) {
           const useSnap = p.keyIsDown(p.SHIFT);
           const startPoint = getGhostWireStartPoint(
-            state.drawingWire.originType,
-            state.drawingWire.source,
+            state.interaction.wireCreation.originType,
+            state.interaction.wireCreation.origin,
             nodeMap,
             busMap,
           );
           const endPoint = getGhostWireEndPoint(
             world,
             startPoint,
-            state.ghostWire,
+            state.ghost.wire,
             useSnap,
           );
-          const connInfo = findWireDestination(endPoint.x, endPoint.y, renderNodes, busNodes, nodeMap, busMap);
-          if (state.drawingWire.originType === "gate") {
-            if (connInfo?.destinationType === "gate") {
-              const connection = connInfo.destination;
-              
-              const outputIndex = state.drawingWire.source.fromOutputIndex;
-              const inputIndex = connection.index;
-              const fromGate = state.drawingWire.source.fromNode.gate;
-              const toGate = connection.toNode.gate;
-
-              const connectGateCommand = new GateConnectionCommand(
-                circuit,
-                fromGate,
-                toGate,
-                inputIndex,
-                outputIndex,
-                state.ghostWire,
-                wires,
-                wireDependents,
-              );
-              performCommand(connectGateCommand);
-            } else if (connInfo?.destinationType === "bus") {
-              const connection = connInfo.destination;
-
-              const outputIndex = state.drawingWire.source.fromOutputIndex;
-              const fromGate = state.drawingWire.source.fromNode.gate;
-              const bus = connection.busNode.bus;
-
-              const busConnectionCommand = new BusConnectionCommand(
-                circuit,
-                fromGate,
-                bus,
-                state.ghostWire,
-                wires,
-                "in",
-                outputIndex,
-                connInfo.destination.tapRef,
-                wireDependents,
-              );
-              performCommand(busConnectionCommand);
-            }
-          } else if (state.drawingWire.originType === "bus") {
-            if (connInfo?.destinationType === "gate") {
-              const toGate = connInfo.destination.toNode.gate;
-              const fromBus = state.drawingWire.source.busNode.bus;
-              const inputIndex = connInfo.destination.index;
-
-              const busConnectionCommand = new BusConnectionCommand(
-                circuit,
-                toGate,
-                fromBus,
-                state.ghostWire,
-                wires,
-                "out",
-                inputIndex,
-                state.drawingWire.source.tapRef,
-                wireDependents,
-              );
-              performCommand(busConnectionCommand);
-            }
-          } else if (state.drawingWire.originType === "wire") {
-            if (state.drawingWire.source.conn instanceof GateConnectionView) {
-              if (connInfo?.destinationType === "gate") {
-                const connection = connInfo.destination;
-
-                const outputIndex = state.drawingWire.source.conn.wire.fromOutputIndex;
-                const inputIndex = connection.index;
-                const fromGate = state.drawingWire.source.conn.wire.from;
-                const toGate = connection.toNode.gate;
-
-                const connectGateCommand = new GateConnectionCommand(
-                  circuit,
-                  fromGate,
-                  toGate,
-                  inputIndex,
-                  outputIndex,
-                  state.ghostWire,
-                  wires,
-                  wireDependents,
-                  true,
-                  state.drawingWire.source,
-                );
-                performCommand(connectGateCommand);
-              } else if (connInfo?.destinationType === "bus") {
-                const connection = connInfo.destination;
-
-                const outputIndex = state.drawingWire.source.conn.wire.fromOutputIndex;
-                const fromGate = state.drawingWire.source.conn.wire.from;
-                const bus = connection.busNode.bus;
-
-                const busConnectionCommand = new BusConnectionCommand(
-                  circuit,
-                  fromGate,
-                  bus,
-                  state.ghostWire,
-                  wires,
-                  "in",
-                  outputIndex,
-                  connInfo.destination.tapRef,
-                  wireDependents,
-                  true,
-                  state.drawingWire.source,
-                );
-                performCommand(busConnectionCommand);
-              }
-            } else if (state.drawingWire.source.conn instanceof BusConnectionView) {
-              if (state.drawingWire.source.conn.direction === "in") {
-                if (connInfo?.destinationType === "gate") {
-                  const connection = connInfo.destination;
-
-                  const outputIndex = state.drawingWire.source.conn.wire.fromOutputIndex;
-                  const inputIndex = connection.index;
-                  const fromGate = state.drawingWire.source.conn.wire.from;
-                  const toGate = connection.toNode.gate;
-
-                  const connectGateCommand = new GateConnectionCommand(
-                    circuit,
-                    fromGate,
-                    toGate,
-                    inputIndex,
-                    outputIndex,
-                    state.ghostWire,
-                    wires,
-                    wireDependents,
-                    true,
-                    state.drawingWire.source,
-                  );
-                  performCommand(connectGateCommand);
-                } else if (connInfo?.destinationType === "bus") {
-                  const connection = connInfo.destination;
-
-                  const outputIndex = state.drawingWire.source.conn.wire.fromOutputIndex;
-                  const fromGate = state.drawingWire.source.conn.wire.from;
-                  const bus = connection.busNode.bus;
-
-                  const busConnectionCommand = new BusConnectionCommand(
-                    circuit,
-                    fromGate,
-                    bus,
-                    state.ghostWire,
-                    wires,
-                    "in",
-                    outputIndex,
-                    connInfo.destination.tapRef,
-                    wireDependents,
-                    true,
-                    state.drawingWire.source,
-                  );
-                  performCommand(busConnectionCommand);
-                }
-              } else if (state.drawingWire.source.conn.direction === "out") {
-                if (connInfo?.destinationType === "gate") {
-                  const connection = connInfo.destination;
-
-                  const toGate = connection.toNode.gate;
-                  const fromBus = state.drawingWire.source.conn.wire.from;
-                  const inputIndex = connection.index;
-
-                  const busConnectionCommand = new BusConnectionCommand(
-                    circuit,
-                    toGate,
-                    fromBus,
-                    state.ghostWire,
-                    wires,
-                    "out",
-                    inputIndex,
-                    state.drawingWire.source.tapRef,
-                    wireDependents,
-                    true,
-                    state.drawingWire.source,
-                  );
-                  performCommand(busConnectionCommand);
-                }
-              }
+          const destinationInfo = findWireDestination(endPoint.x, endPoint.y, renderNodes, busNodes, nodeMap, busMap);
+          if (destinationInfo) {
+            const connectionCommand = buildConnectionCommand(
+              state.interaction.wireCreation,
+              destinationInfo,
+              circuit,
+              wires,
+              wireDependents,
+              state.ghost.wire,
+            );
+            if (connectionCommand) {
+              performCommand(connectionCommand);
             }
           }
-          state.drawingWire = null;
+          state.interaction.wireCreation = null;
           cleanupGhostWire();
         } else {
-          if (state.wireEditing) {
-            if (state.waypointInsertionTarget) {
-              const source = state.waypointInsertionTarget.source;
-              const index = state.waypointInsertionTarget.segmentIndex;
-              const newWaypoint = state.waypointInsertionTarget.point;
+          if (state.wireEditing.active) {
+            if (state.wireEditing.isInsertingWaypoint()) {
+              const source = state.wireEditing.target.source;
+              const index = state.wireEditing.waypoint.insert.index;
+              const newWaypoint = state.wireEditing.waypoint.insert.point;
 
               const addWaypointCommand = new AddWaypointCommand(source, index, newWaypoint);
               addWaypointCommand.do();
-              state.pendingAddWaypointCommand = addWaypointCommand;
+              state.wireEditing.waypoint.insert.pendingCommand = addWaypointCommand;
+              state.wireEditing.waypoint.move.index = index;
+            } else {
+              const waypointRef = findNearWaypoint(world.x, world.y, wires, busNodes);
+              state.wireEditing.waypoint.move.index = waypointRef ? waypointRef.waypointIndex : null;
             }
-            state.waypointRef = findNearWaypoint(world.x, world.y, wires, busNodes);
-            if (!state.waypointRef) {
-              cleanupWireEditor();
-              performCommand(state.pendingAddWaypointCommand, { alreadyPerformed: true });
+            if (!state.wireEditing.isMovingWaypoint()) {
+              const pendingCommand = state.wireEditing.waypoint.insert.pendingCommand;
+              if (pendingCommand) {
+                performCommand(pendingCommand, { alreadyPerformed: true });
+              }
+              state.wireEditing.reset();
             }
-          } else state.drawingWire = findWireOrigin(world.x, world.y, renderNodes, busNodes, wires, nodeMap, busMap);
+          } else {
+            state.interaction.wireCreation = findWireOrigin(
+              world.x,
+              world.y,
+              renderNodes,
+              busNodes,
+              wires,
+              nodeMap,
+              busMap,
+            );
+          }
 
           // ── Update persistent selection ──────────────────────────
-          if (state.dragging) {
-            state.selectedNode = state.dragging;
-          } else if (!state.drawingWire && !state.waypointRef) {
+          if (state.interaction.target) {
+            state.selectedNode = state.interaction.target;
+          } else if (
+            !state.interaction.wireCreation &&
+            !state.wireEditing.isMovingWaypoint()
+          ) {
             // Clicked empty space or a wire — deselect
             state.selectedNode = null;
           }
 
-          if (!state.drawingWire && !state.waypointRef && state.dragging) {
+          if (
+            !state.interaction.wireCreation &&
+            !state.wireEditing.isMovingWaypoint() &&
+            state.interaction.target
+          ) {
             const { x, y } = snapPointToGrid(world.x, world.y);
-            state.offsetX = x - state.dragging.x;
-            state.offsetY = y - state.dragging.y;
-          } else if (state.drawingWire && !state.waypointRef && !state.dragging) {
-            const connection = state.drawingWire.source;
-            if (state.drawingWire.originType === "gate") {
-              const fromNode = connection.fromNode;
+            state.interaction.dragging.offset.x = x - state.interaction.target.x;
+            state.interaction.dragging.offset.y = y - state.interaction.target.y;
+          } else if (
+            state.interaction.wireCreation &&
+            !state.wireEditing.isMovingWaypoint() &&
+            !state.interaction.target
+          ) {
+            const originType = state.interaction.wireCreation.originType;
+            const origin = state.interaction.wireCreation.origin;
+
+            if (originType === "gate") {
+              const fromNode = origin.fromNode;
               const startPoint = fromNode.gate.category === GATE_CATEGORIES.COMPOSITE
-                ? fromNode.getOutputPortPositionByIndex(connection.fromOutputIndex, fromNode.gate.outputCount)
+                ? fromNode.getOutputPortPositionByIndex(origin.fromOutputIndex, fromNode.gate.outputCount)
                 : fromNode.getOutputPortPosition();
+
               const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
-              state.ghostWire = waypoints;
-              state.ghostWireCleanup = cleanup;
-            } else if (state.drawingWire.originType === "bus") {
-              const fromBus = connection.busNode;
+
+              state.ghost.wire = waypoints;
+              state.ghost.wireCleanup = cleanup;
+            } else if (originType === "bus") {
+              const fromBus = origin.busNode;
               const tapRef = getPointRefFromElement(fromBus, world.x, world.y, nodeMap, busMap);
               const startPoint = getTapPointFromElement(fromBus, tapRef, nodeMap, busMap);
-              const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
-              state.ghostWire = waypoints;
-              state.ghostWireCleanup = cleanup;
-            } else if (state.drawingWire.originType === "wire") {
-              const conn = connection.conn;
 
-              const startPoint = getTapPointFromElement(conn, connection.tapRef, nodeMap, busMap);
               const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
 
-              state.ghostWire = waypoints;
-              state.ghostWireCleanup = cleanup;
+              state.ghost.wire = waypoints;
+              state.ghost.wireCleanup = cleanup;
+            } else if (originType === "wire") {
+              const conn = origin.conn;
+              const startPoint = getTapPointFromElement(conn, origin.tapRef, nodeMap, busMap);
+
+              const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
+
+              state.ghost.wire = waypoints;
+              state.ghost.wireCleanup = cleanup;
             }
-          } else if (!state.drawingWire && !state.waypointRef && !state.dragging) {
-            state.isPanning = true;
-          } else if (state.waypointRef) {
-            state.waypointSnapshot = {};
-            const fromWaypoint = state.waypointRef.source.waypoints[state.waypointRef.waypointIndex];
-            state.waypointSnapshot.fromWaypoint = structuredClone(fromWaypoint);
+          } else if (
+            !state.interaction.wireCreation &&
+            !state.wireEditing.active &&
+            !state.interaction.target
+          ) {
+            state.camera.isPanning = true;
+          } else if (state.wireEditing.isMovingWaypoint()) {
+            const source = state.wireEditing.target.source;
+            const waypointIndex = state.wireEditing.waypoint.move.index;
+            const fromWaypoint = source.waypoints[waypointIndex];
+
+            state.wireEditing.waypoint.move.snapshot = {
+              fromWaypoint: structuredClone(fromWaypoint),
+            };
           }
         }
       } else if (state.mode === "run") {
         if (
-          state.dragging &&
-          state.dragging.gate.category === GATE_CATEGORIES.PRIMITIVE &&
-          state.dragging.gate.type === "input"
+          state.interaction.target &&
+          state.interaction.target.gate.category === GATE_CATEGORIES.PRIMITIVE &&
+          state.interaction.target.gate.type === "input"
         ) {
-          const signal = state.dragging.gate.output === LOW ? HIGH : LOW;
-          state.dragging.gate.setValue(signal);
+          const signal = state.interaction.target.gate.output === LOW ? HIGH : LOW;
+          state.interaction.target.gate.setValue(signal);
           circuit.evaluate();
         } else if (
-          state.dragging &&
-          state.dragging.gate.category === GATE_CATEGORIES.PRIMITIVE &&
-          state.dragging.gate.type === "clock"
+          state.interaction.target &&
+          state.interaction.target.gate.category === GATE_CATEGORIES.PRIMITIVE &&
+          state.interaction.target.gate.type === "clock"
         ) {
-          if (state.dragging.intervalId != null) {
-            clearInterval(state.dragging.intervalId);
-            state.dragging.intervalId = null;
+          if (state.interaction.target.intervalId != null) {
+            clearInterval(state.interaction.target.intervalId);
+            state.interaction.target.intervalId = null;
             return;
           }
-          const clockNode = state.dragging;
+          const clockNode = state.interaction.target;
           const timeInterval = 1000 / (2 * FREQUENCY);
-          state.dragging.intervalId = setInterval(() => {
+          state.interaction.target.intervalId = setInterval(() => {
             clockNode.gate.tick();
             circuit.evaluate();
           }, timeInterval);
 
           setTimeout(() => {
-            clearInterval(state.dragging.intervalId);
-            state.dragging.intervalId = null;
+            clearInterval(state.interaction.target.intervalId);
+            state.interaction.target.intervalId = null;
           }, CLOCK_TIMER);
         }
       } else if (state.mode === "placing") {
-        if (state.ghostNode) {
-          if (wouldOverlap(state.ghostNode, renderNodes, busNodes, null)) return;
-          const placeGateCommand = new PlaceGateCommand(circuit, renderNodes, state.ghostNode, nodeMap);
+        if (state.ghost.node) {
+          if (wouldOverlap(state.ghost.node, renderNodes, busNodes, null)) return;
+          const placeGateCommand = new PlaceGateCommand(circuit, renderNodes, state.ghost.node, nodeMap);
           performCommand(placeGateCommand);
 
           if (event.shiftKey) {
-            const gateCategory = state.ghostNode.gate.category;
-            const gateType = state.ghostNode.gate.type;
+            const gateCategory = state.ghost.node.gate.category;
+            const gateType = state.ghost.node.gate.type;
             const { x, y } = snapPointToGrid(world.x, world.y);
             if (gateCategory === GATE_CATEGORIES.PRIMITIVE) {
-              state.ghostNode = createPrimitiveNode(gateType, x, y);
+              state.ghost.node = createPrimitiveNode(gateType, x, y);
             } else {
               const saved = loadCompositeGate(gateType);
               if (saved) {
                 const freshCircuit = buildCircuitFromData(saved.circuitData, saved.renderData);
-                state.ghostNode = createCompositeNode(gateType, freshCircuit, x, y);
+                state.ghost.node = createCompositeNode(gateType, freshCircuit, x, y);
               }
             }
           } else {
             state.mode = "edit";
-            state.ghostNode = null;
+            state.ghost.node = null;
             document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
             document.getElementById("btn-edit").classList.add("active");
           }
-        } else if (state.ghostBus) {
-          if (!state.ghostBus.startPointPlaced && !state.ghostBus.endPointPlaced) {
-            if (wouldBusOverlap(state.ghostBus, renderNodes, busNodes)) return;
-            state.ghostBus.startPointPlaced = true;
-            const startPoint = state.ghostBus.startPoint;
+        } else if (state.ghost.bus) {
+          if (!state.ghost.bus.startPointPlaced && !state.ghost.bus.endPointPlaced) {
+            if (wouldBusOverlap(state.ghost.bus, renderNodes, busNodes)) return;
+            state.ghost.bus.startPointPlaced = true;
+            const startPoint = state.ghost.bus.startPoint;
             const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
-            state.ghostBus.waypoints = waypoints;
-            state.ghostBusCleanup = cleanup;
-          } else if (state.ghostBus.startPointPlaced && !state.ghostBus.endPointPlaced) {
-            if (wouldBusOverlap(state.ghostBus, renderNodes, busNodes)) return;
-            const placeBusCommand = new PlaceBusCommand(circuit, busNodes, state.ghostBus, busMap);
+            state.ghost.bus.waypoints = waypoints;
+            state.ghost.busCleanup = cleanup;
+          } else if (state.ghost.bus.startPointPlaced && !state.ghost.bus.endPointPlaced) {
+            if (wouldBusOverlap(state.ghost.bus, renderNodes, busNodes)) return;
+            const placeBusCommand = new PlaceBusCommand(circuit, busNodes, state.ghost.bus, busMap);
             performCommand(placeBusCommand);
 
             state.mode = "edit";
-            state.ghostBus = null;
+            state.ghost.bus = null;
             document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
             document.getElementById("btn-edit").classList.add("active");
             cleanupGhostBus();
@@ -390,7 +261,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
     }
 
     else if (p.mouseButton.right) {
-      if (state.mode !== "edit" || state.labelEditing) return;
+      if (state.mode !== "edit" || state.ui.labelEditing) return;
       
       const rect = canvas.getBoundingClientRect();
       const clientX = rect.left + (p.mouseX / p.width) * rect.width;
@@ -421,51 +292,65 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
   p.mouseDragged = function () {
     if (state.mode === "edit") {
       const worldDrag = screenToWorld(p.mouseX, p.mouseY);
-      if (state.dragging) {
-        if (!state.changingPos) {
-          state.currentX = state.dragging.x;
-          state.currentY = state.dragging.y;
-          state.changingPos = true;
+      if (state.interaction.target) {
+        if (!state.interaction.dragging.active) {
+          state.interaction.dragging.originalPos.x = state.interaction.target.x;
+          state.interaction.dragging.originalPos.y = state.interaction.target.y;
+          state.interaction.dragging.active = true;
         }
         const { x, y } = snapPointToGrid(worldDrag.x, worldDrag.y);
-        state.dragging.x = x - state.offsetX;
-        state.dragging.y = y - state.offsetY;
-      } else if (state.waypointRef) {
-        const originalWaypoint = state.waypointRef.source.waypoints[state.waypointRef.waypointIndex];
+        state.interaction.target.x = x - state.interaction.dragging.offset.x;
+        state.interaction.target.y = y - state.interaction.dragging.offset.y;
+      } else if (state.wireEditing.isMovingWaypoint()) {
+        const source = state.wireEditing.target.source;
+        const waypointIndex = state.wireEditing.waypoint.move.index;
+
+        const originalWaypoint = source.waypoints[waypointIndex];
         originalWaypoint.x = worldDrag.x;
         originalWaypoint.y = worldDrag.y;
-      } else if (state.isPanning) {
-        state.cameraX += (p.mouseX - p.pmouseX);
-        state.cameraY += (p.mouseY - p.pmouseY);
+      } else if (state.camera.isPanning) {
+        state.camera.x += (p.mouseX - p.pmouseX);
+        state.camera.y += (p.mouseY - p.pmouseY);
       }
     }
   }
 
   p.mouseReleased = function () {
-    if (state.dragging) {
-      if (wouldOverlap(state.dragging, renderNodes, busNodes, state.dragging.gate.id)) {
-        state.dragging.x = state.currentX;
-        state.dragging.y = state.currentY;
-      } else if (state.changingPos) {
+    if (state.interaction.target) {
+      if (
+        wouldOverlap(
+          state.interaction.target,
+          renderNodes,
+          busNodes,
+          state.interaction.target.gate.id
+        )
+      ) {
+        state.interaction.target.x = state.interaction.dragging.originalPos.x;
+        state.interaction.target.y = state.interaction.dragging.originalPos.y;
+      } else if (state.interaction.dragging.active) {
         const moveNodeCommand = new MoveNodeCommand(
-          state.dragging,
-          state.currentX,
-          state.currentY,
-          state.dragging.x,
-          state.dragging.y,
+          state.interaction.target,
+          state.interaction.dragging.originalPos.x,
+          state.interaction.dragging.originalPos.y,
+          state.interaction.target.x,
+          state.interaction.target.y,
         );
         performCommand(moveNodeCommand);
       }
-    } else if (state.waypointRef) {
-      const toWaypoint = state.waypointRef.source.waypoints[state.waypointRef.waypointIndex];
-      state.waypointSnapshot.toWaypoint = structuredClone(toWaypoint);
+    } else if (state.wireEditing.isMovingWaypoint()) {
+      const source = state.wireEditing.target.source;
+      const waypointIndex = state.wireEditing.waypoint.move.index;
+
+      const toWaypoint = source.waypoints[waypointIndex];
+      state.wireEditing.waypoint.move.snapshot.toWaypoint = structuredClone(toWaypoint);
       const changeWaypointCommand = new ChangeWaypointCommand(
-        state.waypointSnapshot,
-        state.waypointRef,
+        state.wireEditing.waypoint.move.snapshot,
+        state.wireEditing.target.source,
+        state.wireEditing.waypoint.move.index,
       );
-      if (state.pendingAddWaypointCommand) {
+      if (state.wireEditing.waypoint.insert.pendingCommand) {
         const compositeCommand = new CompositeCommand(
-          [state.pendingAddWaypointCommand, changeWaypointCommand]
+          [state.wireEditing.waypoint.insert.pendingCommand, changeWaypointCommand]
         );
         changeWaypointCommand.do();
         performCommand(compositeCommand, { alreadyPerformed: true });
@@ -473,20 +358,16 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
         performCommand(changeWaypointCommand);
       }
     }
-    state.dragging = null;
-    state.offsetX = 0;
-    state.offsetY = 0;
-    state.currentX = 0;
-    state.currentY = 0;
-    state.changingPos = false;
-    state.isPanning = false;
-    state.waypointSnapshot = null;
-    state.waypointRef = null;
+    state.interaction.target = null;
+    state.interaction.dragging.reset();
+    state.camera.isPanning = false;
+    state.wireEditing.waypoint.move.reset();
+    state.wireEditing.waypoint.insert.reset();
   }
 
   p.mouseWheel = function(event) {
     // Dismiss label editor on zoom — blur triggers commit → cleanup
-    if (state.labelEditing) {
+    if (state.ui.labelEditing) {
       document.activeElement?.blur();
     }
 
@@ -496,16 +377,16 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
     // 2. Calculate the new zoom level
     const zoomFactor = 1.1;
     if (event.delta > 0) {
-      state.zoom /= zoomFactor; // Scroll down = Zoom out
+      state.camera.zoom /= zoomFactor; // Scroll down = Zoom out
     } else {
-      state.zoom *= zoomFactor; // Scroll up = Zoom in
+      state.camera.zoom *= zoomFactor; // Scroll up = Zoom in
     }
 
-    state.zoom = p.constrain(state.zoom, MIN_ZOOM, MAX_ZOOM);
+    state.camera.zoom = p.constrain(state.camera.zoom, MIN_ZOOM, MAX_ZOOM);
 
     // 3. Counter-pan the camera to pin the world to the mouse
-    state.cameraX = p.mouseX - (x * state.zoom);
-    state.cameraY = p.mouseY - (y * state.zoom);
+    state.camera.x = p.mouseX - (x * state.camera.zoom);
+    state.camera.y = p.mouseY - (y * state.camera.zoom);
 
     // Return false to prevent the entire web page from scrolling
     return false; 
@@ -521,7 +402,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
         labelBtnDiv.innerHTML = "Add Label";
       }
     }
-    state.contextMenuTarget = target;
+    state.ui.contextMenuTarget = target;
     contextMenu.classList.add("open");
     contextMenu.style.left = `${clientX}px`;
     contextMenu.style.top = `${clientY}px`;
@@ -533,28 +414,28 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
     if (rect.right > window.innerWidth) {
       contextMenu.style.left = `${Math.max(0, clientX - rect.width)}px`;
     }
-    state.isAnyModalOpen = true;
+    state.ui.isAnyModalOpen = true;
   }
 
   function hideContextMenu(contextMenu) {
     if (!contextMenu.classList.contains("open")) return;
     contextMenu.classList.remove("open");
-    state.contextMenuTarget = null;
-    state.isAnyModalOpen = false;
+    state.ui.contextMenuTarget = null;
+    state.ui.isAnyModalOpen = false;
   }
 
   // Wire and Bus edit button
   document.getElementById("ctx-wire-edit").addEventListener("click", () => {
-    state.editorTarget = structuredClone(state.contextMenuTarget);
+    state.wireEditing.target = state.ui.contextMenuTarget;
     hideContextMenu(wireCtxMenu);
-    if (!state.editorTarget) return;
-    state.wireEditing = true;
+    if (!state.wireEditing.target) return;
+    state.wireEditing.active = true;
   });
 
   // Delete button
   document.querySelectorAll(".ctx-delete-target").forEach(element => {
     element.addEventListener("click", () => {
-      const target = state.contextMenuTarget;
+      const target = state.ui.contextMenuTarget;
       hideContextMenu(wireCtxMenu);
       hideContextMenu(gateCtxMenu);
       if (!target) return;
@@ -597,7 +478,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
 
   // Label button for gates
   document.getElementById("ctx-gate-edit").addEventListener("click", () => {
-    const target = state.contextMenuTarget;
+    const target = state.ui.contextMenuTarget;
     if (!target || target.type !== "gate") return;
 
     openLabelEditor(target.source, p);
@@ -682,17 +563,17 @@ function findWireOrigin(mx, my, renderNodes, busNodes, wires, nodeMap, busMap) {
   if (nodeConn) {
     return {
       originType: "gate",
-      source: nodeConn,
+      origin: nodeConn,
     }
   } else if (busConn) {
     return {
       originType: "bus",
-      source: busConn,
+      origin: busConn,
     }
   } else if (wireConn) {
     return {
       originType: "wire",
-      source: wireConn,
+      origin: wireConn,
     }
   }
   return null;
@@ -787,7 +668,7 @@ export function getEffectiveMousePosition(
     const useSnap = p.keyIsDown(p.SHIFT);
     const startPoint = getGhostWireStartPoint(
       wireOrigin.originType,
-      wireOrigin.source,
+      wireOrigin.origin,
       nodeMap,
       busMap,
     );
@@ -839,11 +720,11 @@ function bringToFront(renderNodes, node) {
  * Commits on Enter or blur; cancels on Escape.
  */
 function openLabelEditor(renderNode, p) {
-  if (state.zoom < 0.6) {
+  if (state.camera.zoom < 0.6) {
     showToast("Zoom in to edit label", { type: "warning" });
     return;
   }
-  state.labelEditing = true;
+  state.ui.labelEditing = true;
   const canvasHost = document.querySelector(".canvas-host");
   const canvas = canvasHost.querySelector("canvas");
   // Map p5 canvas coords → CSS pixels on the canvas element
@@ -857,7 +738,7 @@ function openLabelEditor(renderNode, p) {
   );
   const cssX = labelPosition.x * scaleX;
   const cssY = labelPosition.y * scaleY;
-  const zoom = state.zoom;
+  const zoom = state.camera.zoom;
   const inputWidth = Math.max(renderNode.width * scaleX * zoom, 80);
   const input = document.createElement("input");
   input.type = "text";
@@ -892,7 +773,7 @@ function openLabelEditor(renderNode, p) {
     input.removeEventListener("keydown", onKeyDown);
     input.removeEventListener("blur", onBlur);
     input.remove();
-    state.labelEditing = false;
+    state.ui.labelEditing = false;
   }
   function onKeyDown(e) {
     if (e.key === "Enter") {

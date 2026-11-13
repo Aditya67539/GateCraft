@@ -42,7 +42,7 @@ export class BusNode {
 
 
 export function spawnBusNode(mouseX, mouseY) {
-  state.ghostBus = createBusNode(mouseX, mouseY);
+  state.ghost.bus = createBusNode(mouseX, mouseY);
   state.mode = "placing";
 }
 
