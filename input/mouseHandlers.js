@@ -1,5 +1,5 @@
 import { state, screenToWorld, worldToScreen } from "../state.js";
-import { CLOCK_TIMER, FREQUENCY, GATE_CATEGORIES, GRID_SIZE, MAX_ZOOM, MIN_ZOOM, PORT_DETECTION_THRESHOLD, SIGNAL } from "../constants.js";
+import { CLOCK_TIMER, FREQUENCY, GATE_CATEGORIES, GRID_SIZE, MAX_ZOOM, MIN_ZOOM, PORT_DETECTION_THRESHOLD, SIGNAL, WAYPOINT_DETECTION_THRESHOLD } from "../constants.js";
 import { setCustomWaypoints, getPointRefFromElement, projectPointOntoSegment, dist, getTapPointFromElement, getGhostWireStartPoint, getGhostWireEndPoint } from "../render/wireGeometry.js";
 import { createPrimitiveNode, createCompositeNode, snapPointToGrid, wouldOverlap, wouldBusOverlap } from "../render/RenderNode.js";
 import { showToast } from "../ui/toast.js";
@@ -613,7 +613,7 @@ function findNearWaypoint(mx, my, wires, busNodes) {
   for (let i = 0; i < wires.length; i++) {
     const waypointCount = wires[i].waypoints.length;
     for (let j = 0; j < waypointCount; j++) {
-      if (isNearPoint(mx, my, wires[i].waypoints[j], PORT_DETECTION_THRESHOLD)) {
+      if (isNearPoint(mx, my, wires[i].waypoints[j], WAYPOINT_DETECTION_THRESHOLD)) {
         return { source: wires[i], waypointIndex: j };
       }
     }
@@ -622,7 +622,7 @@ function findNearWaypoint(mx, my, wires, busNodes) {
   for (let i = 0; i < busNodes.length; i++) {
     const waypointCount = busNodes[i].waypoints.length;
     for (let j = 0; j < waypointCount; j++) {
-      if (isNearPoint(mx, my, busNodes[i].waypoints[j], PORT_DETECTION_THRESHOLD)) {
+      if (isNearPoint(mx, my, busNodes[i].waypoints[j], WAYPOINT_DETECTION_THRESHOLD)) {
         return { source: busNodes[i], waypointIndex: j };
       }
     }
