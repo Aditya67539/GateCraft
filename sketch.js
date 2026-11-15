@@ -220,6 +220,7 @@ const sketch = (p) => {
         state.wireEditing.target.source.wire.id === conn.wire.id;
       const isHovered = hoveredWire?.conn.wire.id === conn.wire.id;
       const highlighted = isContextTarget || (
+        !state.ui.tooltip.active &&
         !state.ui.contextMenuTarget &&
         !state.interaction.wireCreation &&
         !state.isInteractionBlocked() &&
