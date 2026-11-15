@@ -1,5 +1,5 @@
 import { state, screenToWorld, worldToScreen } from "../state.js";
-import { CLOCK_TIMER, FREQUENCY, GATE_CATEGORIES, GRID_SIZE, MAX_ZOOM, MIN_ZOOM, PORT_DETECTION_THRESHOLD, SIGNAL, WAYPOINT_DETECTION_THRESHOLD } from "../constants.js";
+import { CLOCK_TIMER, FREQUENCY, GATE_CATEGORIES, GRID_SIZE, MAX_ZOOM, MIN_ZOOM, PORT_DETECTION_THRESHOLD, SIGNAL, WAYPOINT_DETECTION_THRESHOLD, WIRE_DETECTION_THRESHOLD } from "../constants.js";
 import { setCustomWaypoints, getPointRefFromElement, projectPointOntoSegment, dist, getTapPointFromElement, getGhostWireStartPoint, getGhostWireEndPoint } from "../render/wireGeometry.js";
 import { createPrimitiveNode, createCompositeNode, snapPointToGrid, wouldOverlap, wouldBusOverlap } from "../render/RenderNode.js";
 import { showToast } from "../ui/toast.js";
@@ -585,7 +585,7 @@ export function getWireAtPoint(mx, my, wires, nodeMap, busMap) {
     const { start, waypoints, end } = conn.getPoints(nodeMap, busMap);
     const points = [ start, ...waypoints, end ];
     for (let i = 0; i < points.length - 1; i++) {
-      if (isOnLineSegment(points[i], points[i + 1], { x: mx, y: my }, 15)) {
+      if (isOnLineSegment(points[i], points[i + 1], { x: mx, y: my }, WIRE_DETECTION_THRESHOLD)) {
         return {
           conn: conn,
           tapRef: getPointRefFromElement(conn, mx, my, nodeMap, busMap), 
@@ -601,7 +601,7 @@ export function getBusAtPoint(mx, my, busNodes) {
     const { start, waypoints, end } = busNode.getPoints();
     const points = [ start, ...waypoints, end ];
     for (let i = 0; i < points.length - 1; i++) {
-      if (isOnLineSegment(points[i], points[i + 1], { x: mx, y: my }, 15)) {
+      if (isOnLineSegment(points[i], points[i + 1], { x: mx, y: my }, WIRE_DETECTION_THRESHOLD)) {
         return busNode;
       }
     }
