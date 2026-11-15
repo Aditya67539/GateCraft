@@ -2,6 +2,7 @@ import {
   FONT_SIZE,
   GRID_SIZE,
   PORT_RADIUS,
+  HOVERED_PORT_RADIUS,
   DEFAULT_STROKE_WEIGHT,
   WIRE_THICKNESS,
   BUS_THICKNESS,
@@ -48,6 +49,7 @@ import {
   LABEL_OFFSET_Y,
 } from "../constants.js";
 import { getActiveTheme } from "./theme.js";
+import { state } from "../state.js";
 
 /**
  * Return "#ffffff" or "#1a1a2e" depending on which has better contrast
@@ -671,8 +673,10 @@ function drawOutputPort(renderNode, theme, p) {
     drawPin(p, gateEdgeX, port.y, port.x, port.y, pinColor);
     p.fill(theme.accent.hex);
     p.stroke(theme.text.primary.hex);
+    const isHovering = isPortHovered(gate, "output", i);
+    const radius = isHovering ? HOVERED_PORT_RADIUS : PORT_RADIUS;
     p.strokeWeight(PORT_STROKE_WEIGHT);
-    p.circle(port.x, port.y, PORT_RADIUS);
+    p.circle(port.x, port.y, radius);
   }
 }
 
@@ -694,9 +698,20 @@ function drawInputPort(renderNode, theme, p) {
     drawPin(p, gateEdgeX, port.y, port.x, port.y, pinColor);
     p.fill(theme.accent.hex);
     p.stroke(theme.text.primary.hex);
+    const isHovering = isPortHovered(gate, "input", i);
+    const radius = isHovering ? HOVERED_PORT_RADIUS : PORT_RADIUS;
     p.strokeWeight(PORT_STROKE_WEIGHT);
-    p.circle(port.x, port.y, PORT_RADIUS);
+    p.circle(port.x, port.y, radius);
   }
+}
+
+function isPortHovered(gate, portType, portIndex) {
+  return (
+    state.ui.tooltip.active &&
+    state.ui.tooltip.port.type === portType &&
+    state.ui.tooltip.node.gate.id === gate.id &&
+    state.ui.tooltip.port.index === portIndex
+  );
 }
 
 function drawPolylineSegments(start, waypoints, end, p) {

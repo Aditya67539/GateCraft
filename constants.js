@@ -35,7 +35,6 @@ export const FONT_SIZE = 16;
 export const PORT_LABEL_SIZE = 14;
 export const GRID_OFFSET = 5;
 export const GRID_SIZE = 20;
-export const PORT_RADIUS = 11;
 export const MAX_ZOOM = 2;
 export const MIN_ZOOM = 0.5;
 
@@ -59,6 +58,8 @@ export const HOVERED_WAYPOINT_RADIUS = 20;
 export const BUS_POINT_RADIUS = 16;
 export const BUS_BOUNDS_PADDING = 8;
 export const SEVEN_SEG_GRID_HEIGHT = 11;
+export const PORT_RADIUS = 11;
+export const HOVERED_PORT_RADIUS = 14;
 
 // Seven-segment display layout factors
 export const DISPLAY_SIGN_WIDTH_FACTOR = 2;
