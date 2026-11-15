@@ -137,34 +137,16 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
             const originType = state.interaction.wireCreation.originType;
             const origin = state.interaction.wireCreation.origin;
 
-            if (originType === "gate") {
-              const fromNode = origin.fromNode;
-              const startPoint = fromNode.gate.category === GATE_CATEGORIES.COMPOSITE
-                ? fromNode.getOutputPortPositionByIndex(origin.fromOutputIndex, fromNode.gate.outputCount)
-                : fromNode.getOutputPortPosition();
+            const startPoint = getGhostWireStartPoint(
+              originType,
+              origin,
+              nodeMap,
+              busMap,
+            );
+            const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
 
-              const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
-
-              state.ghost.wire = waypoints;
-              state.ghost.wireCleanup = cleanup;
-            } else if (originType === "bus") {
-              const fromBus = origin.busNode;
-              const tapRef = getPointRefFromElement(fromBus, world.x, world.y, nodeMap, busMap);
-              const startPoint = getTapPointFromElement(fromBus, tapRef, nodeMap, busMap);
-
-              const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
-
-              state.ghost.wire = waypoints;
-              state.ghost.wireCleanup = cleanup;
-            } else if (originType === "wire") {
-              const conn = origin.conn;
-              const startPoint = getTapPointFromElement(conn, origin.tapRef, nodeMap, busMap);
-
-              const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
-
-              state.ghost.wire = waypoints;
-              state.ghost.wireCleanup = cleanup;
-            }
+            state.ghost.wire = waypoints;
+            state.ghost.wireCleanup = cleanup;
           } else if (
             !state.interaction.wireCreation &&
             !state.wireEditing.active &&
