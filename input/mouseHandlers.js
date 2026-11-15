@@ -48,16 +48,10 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
         // Check input ports
         if (state.interaction.wireCreation) {
           const useSnap = p.keyIsDown(p.SHIFT);
-          const startPoint = getGhostWireStartPoint(
-            state.interaction.wireCreation.originType,
-            state.interaction.wireCreation.origin,
-            nodeMap,
-            busMap,
-          );
           const endPoint = getGhostWireEndPoint(
             world,
-            startPoint,
-            state.ghost.wire,
+            state.ghost.wire.startPoint,
+            state.ghost.wire.waypoints,
             useSnap,
           );
           const destinationInfo = findWireDestination(endPoint.x, endPoint.y, renderNodes, busNodes, nodeMap, busMap);
@@ -145,7 +139,9 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
             );
             const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
 
-            state.ghost.wire = waypoints;
+            state.ghost.wire = {};
+            state.ghost.wire.startPoint = startPoint;
+            state.ghost.wire.waypoints = waypoints;
             state.ghost.wireCleanup = cleanup;
           } else if (
             !state.interaction.wireCreation &&
@@ -648,17 +644,11 @@ export function getEffectiveMousePosition(
   let effectiveMousePosition = mouse;
   if (wireOrigin) {
     const useSnap = p.keyIsDown(p.SHIFT);
-    const startPoint = getGhostWireStartPoint(
-      wireOrigin.originType,
-      wireOrigin.origin,
-      nodeMap,
-      busMap,
-    );
 
     effectiveMousePosition = getGhostWireEndPoint(
       mouse,
-      startPoint,
-      ghostWire,
+      ghostWire.startPoint,
+      ghostWire.waypoints,
       useSnap,
     );
 

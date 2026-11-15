@@ -8,7 +8,7 @@ import { CircuitBuilder } from "./logic/CircuitBuilder.js";
 import { snapPointToGrid, wouldBusOverlap, wouldOverlap } from "./render/RenderNode.js";
 import { registerKeyboardHandlers } from "./input/keyboardHandlers.js";
 import { drawMinimap } from "./render/minimap.js";
-import { getGhostWireEndPoint, getGhostWireStartPoint, projectPointOntoSegment } from "./render/wireGeometry.js";
+import { getGhostWireEndPoint, projectPointOntoSegment } from "./render/wireGeometry.js";
 import { canWireConnectToTarget } from "./logic/wire.js";
 import { GATE_CATEGORIES, WAYPOINT_DETECTION_THRESHOLD, PORT_DETECTION_THRESHOLD, WAYPOINT_INSERTION_THRESHOLD_SQ, TOOLTIP_FADE_SPEED, GRID_SIZE, GRID_OFFSET, MAX_ZOOM, GRID_DOT_SIZE } from "./constants.js";
 
@@ -295,21 +295,15 @@ const sketch = (p) => {
       drawGhostBus(state.ghost.bus, p, status);
     }
     if (state.interaction.wireCreation) {
-      const startPoint = getGhostWireStartPoint(
-        state.interaction.wireCreation.originType,
-        state.interaction.wireCreation.origin,
-        nodeMap,
-        busMap,
-      );
       const useSnap = p.keyIsDown(p.SHIFT);
       const endPoint = getGhostWireEndPoint(
         mouse,
-        startPoint,
-        state.ghost.wire,
+        state.ghost.wire.startPoint,
+        state.ghost.wire.waypoints,
         useSnap,
       );
 
-      drawGhostPath(startPoint, state.ghost.wire, endPoint, p);
+      drawGhostPath(state.ghost.wire.startPoint, state.ghost.wire.waypoints, endPoint, p);
     }
 
     // ── Draw tooltip last so it renders on top of everything ──

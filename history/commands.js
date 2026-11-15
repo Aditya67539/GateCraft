@@ -222,7 +222,12 @@ export class GateConnectionCommand {
     if (this.connection !== null) {
       this.connection.wire = result.wire;
     } else {
-      this.connection = new GateConnectionView({ wire, waypoints: this.ghostWire, isWireBranch: this.isWireBranch, source: this.source });
+      this.connection = new GateConnectionView({
+        wire,
+        waypoints: this.ghostWire.waypoints,
+        isWireBranch: this.isWireBranch,
+        source: this.source,
+      });
     }
     this.wires.push(this.connection);
 
@@ -280,7 +285,7 @@ export class BusConnectionCommand {
     } else {
       const wireInfo = {
         wire,
-        waypoints: this.ghostWire,
+        waypoints: this.ghostWire.waypoints,
         isWireBranch: this.isWireBranch,
         tapRef: this.tapRef,
         source: this.source,
