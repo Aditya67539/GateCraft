@@ -1,5 +1,5 @@
 import { state, screenToWorld, worldToScreen } from "../state.js";
-import { CLOCK_TIMER, FREQUENCY, GATE_CATEGORIES, GRID_SIZE, MAX_ZOOM, MIN_ZOOM, PORT_DETECTION_THRESHOLD, SIGNAL, WAYPOINT_DETECTION_THRESHOLD, WIRE_DETECTION_THRESHOLD } from "../constants.js";
+import { CLOCK_TIMER, FREQUENCY, GATE_CATEGORIES, GRID_SIZE, MAX_ZOOM, MIN_ZOOM, PORT_DETECTION_THRESHOLD, SIGNAL, WAYPOINT_DETECTION_THRESHOLD, WIRE_DETECTION_THRESHOLD, ROLE } from "../constants.js";
 import { setCustomWaypoints, getPointRefFromElement, projectPointOntoSegment, dist, getTapPointFromElement, getGhostWireStartPoint, getGhostWireEndPoint } from "../render/wireGeometry.js";
 import { createPrimitiveNode, createCompositeNode, snapPointToGrid, wouldOverlap, wouldBusOverlap } from "../render/RenderNode.js";
 import { showToast } from "../ui/toast.js";
@@ -54,10 +54,23 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
             state.ghost.wire.waypoints,
             useSnap,
           );
-          const destinationInfo = findWireDestination(endPoint.x, endPoint.y, renderNodes, busNodes, nodeMap, busMap);
-          if (destinationInfo) {
-            const connectionCommand = buildConnectionCommand(
+          const endPointInfo = findWireEndpoint(
+            endPoint.x,
+            endPoint.y,
+            renderNodes,
+            busNodes,
+            wires,
+            nodeMap,
+            busMap,
+            neededRole(state.interaction.wireCreation),
+          );
+          if (endPointInfo) {
+            const { originInfo, destinationInfo } = resolveConnection(
               state.interaction.wireCreation,
+              endPointInfo,
+            );
+            const connectionCommand = buildConnectionCommand(
+              originInfo,
               destinationInfo,
               circuit,
               wires,
@@ -93,7 +106,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
               state.wireEditing.reset();
             }
           } else {
-            state.interaction.wireCreation = findWireOrigin(
+            state.interaction.wireCreation = findWireEndpoint(
               world.x,
               world.y,
               renderNodes,
@@ -101,6 +114,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
               wires,
               nodeMap,
               busMap,
+              ROLE.ANY,
             );
           }
 
@@ -533,54 +547,51 @@ export function findNearBus(mx, my, busNodes, nodeMap, busMap) {
   return null;
 }
 
-function findWireOrigin(mx, my, renderNodes, busNodes, wires, nodeMap, busMap) {
-  const nodeConn = findNearOutput(mx, my, renderNodes);
-  const busConn = findNearBus(mx, my, busNodes, nodeMap, busMap);
-  const wireConn = getWireAtPoint(mx, my, wires, nodeMap, busMap);
-  
-  if (nodeConn) {
-    return {
-      originType: "gate",
-      origin: nodeConn,
-    }
-  } else if (busConn) {
-    return {
-      originType: "bus",
-      origin: busConn,
-    }
-  } else if (wireConn) {
-    return {
-      originType: "wire",
-      origin: wireConn,
-    }
+function findWireEndpoint(mx, my, renderNodes, busNodes, wires, nodeMap, busMap, need = ROLE.ANY) {
+  const canSource = need !== ROLE.SINK;
+  const canSink   = need !== ROLE.SOURCE;
+
+  if (canSource) {
+    const out = findNearOutput(mx, my, renderNodes);
+    if (out) return { kind: "gate", role: ROLE.SOURCE, entity: out };
+
+    const wire = getWireAtPoint(mx, my, wires, nodeMap, busMap);
+    if (wire) return { kind: "wire", role: ROLE.SOURCE, entity: wire };
   }
+  if (canSink) {
+    const inp = findNearInput(mx, my, renderNodes);
+    if (inp) return { kind: "gate", role: ROLE.SINK, entity: inp };
+  }
+  const bus = findNearBus(mx, my, busNodes, nodeMap, busMap);
+  if (bus) return { kind: "bus", role: ROLE.ANY, entity: bus };
   return null;
 }
 
-function findWireDestination(mx, my, renderNodes, busNodes, nodeMap, busMap) {
-  const nodeConn = findNearInput(mx, my, renderNodes);
-  const busConn = findNearBus(mx, my, busNodes, nodeMap, busMap);
+function neededRole(firstEndpoint) {
+  if (!firstEndpoint) return ROLE.ANY;
+  return firstEndpoint.role === ROLE.SOURCE
+    ? ROLE.SINK
+    : firstEndpoint.role ===  ROLE.SINK
+    ? ROLE.SOURCE
+    : ROLE.ANY;
+}
 
-  if (nodeConn) {
-    return {
-      destinationType: "gate",
-      destination: nodeConn,
-    }
-  } else if (busConn) {
-    return {
-      destinationType: "bus",
-      destination: busConn,
-    }
-  }
-  return null;
+// a = first click, b = second click
+export function resolveConnection(a, b) {
+  const swap = a.role === ROLE.SINK || b.role === ROLE.SOURCE;
+  const [ from, to ] = swap ? [ b, a ] : [ a, b ];
+  return {
+    originInfo: { originType: from.kind, origin: from.entity },
+    destinationInfo: { destinationType: to.kind, destination: to.entity },
+  };
 }
 
 function isOnLineSegment(A, B, O, threshold) {
   const { distSq } = projectPointOntoSegment(A, B, O);
-  return distSq <= Math.pow(threshold, 2);
 }
 
-export function getWireAtPoint(mx, my, wires, nodeMap, busMap) {
+function isOnLineSegment(A, B, O, threshold) {
+  const { distSq } = projectPointOntoSegment(A, B, O);
   for (const conn of wires) {
     const { start, waypoints, end } = conn.getPoints(nodeMap, busMap);
     const points = [ start, ...waypoints, end ];

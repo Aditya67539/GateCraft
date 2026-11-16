@@ -29,6 +29,11 @@ export const PRIMITIVE_GATE_DEFS = Object.freeze({
   "seven-seg": Object.freeze({ inputs: 8, outputs: 0 }),
   "Tri-state Buffer": Object.freeze({ inputs: 2, outputs: 1 }),
 });
+export const ROLE = Object.freeze({
+  ANY:    0,
+  SOURCE: 1,
+  SINK:   2,
+});
 export const FREQUENCY = 1; // Hertz
 export const CLOCK_TIMER = 120 /* seconds */ * 1000; // ms
 export const FONT_SIZE = 16;
