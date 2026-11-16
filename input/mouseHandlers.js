@@ -142,12 +142,8 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
             !state.wireEditing.isMovingWaypoint() &&
             !state.interaction.target
           ) {
-            const originType = state.interaction.wireCreation.originType;
-            const origin = state.interaction.wireCreation.origin;
-
             const startPoint = getGhostWireStartPoint(
-              originType,
-              origin,
+              state.interaction.wireCreation,
               nodeMap,
               busMap,
             );

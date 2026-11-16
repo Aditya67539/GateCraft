@@ -1,4 +1,4 @@
-import { GATE_CATEGORIES, PORT_DETECTION_THRESHOLD } from "../constants.js";
+import { GATE_CATEGORIES, PORT_DETECTION_THRESHOLD, ROLE } from "../constants.js";
 import { isNearPoint } from "../input/mouseHandlers.js";
 import { screenToWorld } from "../state.js";
 import { BusNode } from "./BusNode.js";
@@ -252,22 +252,24 @@ export function dist(x1, y1, x2, y2) {
 }
 
 
-export function getGhostWireStartPoint(originType, source, nodeMap, busMap) {
-  let startPoint;
-  if (originType === "gate") {
-    const outputIndex = source.fromOutputIndex;
-    const totalOutputs = source.fromNode.gate.outputCount;
+export function getGhostWireStartPoint(wc, nodeMap, busMap) {
+  const { kind, role, entity } = wc;
 
-    startPoint = outputIndex !== null
-      ? source.fromNode.getOutputPortPositionByIndex(outputIndex, totalOutputs)
-      : source.fromNode.getOutputPortPosition();
-  } else if (originType === "bus") {
-    startPoint = getTapPointFromElement(source.busNode, source.tapRef, nodeMap, busMap);
-  } else if (originType === "wire") {
-    startPoint = getTapPointFromElement(source.conn, source.tapRef, nodeMap, busMap);
+  if (kind === "gate") {
+    if (role === ROLE.SOURCE) {
+      return getOutputPoint(entity);
+    } else if (role === ROLE.SINK) {
+      return getInputPoint(entity);
+    }
   }
-
-  return startPoint;
+  
+  if (kind === "bus") {
+    return getTapPointFromElement(entity.busNode, entity.tapRef, nodeMap, busMap);
+  }
+  
+  if (kind === "wire") {
+    return getTapPointFromElement(entity.conn, entity.tapRef, nodeMap, busMap);
+  }
 }
 
 export function getGhostWireEndPoint(mouse, startPoint, waypoints, useSnap = false) {
@@ -281,4 +283,20 @@ export function getGhostWireEndPoint(mouse, startPoint, waypoints, useSnap = fal
     : startPoint.y;
 
   return getOctilinearSnap(x1, y1, mouse.x, mouse.y);
+}
+
+function getOutputPoint(entity) {
+  const outputIndex  = entity.fromOutputIndex;
+  const totalOutputs = entity.fromNode.gate.outputCount;
+
+  return outputIndex !== null
+    ? entity.fromNode.getOutputPortPositionByIndex(outputIndex, totalOutputs)
+    : entity.fromNode.getOutputPortPosition();
+}
+
+function getInputPoint(entity) {
+  const inputIndex  = entity.index;
+  const totalInputs = entity.toNode.gate.inputCount;
+
+  return entity.toNode.getInputPortPositionByIndex(inputIndex, totalInputs);
 }
