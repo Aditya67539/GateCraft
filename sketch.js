@@ -1,7 +1,7 @@
 import p5 from "p5";
 import { state, screenToWorld } from "./state.js";
 import { drawGate, drawWaypoint, drawWire, drawPortTooltip, setFont, drawGhostPath, drawBus, drawGhostBus, drawGhostWaypoint } from "./render/draw.js";
-import { registerMouseHandlers, isNearPoint, busMap, nodeMap, getWireAtPoint, getBusAtPoint, getEffectiveMousePosition } from "./input/mouseHandlers.js";
+import { registerMouseHandlers, isNearPoint, busMap, nodeMap, getWireAtPoint, getEffectiveMousePosition, findNearBus } from "./input/mouseHandlers.js";
 import { initToolbar } from "./ui/toolbar.js";
 import { getActiveTheme, applyTheme } from "./render/theme.js";
 import { CircuitBuilder } from "./logic/CircuitBuilder.js";
@@ -76,7 +76,7 @@ const sketch = (p) => {
 
     setFont(theme, p);
 
-    const hoveredBus = getBusAtPoint(mouse.x, mouse.y, busNodes);
+    const hoveredBus = findNearBus(mouse.x, mouse.y, busNodes, nodeMap, busMap);
 
     for (let i = 0; i < busNodes.length; i++) {
       const busNode = busNodes[i];
@@ -84,7 +84,7 @@ const sketch = (p) => {
         state.ui.contextMenuTarget.source.bus.id === busNode.bus.id;
       const isEditorTarget = state.wireEditing.target?.type === "bus" &&
         state.wireEditing.target.source.bus.id === busNode.bus.id;
-      const isHovered = hoveredBus?.bus.id === busNode.bus.id;
+      const isHovered = hoveredBus?.busNode.bus.id === busNode.bus.id;
       const highlighted = isContextTarget || (
         !state.ui.contextMenuTarget && !state.isInteractionBlocked() &&
         (state.wireEditing.active ? isEditorTarget : isHovered) &&

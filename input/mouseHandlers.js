@@ -259,9 +259,9 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
         return;
       }
 
-      const busInfo = getBusAtPoint(world.x, world.y, busNodes);
+      const busInfo = findNearBus(world.x, world.y, busNodes, nodeMap, busMap);
       if (busInfo) {
-        showContextMenu(wireCtxMenu, clientX, clientY, { type: "bus", source: busInfo });
+        showContextMenu(wireCtxMenu, clientX, clientY, { type: "bus", source: busInfo.busNode });
         return;
       }
     }
@@ -516,7 +516,7 @@ function findNearInput(mx, my, renderNodes) {
   return null;
 }
 
-function findNearBus(mx, my, busNodes, nodeMap, busMap) {
+export function findNearBus(mx, my, busNodes, nodeMap, busMap) {
   for (let i = 0; i < busNodes.length; i++) {
     const { start, waypoints, end } = busNodes[i].getPoints();
     const points = [start, ...waypoints, end];
@@ -590,19 +590,6 @@ export function getWireAtPoint(mx, my, wires, nodeMap, busMap) {
           conn: conn,
           tapRef: getPointRefFromElement(conn, mx, my, nodeMap, busMap), 
         };
-      }
-    }
-  }
-  return null;
-}
-
-export function getBusAtPoint(mx, my, busNodes) {
-  for (const busNode of busNodes) {
-    const { start, waypoints, end } = busNode.getPoints();
-    const points = [ start, ...waypoints, end ];
-    for (let i = 0; i < points.length - 1; i++) {
-      if (isOnLineSegment(points[i], points[i + 1], { x: mx, y: my }, WIRE_DETECTION_THRESHOLD)) {
-        return busNode;
       }
     }
   }
