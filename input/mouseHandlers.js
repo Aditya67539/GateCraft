@@ -6,7 +6,7 @@ import { showToast } from "../ui/toast.js";
 import { MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand, PlaceBusCommand, RemoveBusCommand, AddWaypointCommand, CompositeCommand, buildConnectionCommand } from "../history/commands.js";
 import { performCommand } from "../history/history.js";
 import { loadCompositeGate, buildCircuitFromData } from "../persistence.js";
-import { canWireConnectToTarget } from "../logic/wire.js";
+import { isConnectionPossible } from "../logic/wire.js";
 
 const { LOW, HIGH, X, Z, E } = SIGNAL;
 
@@ -626,17 +626,18 @@ function findNearWaypoint(mx, my, wires, busNodes) {
 
 export function getEffectiveMousePosition(
   mouse,
-  wireOrigin,
+  wireCreation,
   ghostWire,
   circuit,
   renderNodes,
   busNodes,
+  wires,
   nodeMap,
   busMap,
   p
 ) {
   let effectiveMousePosition = mouse;
-  if (wireOrigin) {
+  if (wireCreation) {
     const useSnap = p.keyIsDown(p.SHIFT);
 
     effectiveMousePosition = getGhostWireEndPoint(
@@ -646,28 +647,37 @@ export function getEffectiveMousePosition(
       useSnap,
     );
 
-    const hoveredDestination = findWireDestination(
+    const hoveredEndPointInfo = findWireEndpoint(
       effectiveMousePosition.x,
       effectiveMousePosition.y,
       renderNodes,
       busNodes,
+      wires,
       nodeMap,
       busMap,
+      neededRole(wireCreation),
     );
-    const validDestination = canWireConnectToTarget(circuit, wireOrigin, hoveredDestination);
+    if (hoveredEndPointInfo) {
+      const { originInfo, destinationInfo } = resolveConnection(
+        wireCreation,
+        hoveredEndPointInfo,
+      );
+      const validDestination = isConnectionPossible(circuit, originInfo, destinationInfo);
 
-    if (validDestination) {
-      if (hoveredDestination.destinationType === "gate") {
-        const inputIndex = hoveredDestination.destination.index;
-        const toNode = hoveredDestination.destination.toNode;
-        const totalInputs = toNode.gate.inputCount;
+      if (validDestination) {
+        const { destinationType, destination } = destinationInfo;
+        if (destinationType === "gate") {
+          const inputIndex = destination.index;
+          const toNode = destination.toNode;
+          const totalInputs = toNode.gate.inputCount;
 
-        effectiveMousePosition = toNode.getInputPortPositionByIndex(inputIndex, totalInputs);
-      } else if (hoveredDestination.destinationType === "bus") {
-        const busNode = hoveredDestination.destination.busNode;
-        const tapRef = hoveredDestination.destination.tapRef;
+          effectiveMousePosition = toNode.getInputPortPositionByIndex(inputIndex, totalInputs);
+        } else if (destinationType === "bus") {
+          const busNode = destination.busNode;
+          const tapRef = destination.tapRef;
 
-        effectiveMousePosition = getTapPointFromElement(busNode, tapRef, nodeMap, busMap);
+          effectiveMousePosition = getTapPointFromElement(busNode, tapRef, nodeMap, busMap);
+        }
       }
     }
   }

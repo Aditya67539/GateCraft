@@ -55,6 +55,7 @@ const sketch = (p) => {
       circuit,
       renderNodes,
       busNodes,
+      wires,
       nodeMap,
       busMap,
       p,
