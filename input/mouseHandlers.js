@@ -588,10 +588,10 @@ export function resolveConnection(a, b) {
 
 function isOnLineSegment(A, B, O, threshold) {
   const { distSq } = projectPointOntoSegment(A, B, O);
+  return distSq <= Math.pow(threshold, 2);
 }
 
-function isOnLineSegment(A, B, O, threshold) {
-  const { distSq } = projectPointOntoSegment(A, B, O);
+export function getWireAtPoint(mx, my, wires, nodeMap, busMap) {
   for (const conn of wires) {
     const { start, waypoints, end } = conn.getPoints(nodeMap, busMap);
     const points = [ start, ...waypoints, end ];
