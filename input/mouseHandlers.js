@@ -546,17 +546,17 @@ export function findNearBus(mx, my, busNodes, nodeMap, busMap) {
 function findWireEndpoint(mx, my, renderNodes, busNodes, wires, nodeMap, busMap, need = ROLE.ANY) {
   const canSource = need !== ROLE.SINK;
   const canSink   = need !== ROLE.SOURCE;
-
+  
+  if (canSink) {
+    const inp = findNearInput(mx, my, renderNodes);
+    if (inp) return { kind: "gate", role: ROLE.SINK, entity: inp };
+  }
   if (canSource) {
     const out = findNearOutput(mx, my, renderNodes);
     if (out) return { kind: "gate", role: ROLE.SOURCE, entity: out };
 
     const wire = getWireAtPoint(mx, my, wires, nodeMap, busMap);
     if (wire) return { kind: "wire", role: ROLE.SOURCE, entity: wire };
-  }
-  if (canSink) {
-    const inp = findNearInput(mx, my, renderNodes);
-    if (inp) return { kind: "gate", role: ROLE.SINK, entity: inp };
   }
   const bus = findNearBus(mx, my, busNodes, nodeMap, busMap);
   if (bus) return { kind: "bus", role: ROLE.ANY, entity: bus };
