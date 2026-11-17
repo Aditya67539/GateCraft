@@ -1,7 +1,7 @@
 import p5 from "p5";
 import { state, screenToWorld } from "./state.js";
 import { drawGate, drawWaypoint, drawWire, drawPortTooltip, setFont, drawGhostPath, drawBus, drawGhostBus, drawGhostWaypoint } from "./render/draw.js";
-import { registerMouseHandlers, isNearPoint, busMap, nodeMap, getWireAtPoint, getEffectiveMousePosition, findNearBus } from "./input/mouseHandlers.js";
+import { registerMouseHandlers, isNearPoint, busMap, nodeMap, getWireAtPoint, getEffectiveMousePosition, resolveConnection, findNearBus } from "./input/mouseHandlers.js";
 import { initToolbar } from "./ui/toolbar.js";
 import { getActiveTheme, applyTheme } from "./render/theme.js";
 import { CircuitBuilder } from "./logic/CircuitBuilder.js";
@@ -9,8 +9,8 @@ import { snapPointToGrid, wouldBusOverlap, wouldOverlap } from "./render/RenderN
 import { registerKeyboardHandlers } from "./input/keyboardHandlers.js";
 import { drawMinimap } from "./render/minimap.js";
 import { getGhostWireEndPoint, projectPointOntoSegment } from "./render/wireGeometry.js";
-import { canWireConnectToTarget } from "./logic/wire.js";
-import { GATE_CATEGORIES, WAYPOINT_DETECTION_THRESHOLD, PORT_DETECTION_THRESHOLD, WAYPOINT_INSERTION_THRESHOLD_SQ, TOOLTIP_FADE_SPEED, GRID_SIZE, GRID_OFFSET, MAX_ZOOM, GRID_DOT_SIZE } from "./constants.js";
+import { isConnectionPossible } from "./logic/wire.js";
+import { GATE_CATEGORIES, WAYPOINT_DETECTION_THRESHOLD, PORT_DETECTION_THRESHOLD, WAYPOINT_INSERTION_THRESHOLD_SQ, TOOLTIP_FADE_SPEED, GRID_SIZE, GRID_OFFSET, MAX_ZOOM, GRID_DOT_SIZE, ROLE } from "./constants.js";
 
 applyTheme(getActiveTheme());
 
@@ -78,6 +78,24 @@ const sketch = (p) => {
     setFont(theme, p);
 
     const hoveredBus = findNearBus(mouse.x, mouse.y, busNodes, nodeMap, busMap);
+    let validConnection = false;
+    if (hoveredBus) {
+      if (
+        state.interaction.wireCreation &&
+        state.interaction.wireCreation.kind !== "bus"
+      ) {
+        const hoveredBusInfo = { kind: "bus", role: ROLE.ANY, entity: hoveredBus };
+        const { originInfo, destinationInfo } = resolveConnection(
+          state.interaction.wireCreation,
+          hoveredBusInfo,
+        );
+        validConnection = isConnectionPossible(
+          circuit,
+          originInfo,
+          destinationInfo,
+        );
+      }
+    }
 
     for (let i = 0; i < busNodes.length; i++) {
       const busNode = busNodes[i];
@@ -91,11 +109,7 @@ const sketch = (p) => {
         (state.wireEditing.active ? isEditorTarget : isHovered) &&
         (
           !state.interaction.wireCreation || 
-          canWireConnectToTarget(
-            circuit,
-            state.interaction.wireCreation,
-            { destinationType: "bus", destination: { busNode } }
-          )
+          validConnection
         )
       );
       drawBus(busNode, p, highlighted);
