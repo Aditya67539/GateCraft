@@ -7,6 +7,7 @@ import { MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand
 import { performCommand } from "../history/history.js";
 import { loadCompositeGate, buildCircuitFromData } from "../persistence.js";
 import { isConnectionPossible } from "../logic/wire.js";
+import { findClosestPort } from "../interaction/portInteraction.js";
 
 const { LOW, HIGH, X, Z, E } = SIGNAL;
 
@@ -508,18 +509,13 @@ function findNearOutput(mx, my, renderNodes) {
   for (let i = 0; i < renderNodes.length; i++) {
     const gate = renderNodes[i].gate;
     if (gate.category === GATE_CATEGORIES.PRIMITIVE && gate.type === "output") continue;
-    if (gate.category === GATE_CATEGORIES.COMPOSITE) {
-      for (let j = 0; j < gate.outputCount; j++) {
-        const port = renderNodes[i].getOutputPortPositionByIndex(j, gate.outputCount);
-        if (isNearPoint(mx, my, port, PORT_DETECTION_THRESHOLD)) {
-          return { fromNode: renderNodes[i], fromOutputIndex: j };
-        }
-      }
-    }
-    const port = renderNodes[i].getOutputPortPosition();
-    if (isNearPoint(mx, my, port, PORT_DETECTION_THRESHOLD)) {
-      return { fromNode: renderNodes[i], fromOutputIndex: null };
-    }
+    const hit = findClosestPort(
+      mx, my,
+      gate.outputCount,
+      (j, n) => renderNodes[i].getOutputPortPositionByIndex(j, n),
+      PORT_DETECTION_THRESHOLD,
+    );
+    if (hit) return { fromNode: renderNodes[i], fromOutputIndex: hit.index };
   }
   return null;
 }
@@ -528,14 +524,13 @@ function findNearInput(mx, my, renderNodes) {
   for (let i = 0; i < renderNodes.length; i++) {
     const gate = renderNodes[i].gate;
     if (gate.category === GATE_CATEGORIES.PRIMITIVE && gate.type === "input") continue;
-    const totalInputs = gate.inputCount;
-
-    for (let j = 0; j < totalInputs; j++) {
-      const port = renderNodes[i].getInputPortPositionByIndex(j, totalInputs);
-      if (isNearPoint(mx, my, port, PORT_DETECTION_THRESHOLD)) {
-        return { toNode: renderNodes[i], index: j };
-      }
-    }
+    const hit = findClosestPort(
+      mx, my,
+      gate.inputCount,
+      (j, n) => renderNodes[i].getInputPortPositionByIndex(j, n),
+      PORT_DETECTION_THRESHOLD,
+    );
+    if (hit) return { toNode: renderNodes[i], index: hit.index };
   }
   return null;
 }

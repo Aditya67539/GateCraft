@@ -97,7 +97,7 @@ export function detectHoveredPort(mouse, renderNodes, p) {
 }
 
 
-function findClosestPort(mx, my, count, getPos, threshold) {
+export function findClosestPort(mx, my, count, getPos, threshold) {
   let best = null;
   for (let i = 0; i < count; i++) {
     const pos = getPos(i, count);
