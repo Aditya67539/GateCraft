@@ -665,16 +665,27 @@ export function getEffectiveMousePosition(
       const validDestination = isConnectionPossible(circuit, originInfo, destinationInfo);
 
       if (validDestination) {
-        const { destinationType, destination } = destinationInfo;
-        if (destinationType === "gate") {
-          const inputIndex = destination.index;
-          const toNode = destination.toNode;
-          const totalInputs = toNode.gate.inputCount;
+        if (hoveredEndPointInfo.role === ROLE.SINK) {
+          const { destinationType, destination } = destinationInfo;
+          if (destinationType === "gate") {
+            const inputIndex = destination.index;
+            const toNode = destination.toNode;
+            const totalInputs = toNode.gate.inputCount;
 
-          effectiveMousePosition = toNode.getInputPortPositionByIndex(inputIndex, totalInputs);
-        } else if (destinationType === "bus") {
-          const busNode = destination.busNode;
-          const tapRef = destination.tapRef;
+            effectiveMousePosition = toNode.getInputPortPositionByIndex(inputIndex, totalInputs);
+          }
+        } else if (hoveredEndPointInfo.role === ROLE.SOURCE) {
+          const { originType, origin } = originInfo;
+          if (originType === "gate") {
+            const outputIndex = origin.fromOutputIndex;
+            const fromNode = origin.fromNode;
+            const totalOutputs = fromNode.gate.outputCount;
+
+            effectiveMousePosition = fromNode.getOutputPortPositionByIndex(outputIndex, totalOutputs);
+          }
+        } else if (hoveredEndPointInfo.role === ROLE.ANY) {
+          const busNode = hoveredEndPointInfo.entity.busNode;
+          const tapRef = hoveredEndPointInfo.entity.tapRef;
 
           effectiveMousePosition = getTapPointFromElement(busNode, tapRef, nodeMap, busMap);
         }
