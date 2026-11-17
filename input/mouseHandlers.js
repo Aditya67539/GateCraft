@@ -116,6 +116,20 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
               busMap,
               ROLE.ANY,
             );
+            if (
+              state.interaction.wireCreation &&
+              state.interaction.wireCreation.role === ROLE.SINK
+            ) {
+              const entity = state.interaction.wireCreation.entity;
+              const gate = entity.toNode.gate;
+              const index = entity.index;
+
+              if (!gate.canConnect(index)) {
+                state.interaction.wireCreation = null;
+                showToast("Wire is already connected!", { type: "error" });
+                return;
+              } 
+            }
           }
 
           // ── Update persistent selection ──────────────────────────
