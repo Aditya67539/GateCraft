@@ -11,6 +11,7 @@ import { drawMinimap } from "./render/minimap.js";
 import { getGhostWireEndPoint, projectPointOntoSegment } from "./render/wireGeometry.js";
 import { isConnectionPossible } from "./logic/wire.js";
 import { GATE_CATEGORIES, WAYPOINT_DETECTION_THRESHOLD, PORT_DETECTION_THRESHOLD, WAYPOINT_INSERTION_THRESHOLD_SQ, TOOLTIP_FADE_SPEED, GRID_SIZE, GRID_OFFSET, MAX_ZOOM, GRID_DOT_SIZE, ROLE } from "./constants.js";
+import { detectHoveredPort } from "./interaction/portInteraction.js";
 
 applyTheme(getActiveTheme());
 
@@ -116,84 +117,7 @@ const sketch = (p) => {
     }
 
     // ── Detect hovered port for tooltip ──────────────────────
-    let hoveredPortPosition = null;
-    let hoveredNode = null;
-    let hoveredPortIndex = null;
-    let hoveredLabel = "";
-    let portType = "";
-    for (let i = 0; i < renderNodes.length; i++) {
-      const gate = renderNodes[i].gate;
-      const totalInputs = gate.inputCount;
-      const totalOutputs = gate.outputCount;
-
-      if (totalInputs !== 0) {
-        for (let j = 0; j < totalInputs; j++) {
-          const portPosition = renderNodes[i].getInputPortPositionByIndex(j, totalInputs);
-          if (isNearPoint(mouse.x, mouse.y, portPosition, PORT_DETECTION_THRESHOLD)) {
-            hoveredNode = renderNodes[i];
-            hoveredPortIndex = j;
-            hoveredPortPosition = portPosition;
-            if (
-              gate.category === GATE_CATEGORIES.COMPOSITE &&
-              gate.internalInputs &&
-              gate.internalInputs[j] &&
-              gate.internalInputs[j].label
-            ) {
-              hoveredLabel = gate.internalInputs[j].label;
-            } else if (
-              gate.category === GATE_CATEGORIES.PRIMITIVE &&
-              gate.type === "Tri-state Buffer"
-            ) {
-              if (j === 0) hoveredLabel = "enable";
-              else if (j === 1) hoveredLabel = "data";
-              else hoveredLabel = "in";
-            } else {
-              hoveredLabel = "in";
-            }
-            portType = "input";
-          }
-        }
-      }
-
-      if (totalOutputs !== 0) {
-        for (let j = 0; j < totalOutputs; j++) {
-          const portPosition = renderNodes[i].getOutputPortPositionByIndex(j, totalOutputs);
-          if (isNearPoint(mouse.x, mouse.y, portPosition, PORT_DETECTION_THRESHOLD)) {
-            hoveredNode = renderNodes[i];
-            hoveredPortIndex = j;
-            hoveredPortPosition = portPosition;
-            if (
-              gate.category === GATE_CATEGORIES.COMPOSITE &&
-              gate.internalOutputs &&
-              gate.internalOutputs[j] &&
-              gate.internalOutputs[j].label
-            ) {
-              hoveredLabel = gate.internalOutputs[j].label;
-            } else {
-              hoveredLabel = "out";
-            }
-            portType = "output";
-          }
-        }
-      }
-    }
-
-    // Update tooltip animation state
-    const dt = p.deltaTime / 1000; // seconds
-    if (hoveredPortPosition) {
-      state.ui.tooltip.active = true;
-      state.ui.tooltip.label = hoveredLabel;
-      state.ui.tooltip.node = hoveredNode;
-      state.ui.tooltip.port.index = hoveredPortIndex;
-      state.ui.tooltip.port.position = hoveredPortPosition;
-      state.ui.tooltip.port.type = portType;
-      state.ui.tooltip.opacity = Math.min(1, state.ui.tooltip.opacity + TOOLTIP_FADE_SPEED * dt);
-    } else {
-      state.ui.tooltip.opacity = Math.max(0, state.ui.tooltip.opacity - TOOLTIP_FADE_SPEED * dt);
-      if (state.ui.tooltip.opacity <= 0) {
-        state.ui.tooltip.reset();
-      }
-    }
+    detectHoveredPort(mouse, renderNodes, p);
 
     for (let i = 0; i < renderNodes.length; i++) {
       const node = renderNodes[i];
@@ -215,12 +139,12 @@ const sketch = (p) => {
 
       // Highlight corresponding segment when hovering over an input port of a seven-segment display
       const isHoveredDisplayInput = (
-        hoveredNode === node &&
-        portType === "input" &&
+        state.ui.tooltip.node === node &&
+        state.ui.tooltip.port.type === "input" &&
         node.gate.category === GATE_CATEGORIES.PRIMITIVE &&
         node.gate.type === "seven-seg"
       );
-      const highlightedSegmentIndex = isHoveredDisplayInput ? hoveredPortIndex : null;
+      const highlightedSegmentIndex = isHoveredDisplayInput ? state.ui.tooltip.port.index : null;
 
       drawGate(node, p, nodeStatus, highlightedSegmentIndex);
     }
