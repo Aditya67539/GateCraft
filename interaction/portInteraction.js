@@ -3,12 +3,7 @@ import { state } from "../state.js";
 import { dist } from "../render/wireGeometry.js";
 
 export function detectHoveredPort(mouse, renderNodes, p) {
-  let hoveredPortPosition = null;
-  let hoveredNode = null;
-  let hoveredPortIndex = null;
-  let hoveredLabel = "";
-  let portType = "";
-  
+  let isHoveringPort = false;
   for (let i = 0; i < renderNodes.length; i++) {
     const gate = renderNodes[i].gate;
     const totalInputs  = gate.inputCount;
@@ -24,9 +19,10 @@ export function detectHoveredPort(mouse, renderNodes, p) {
 
     if (closestInputPort) {
       const j = closestInputPort.index;
-      hoveredNode = renderNodes[i];
-      hoveredPortIndex = j;
-      hoveredPortPosition = closestInputPort.position;
+      isHoveringPort = true;
+      state.ui.tooltip.node = renderNodes[i];
+      state.ui.tooltip.port.index = j;
+      state.ui.tooltip.port.position = closestInputPort.position;
 
       if (
         gate.category === GATE_CATEGORIES.COMPOSITE &&
@@ -34,18 +30,18 @@ export function detectHoveredPort(mouse, renderNodes, p) {
         gate.internalInputs[j] &&
         gate.internalInputs[j].label
       ) {
-        hoveredLabel = gate.internalInputs[j].label;
+        state.ui.tooltip.label = gate.internalInputs[j].label;
       } else if (
         gate.category === GATE_CATEGORIES.PRIMITIVE &&
         gate.type === "Tri-state Buffer"
       ) {
-        if (j === 0) hoveredLabel = "enable";
-        else if (j === 1) hoveredLabel = "data";
-        else hoveredLabel = "in";
+        if (j === 0) state.ui.tooltip.label = "enable";
+        else if (j === 1) state.ui.tooltip.label = "data";
+        else state.ui.tooltip.label = "in";
       } else {
-        hoveredLabel = "in";
+        state.ui.tooltip.label = "in";
       }
-      portType = "input";
+      state.ui.tooltip.port.type = "input";
       break;
     }
 
@@ -59,9 +55,10 @@ export function detectHoveredPort(mouse, renderNodes, p) {
 
     if (closestOutputPort) {
       const j = closestOutputPort.index;
-      hoveredNode = renderNodes[i];
-      hoveredPortIndex = j;
-      hoveredPortPosition = closestOutputPort.position;
+      isHoveringPort = true;
+      state.ui.tooltip.node = renderNodes[i];
+      state.ui.tooltip.port.index = j;
+      state.ui.tooltip.port.position = closestOutputPort.position;
 
       if (
         gate.category === GATE_CATEGORIES.COMPOSITE &&
@@ -69,24 +66,19 @@ export function detectHoveredPort(mouse, renderNodes, p) {
         gate.internalOutputs[j] &&
         gate.internalOutputs[j].label
       ) {
-        hoveredLabel = gate.internalOutputs[j].label;
+        state.ui.tooltip.label = gate.internalOutputs[j].label;
       } else {
-        hoveredLabel = "out";
+        state.ui.tooltip.label = "out";
       }
-      portType = "output";
+      state.ui.tooltip.port.type = "output";
       break;
     }
   }
 
   // Update tooltip state
   const dt = p.deltaTime / 1000; // seconds
-  if (hoveredPortPosition) {
+  if (isHoveringPort) {
     state.ui.tooltip.active = true;
-    state.ui.tooltip.label = hoveredLabel;
-    state.ui.tooltip.node = hoveredNode;
-    state.ui.tooltip.port.index = hoveredPortIndex;
-    state.ui.tooltip.port.position = hoveredPortPosition;
-    state.ui.tooltip.port.type = portType;
     state.ui.tooltip.opacity = Math.min(1, state.ui.tooltip.opacity + TOOLTIP_FADE_SPEED * dt);
   } else {
     state.ui.tooltip.opacity = Math.max(0, state.ui.tooltip.opacity - TOOLTIP_FADE_SPEED * dt);
