@@ -9,7 +9,9 @@ export class Wire {
     this.to = to;
     this.toInputIndex = toInputIndex;
     this.fromOutputIndex = fromOutputIndex;
-    this.signal = fromOutputIndex !== null ? from.output[fromOutputIndex] : from.output;
+    this.signal = fromOutputIndex !== null && Array.isArray(from.output)
+      ? from.output[fromOutputIndex]
+      : from.output;
   }
 }
 

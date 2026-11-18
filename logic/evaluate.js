@@ -31,8 +31,11 @@ export function evaluateAll(circuit, seedAll = false) {
   if (seedAll) {
     for (const wire of wires) {
       const signal = (
-        wire.from.category === GATE_CATEGORIES.COMPOSITE ||
-        wire.from.type === "seven-seg"
+        (
+          wire.from.category === GATE_CATEGORIES.COMPOSITE ||
+          wire.from.type === "seven-seg"
+        ) &&
+        Array.isArray(wire.from.output)
       ) ? wire.from.output[wire.fromOutputIndex]
         : wire.from.output;
       if (wire.signal !== signal) {
@@ -178,8 +181,11 @@ export function evaluateOnce(circuit) {
       if (wire.from.id !== gate.id) continue;
 
       const signal = (
-        gate.category === GATE_CATEGORIES.COMPOSITE ||
-        gate.type === "seven-seg"
+        (
+          gate.category === GATE_CATEGORIES.COMPOSITE ||
+          gate.type === "seven-seg"
+        ) && 
+        Array.isArray(gate.output)
       ) ? gate.output[wire.fromOutputIndex]
         : gate.output;
 
