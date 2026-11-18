@@ -10,8 +10,8 @@ import { registerKeyboardHandlers } from "./input/keyboardHandlers.js";
 import { drawMinimap } from "./render/minimap.js";
 import { getGhostWireEndPoint, projectPointOntoSegment } from "./render/wireGeometry.js";
 import { isConnectionPossible } from "./logic/wire.js";
-import { GATE_CATEGORIES, WAYPOINT_DETECTION_THRESHOLD, PORT_DETECTION_THRESHOLD, WAYPOINT_INSERTION_THRESHOLD_SQ, TOOLTIP_FADE_SPEED, GRID_SIZE, GRID_OFFSET, MAX_ZOOM, GRID_DOT_SIZE, ROLE } from "./constants.js";
-import { detectHoveredPort } from "./interaction/portInteraction.js";
+import { GATE_CATEGORIES, WAYPOINT_DETECTION_THRESHOLD, WAYPOINT_INSERTION_THRESHOLD_SQ, GRID_SIZE, GRID_OFFSET, MAX_ZOOM, GRID_DOT_SIZE, ROLE } from "./constants.js";
+import { detectHoveredPort, shouldHighlightPort } from "./interaction/portInteraction.js";
 
 applyTheme(getActiveTheme());
 
@@ -145,8 +145,19 @@ const sketch = (p) => {
         node.gate.type === "seven-seg"
       );
       const highlightedSegmentIndex = isHoveredDisplayInput ? state.ui.tooltip.port.index : null;
+      const highlightedPort = shouldHighlightPort() && state.ui.tooltip.node === node
+        ? state.ui.tooltip.port
+        : {};
 
-      drawGate(node, p, nodeStatus, highlightedSegmentIndex);
+      drawGate(
+        node, p, theme,
+        {
+          status: nodeStatus,
+          interactionBlocked: state.isInteractionBlocked(),
+          highlightedPort,
+          highlightedSegmentIndex,
+        }
+      );
     }
 
     const hoveredWire = getWireAtPoint(mouse.x, mouse.y, wires, nodeMap, busMap);
@@ -208,7 +219,13 @@ const sketch = (p) => {
 
     if (state.ghost.node) {
       let status = wouldOverlap(state.ghost.node, renderNodes, busNodes, null) ? "invalid" : "valid";
-      drawGate(state.ghost.node, p, status);
+      drawGate(
+        state.ghost.node, p, theme,
+        {
+          status,
+          interactionBlocked: state.isInteractionBlocked(),
+        }
+      );
       if (state.mode === "placing") {
         const { x, y } = snapPointToGrid(mouse.x, mouse.y);
         state.ghost.node.x = x;
