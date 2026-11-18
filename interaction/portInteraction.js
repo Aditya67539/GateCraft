@@ -1,4 +1,4 @@
-import { GATE_CATEGORIES, PORT_DETECTION_THRESHOLD, TOOLTIP_FADE_SPEED } from "../constants.js";
+import { GATE_CATEGORIES, PORT_DETECTION_THRESHOLD, TOOLTIP_FADE_SPEED, ROLE } from "../constants.js";
 import { state } from "../state.js";
 import { dist } from "../render/wireGeometry.js";
 
@@ -84,6 +84,37 @@ export function detectHoveredPort(mouse, renderNodes, p) {
     state.ui.tooltip.opacity = Math.max(0, state.ui.tooltip.opacity - TOOLTIP_FADE_SPEED * dt);
     if (state.ui.tooltip.opacity <= 0) {
       state.ui.tooltip.reset();
+    }
+  }
+}
+
+
+export function shouldHighlightPort() {
+  if (!state.ui.tooltip.active) return false;
+  const node  = state.ui.tooltip.node;
+  const index = state.ui.tooltip.port.index;
+  const portType = state.ui.tooltip.port.type;
+
+  if (!state.interaction.wireCreation) {
+    if (portType === "input") {
+      return node.gate.canConnect(index);
+    }
+    return true;
+  } else {
+    const role = state.interaction.wireCreation.role;
+
+    if (role === ROLE.SOURCE) {
+      if (portType === "output") return false;
+      return node.gate.canConnect(index);
+    } else if (role === ROLE.SINK) {
+      return portType !== "input";
+    } else if (role === ROLE.ANY) {
+      if (portType === "input") {
+        return node.gate.canConnect(index);
+      } else if (portType === "output") {
+        const busNode = state.interaction.wireCreation.entity.busNode;
+        return busNode.bus.canConnect(node.gate, index);
+      }
     }
   }
 }
