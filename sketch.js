@@ -161,6 +161,21 @@ const sketch = (p) => {
     }
 
     const hoveredWire = getWireAtPoint(mouse.x, mouse.y, wires, nodeMap, busMap);
+    validConnection = false;
+    if (hoveredWire) {
+      if (state.interaction.wireCreation) {
+        const hoveredWireInfo = { kind: "wire", role: ROLE.SOURCE, entity: hoveredWire };
+        const { originInfo, destinationInfo } = resolveConnection(
+          state.interaction.wireCreation,
+          hoveredWireInfo,
+        );
+        validConnection = isConnectionPossible(
+          circuit,
+          originInfo,
+          destinationInfo,
+        );
+      }
+    }
 
     for (let i = 0; i < wires.length; i++) {
       const conn = wires[i];
@@ -172,9 +187,12 @@ const sketch = (p) => {
       const highlighted = isContextTarget || (
         !state.ui.tooltip.active &&
         !state.ui.contextMenuTarget &&
-        !state.interaction.wireCreation &&
         !state.isInteractionBlocked() &&
-        (state.wireEditing.active ? isEditorTarget : isHovered)
+        (state.wireEditing.active ? isEditorTarget : isHovered) &&
+        (
+          !state.interaction.wireCreation ||
+          validConnection
+        )
       );
       drawWire(conn, nodeMap, busMap, p, highlighted);
     }
