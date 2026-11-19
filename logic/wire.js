@@ -1,3 +1,5 @@
+import { GATE_CATEGORIES } from "../constants.js";
+
 class Logic {
   static nextId = 1;
 }
@@ -38,9 +40,15 @@ export function isConnectionPossible(circuit, originInfo, destinationInfo) {
     toInputIndex = destination.index;
   } else if (destinationType === "bus") {
     to = destination.busNode.bus;
-  } else if (destinationType === "wire") {
-    return false;
   }
+
+  if (
+    (
+      originType === "bus" ||
+      (from.category === GATE_CATEGORIES.PRIMITIVE && from.type === "bus")
+    ) &&
+    destinationType === "bus"
+  ) return false;
 
   return circuit.canConnect(from, to, fromOutputIndex, toInputIndex);
 }
