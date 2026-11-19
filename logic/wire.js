@@ -35,6 +35,8 @@ export function isConnectionPossible(circuit, originInfo, destinationInfo) {
     toInputIndex = destination.index;
   } else if (destinationType === "bus") {
     to = destination.busNode.bus;
+  } else if (destinationType === "wire") {
+    return false;
   }
 
   return circuit.canConnect(from, to, fromOutputIndex, toInputIndex);
