@@ -2,6 +2,7 @@ import {
   FONT_SIZE,
   GRID_SIZE,
   PORT_RADIUS,
+  HOVERED_PORT_RADIUS,
   DEFAULT_STROKE_WEIGHT,
   WIRE_THICKNESS,
   BUS_THICKNESS,
@@ -48,6 +49,8 @@ import {
   LABEL_OFFSET_Y,
 } from "../constants.js";
 import { getActiveTheme } from "./theme.js";
+import { state } from "../state.js";
+import { RenderNode } from "./RenderNode.js";
 
 /**
  * Return "#ffffff" or "#1a1a2e" depending on which has better contrast
@@ -122,23 +125,43 @@ function drawClockWave(renderNode, stateKey, theme, p) {
 
 /**
  * Draws a logic gate or display component.
- *
- * @param {RenderNode} renderNode - The gate node to draw
- * @param {Object} p - The p5 instance
- * @param {string|null} [status=null] - Visual overlay status ('selected', 'valid', 'invalid')
- * @param {number|null} [highlightedSegmentIndex=null] - Index of segment (0-7) to highlight on seven-segment displays
+ * 
+ * @param {RenderNode} node - The render node representing the gate.
+ * @param {Object} p - The p5 instance used for rendering.
+ * @param {Object} theme - The theme configuration used for rendering.
+ * @param {Object} [options={}] - Optional rendering and interaction settings.
+ * @param {'selected'|'valid'|'invalid'|null} [options.status=null] - Visual overlay status.
+ * @param {boolean} [options.interactionBlocked=false] - Whether interactions with the gate are blocked.
+ * @param {{index: number|null, type: string|null}} [options.highlightedPort={index: null, type: null}] - Port to highlight.
+ * @param {number|null} [options.highlightedSegmentIndex=null] - Index of the seven-segment display segment (0-7) to highlight.
  */
-export function drawGate(renderNode, p, status = null, highlightedSegmentIndex = null) {
-  const theme = getActiveTheme();
+export function drawGate(node, p, theme, options = {}) {
+  const {
+    status = null,
+    interactionBlocked = false,
+    highlightedPort = { index: null, type: null },
+    highlightedSegmentIndex = null,
+  } = options;
+
   if (
-    renderNode.gate.category === GATE_CATEGORIES.PRIMITIVE &&
-    renderNode.gate.type === "seven-seg"
+    node.gate.category === GATE_CATEGORIES.PRIMITIVE &&
+    node.gate.type === "seven-seg"
   ) {
-    drawDisplay(renderNode, p, highlightedSegmentIndex);
-    drawInputPort(renderNode, theme, p);
-    drawOutputPort(renderNode, theme, p);
-    drawLabel(renderNode, p);
-    if (status) drawOverlay(renderNode.getBounds(), status, p);
+    drawDisplay(node, p, highlightedSegmentIndex);
+    if (highlightedPort.type === "input" && !interactionBlocked) {
+      drawInputPort(node, theme, p, highlightedPort.index);
+    } else {
+      drawInputPort(node, theme, p);
+    }
+
+    if (highlightedPort.type === "output" && !interactionBlocked) {
+      drawOutputPort(node, theme, p, highlightedPort.index);
+    } else {
+      drawOutputPort(node, theme, p);
+    }
+
+    drawLabel(node, p);
+    if (status) drawOverlay(node.getBounds(), status, p);
 
     p.fill(0);
     p.stroke(0);
@@ -146,7 +169,7 @@ export function drawGate(renderNode, p, status = null, highlightedSegmentIndex =
     return;
   }
 
-  const gate = renderNode.gate;
+  const gate = node.gate;
   const stateVal = Array.isArray(gate.output) ? gate.output[0] : gate.output;
   const signalInfo = SIGNAL_MAP[stateVal];
   const stateKey = signalInfo?.key || "x";
@@ -175,8 +198,8 @@ export function drawGate(renderNode, p, status = null, highlightedSegmentIndex =
     // Use Canvas 2D API for a vertical gradient fill + stroke
     const ctx = p.drawingContext;
     const grad = ctx.createLinearGradient(
-      renderNode.x, renderNode.y,
-      renderNode.x, renderNode.y + renderNode.height
+      node.x, node.y,
+      node.x, node.y + node.height
     );
     grad.addColorStop(0, theme.gates.logic.gradientTop);
     grad.addColorStop(1, theme.gates.logic.gradientBottom);
@@ -184,8 +207,8 @@ export function drawGate(renderNode, p, status = null, highlightedSegmentIndex =
     ctx.fillStyle = grad;
     // Draw rounded rect via Canvas API (matches p5's rect with corner radius)
     const r = GATE_CORNER_RADIUS;
-    const x = renderNode.x, y = renderNode.y;
-    const w = renderNode.width, h = renderNode.height;
+    const x = node.x, y = node.y;
+    const w = node.width, h = node.height;
     ctx.beginPath();
     ctx.moveTo(x + r, y);
     ctx.arcTo(x + w, y, x + w, y + h, r);
@@ -209,7 +232,7 @@ export function drawGate(renderNode, p, status = null, highlightedSegmentIndex =
       p.noStroke();
     }
     p.fill(color);
-    p.rect(renderNode.x, renderNode.y, renderNode.width, renderNode.height, GATE_CORNER_RADIUS);
+    p.rect(node.x, node.y, node.width, node.height, GATE_CORNER_RADIUS);
   }
 
   // Compute label color with good contrast against the gate fill
@@ -235,12 +258,12 @@ export function drawGate(renderNode, p, status = null, highlightedSegmentIndex =
   ) {
     // --- Label at the top ---
     const { displayW, displayH, labelRowH, displayPad, displayCount, displayGap } = gate._displayArea;
-    p.text(gateDisplayText, renderNode.x + renderNode.width / 2, renderNode.y + labelRowH / 1.5);
+    p.text(gateDisplayText, node.x + node.width / 2, node.y + labelRowH / 1.5);
 
     // --- Embedded displays (centered strip) ---
     const displayStripW = displayCount * displayW + (displayCount - 1) * displayGap;
-    const stripStartX = renderNode.x + (renderNode.width - displayStripW) / 2;
-    const dispY = renderNode.y + labelRowH + displayPad;
+    const stripStartX = node.x + (node.width - displayStripW) / 2;
+    const dispY = node.y + labelRowH + displayPad;
 
     const borderWidth = (displayCount * displayW) + (displayGap * (displayCount - 1));
 
@@ -254,16 +277,25 @@ export function drawGate(renderNode, p, status = null, highlightedSegmentIndex =
     gate.category === GATE_CATEGORIES.PRIMITIVE &&
     gate.type === "clock"
   ) {
-    drawClockWave(renderNode, stateKey, theme, p);
+    drawClockWave(node, stateKey, theme, p);
   } else {
-    p.text(gateDisplayText, renderNode.x + renderNode.width / 2, renderNode.y + renderNode.height / 2);
+    p.text(gateDisplayText, node.x + node.width / 2, node.y + node.height / 2);
   }
 
-  drawOutputPort(renderNode, theme, p);
-  drawInputPort(renderNode, theme, p);
-  drawLabel(renderNode, p);
+  if (highlightedPort.type === "input" && !interactionBlocked) {
+    drawInputPort(node, theme, p, highlightedPort.index);
+  } else {
+    drawInputPort(node, theme, p);
+  }
 
-  if (status) drawOverlay(renderNode.getBounds(), status, p);
+  if (highlightedPort.type === "output" && !interactionBlocked) {
+    drawOutputPort(node, theme, p, highlightedPort.index);
+  } else {
+    drawOutputPort(node, theme, p);
+  }
+  drawLabel(node, p);
+
+  if (status) drawOverlay(node.getBounds(), status, p);
 
   p.fill(0);
   p.stroke(0);
@@ -656,7 +688,7 @@ function drawPin(p, x1, y1, x2, y2, baseColor) {
   ctx.restore();
 }
 
-function drawOutputPort(renderNode, theme, p) {
+function drawOutputPort(renderNode, theme, p, highlightedPortIndex = null) {
   const gate = renderNode.gate;
   if (
     gate.category === GATE_CATEGORIES.PRIMITIVE &&
@@ -671,12 +703,14 @@ function drawOutputPort(renderNode, theme, p) {
     drawPin(p, gateEdgeX, port.y, port.x, port.y, pinColor);
     p.fill(theme.accent.hex);
     p.stroke(theme.text.primary.hex);
+    const isHovering = highlightedPortIndex === i;
+    const radius = isHovering ? HOVERED_PORT_RADIUS : PORT_RADIUS;
     p.strokeWeight(PORT_STROKE_WEIGHT);
-    p.circle(port.x, port.y, PORT_RADIUS);
+    p.circle(port.x, port.y, radius);
   }
 }
 
-function drawInputPort(renderNode, theme, p) {
+function drawInputPort(renderNode, theme, p, highlightedPortIndex = null) {
   const gate = renderNode.gate;
   if (
     gate.category === GATE_CATEGORIES.PRIMITIVE &&
@@ -694,9 +728,20 @@ function drawInputPort(renderNode, theme, p) {
     drawPin(p, gateEdgeX, port.y, port.x, port.y, pinColor);
     p.fill(theme.accent.hex);
     p.stroke(theme.text.primary.hex);
+    const isHovering = highlightedPortIndex === i;
+    const radius = isHovering ? HOVERED_PORT_RADIUS : PORT_RADIUS;
     p.strokeWeight(PORT_STROKE_WEIGHT);
-    p.circle(port.x, port.y, PORT_RADIUS);
+    p.circle(port.x, port.y, radius);
   }
+}
+
+function isPortHovered(gate, portType, portIndex) {
+  return (
+    state.ui.tooltip.active &&
+    state.ui.tooltip.port.type === portType &&
+    state.ui.tooltip.node.gate.id === gate.id &&
+    state.ui.tooltip.port.index === portIndex
+  );
 }
 
 function drawPolylineSegments(start, waypoints, end, p) {

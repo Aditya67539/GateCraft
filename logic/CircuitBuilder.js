@@ -177,12 +177,10 @@ export class CircuitBuilder {
   }
 
   canConnect(from, to, fromOutputIndex = null, toInputIndex = null) {
-    if (to.category === GATE_CATEGORIES.PRIMITIVE && to.type !== "bus") {
-      return to.canConnect(toInputIndex);
-    } else {
-      if (from.category === GATE_CATEGORIES.PRIMITIVE && from.type === "bus") return false;
+    if (to.category === GATE_CATEGORIES.PRIMITIVE && to.type === "bus") {
       return to.canConnect(from, fromOutputIndex);
     }
+    return to.canConnect(toInputIndex);
   }
 
   /**

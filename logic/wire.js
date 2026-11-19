@@ -9,29 +9,34 @@ export class Wire {
     this.to = to;
     this.toInputIndex = toInputIndex;
     this.fromOutputIndex = fromOutputIndex;
-    this.signal = fromOutputIndex !== null ? from.output[fromOutputIndex] : from.output;
+    this.signal = fromOutputIndex !== null && Array.isArray(from.output)
+      ? from.output[fromOutputIndex]
+      : from.output;
   }
 }
 
-export function canWireConnectToTarget(circuit, wire, target) {
-  if (target === null) return false;
+export function isConnectionPossible(circuit, originInfo, destinationInfo) {
+  const { originType, origin } = originInfo;
+  const { destinationType, destination } = destinationInfo;
   let from, to, fromOutputIndex = null, toInputIndex = null;
 
-  if (wire.originType === "gate") {
-    from = wire.origin.fromNode.gate;
-    fromOutputIndex = wire.origin.fromOutputIndex;
-  } else if (wire.originType === "wire") {
-    from = wire.origin.conn.wire.from;
-    fromOutputIndex = wire.origin.conn.wire.fromOutputIndex;
-  } else if (wire.originType === "bus") {
-    from = wire.origin.busNode.bus;
+  if (originType === "gate") {
+    from = origin.fromNode.gate;
+    fromOutputIndex = origin.fromOutputIndex;
+  } else if (originType === "wire") {
+    from = origin.conn.wire.from;
+    fromOutputIndex = origin.conn.wire.fromOutputIndex;
+  } else if (originType === "bus") {
+    from = origin.busNode.bus;
   }
 
-  if (target.destinationType === "gate") {
-    to = target.destination.toNode.gate;
-    toInputIndex = target.destination.index;
-  } else if (target.destinationType === "bus") {
-    to = target.destination.busNode.bus;
+  if (destinationType === "gate") {
+    to = destination.toNode.gate;
+    toInputIndex = destination.index;
+  } else if (destinationType === "bus") {
+    to = destination.busNode.bus;
+  } else if (destinationType === "wire") {
+    return false;
   }
 
   return circuit.canConnect(from, to, fromOutputIndex, toInputIndex);

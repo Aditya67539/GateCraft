@@ -29,13 +29,17 @@ export const PRIMITIVE_GATE_DEFS = Object.freeze({
   "seven-seg": Object.freeze({ inputs: 8, outputs: 0 }),
   "Tri-state Buffer": Object.freeze({ inputs: 2, outputs: 1 }),
 });
+export const ROLE = Object.freeze({
+  ANY:    0,
+  SOURCE: 1,
+  SINK:   2,
+});
 export const FREQUENCY = 1; // Hertz
 export const CLOCK_TIMER = 120 /* seconds */ * 1000; // ms
 export const FONT_SIZE = 16;
 export const PORT_LABEL_SIZE = 14;
 export const GRID_OFFSET = 5;
 export const GRID_SIZE = 20;
-export const PORT_RADIUS = 11;
 export const MAX_ZOOM = 2;
 export const MIN_ZOOM = 0.5;
 
@@ -59,6 +63,8 @@ export const HOVERED_WAYPOINT_RADIUS = 20;
 export const BUS_POINT_RADIUS = 16;
 export const BUS_BOUNDS_PADDING = 8;
 export const SEVEN_SEG_GRID_HEIGHT = 11;
+export const PORT_RADIUS = 11;
+export const HOVERED_PORT_RADIUS = 14;
 
 // Seven-segment display layout factors
 export const DISPLAY_SIGN_WIDTH_FACTOR = 2;
@@ -100,6 +106,7 @@ export const LABEL_BG_ALPHA = 0.15;
 export const LABEL_OFFSET_Y = GRID_SIZE;
 
 // Click and hover detection threshold
-export const PORT_DETECTION_THRESHOLD = 15;
+export const PORT_DETECTION_THRESHOLD = 20;
 export const WAYPOINT_DETECTION_THRESHOLD = 10;
 export const WAYPOINT_INSERTION_THRESHOLD_SQ = 60;
+export const WIRE_DETECTION_THRESHOLD = 10;

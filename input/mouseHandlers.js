@@ -1,12 +1,13 @@
 import { state, screenToWorld, worldToScreen } from "../state.js";
-import { CLOCK_TIMER, FREQUENCY, GATE_CATEGORIES, GRID_SIZE, MAX_ZOOM, MIN_ZOOM, PORT_DETECTION_THRESHOLD, SIGNAL } from "../constants.js";
-import { setCustomWaypoints, getPointRefFromElement, projectPointOntoSegment, dist, getTapPointFromElement, getGhostWireStartPoint, getGhostWireEndPoint } from "../render/wireGeometry.js";
+import { CLOCK_TIMER, FREQUENCY, GATE_CATEGORIES, GRID_SIZE, MAX_ZOOM, MIN_ZOOM, PORT_DETECTION_THRESHOLD, SIGNAL, WAYPOINT_DETECTION_THRESHOLD, WIRE_DETECTION_THRESHOLD, ROLE } from "../constants.js";
+import { setCustomWaypoints, getPointRefFromElement, projectPointOntoSegment, dist, getTapPointFromElement, getGhostWireStartPoint, getGhostWireEndPoint, normalizeWaypointDirection } from "../render/wireGeometry.js";
 import { createPrimitiveNode, createCompositeNode, snapPointToGrid, wouldOverlap, wouldBusOverlap } from "../render/RenderNode.js";
 import { showToast } from "../ui/toast.js";
 import { MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand, PlaceBusCommand, RemoveBusCommand, AddWaypointCommand, CompositeCommand, buildConnectionCommand } from "../history/commands.js";
 import { performCommand } from "../history/history.js";
 import { loadCompositeGate, buildCircuitFromData } from "../persistence.js";
-import { canWireConnectToTarget } from "../logic/wire.js";
+import { isConnectionPossible } from "../logic/wire.js";
+import { findClosestPort } from "../interaction/portInteraction.js";
 
 const { LOW, HIGH, X, Z, E } = SIGNAL;
 
@@ -48,22 +49,34 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
         // Check input ports
         if (state.interaction.wireCreation) {
           const useSnap = p.keyIsDown(p.SHIFT);
-          const startPoint = getGhostWireStartPoint(
-            state.interaction.wireCreation.originType,
-            state.interaction.wireCreation.origin,
-            nodeMap,
-            busMap,
-          );
           const endPoint = getGhostWireEndPoint(
             world,
-            startPoint,
-            state.ghost.wire,
+            state.ghost.wire.startPoint,
+            state.ghost.wire.waypoints,
             useSnap,
           );
-          const destinationInfo = findWireDestination(endPoint.x, endPoint.y, renderNodes, busNodes, nodeMap, busMap);
-          if (destinationInfo) {
-            const connectionCommand = buildConnectionCommand(
+          const endPointInfo = findWireEndpoint(
+            endPoint.x,
+            endPoint.y,
+            renderNodes,
+            busNodes,
+            wires,
+            nodeMap,
+            busMap,
+            neededRole(state.interaction.wireCreation),
+          );
+          if (endPointInfo) {
+            const { originInfo, destinationInfo } = resolveConnection(
               state.interaction.wireCreation,
+              endPointInfo,
+            );
+            state.ghost.wire.waypoints = normalizeWaypointDirection(
+              state.interaction.wireCreation,
+              endPointInfo,
+              state.ghost.wire.waypoints,
+            );
+            const connectionCommand = buildConnectionCommand(
+              originInfo,
               destinationInfo,
               circuit,
               wires,
@@ -99,7 +112,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
               state.wireEditing.reset();
             }
           } else {
-            state.interaction.wireCreation = findWireOrigin(
+            state.interaction.wireCreation = findWireEndpoint(
               world.x,
               world.y,
               renderNodes,
@@ -107,7 +120,22 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
               wires,
               nodeMap,
               busMap,
+              ROLE.ANY,
             );
+            if (
+              state.interaction.wireCreation &&
+              state.interaction.wireCreation.role === ROLE.SINK
+            ) {
+              const entity = state.interaction.wireCreation.entity;
+              const gate = entity.toNode.gate;
+              const index = entity.index;
+
+              if (!gate.canConnect(index)) {
+                state.interaction.wireCreation = null;
+                showToast("Wire is already connected!", { type: "error" });
+                return;
+              } 
+            }
           }
 
           // ── Update persistent selection ──────────────────────────
@@ -134,37 +162,17 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
             !state.wireEditing.isMovingWaypoint() &&
             !state.interaction.target
           ) {
-            const originType = state.interaction.wireCreation.originType;
-            const origin = state.interaction.wireCreation.origin;
+            const startPoint = getGhostWireStartPoint(
+              state.interaction.wireCreation,
+              nodeMap,
+              busMap,
+            );
+            const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
 
-            if (originType === "gate") {
-              const fromNode = origin.fromNode;
-              const startPoint = fromNode.gate.category === GATE_CATEGORIES.COMPOSITE
-                ? fromNode.getOutputPortPositionByIndex(origin.fromOutputIndex, fromNode.gate.outputCount)
-                : fromNode.getOutputPortPosition();
-
-              const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
-
-              state.ghost.wire = waypoints;
-              state.ghost.wireCleanup = cleanup;
-            } else if (originType === "bus") {
-              const fromBus = origin.busNode;
-              const tapRef = getPointRefFromElement(fromBus, world.x, world.y, nodeMap, busMap);
-              const startPoint = getTapPointFromElement(fromBus, tapRef, nodeMap, busMap);
-
-              const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
-
-              state.ghost.wire = waypoints;
-              state.ghost.wireCleanup = cleanup;
-            } else if (originType === "wire") {
-              const conn = origin.conn;
-              const startPoint = getTapPointFromElement(conn, origin.tapRef, nodeMap, busMap);
-
-              const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
-
-              state.ghost.wire = waypoints;
-              state.ghost.wireCleanup = cleanup;
-            }
+            state.ghost.wire = {};
+            state.ghost.wire.startPoint = startPoint;
+            state.ghost.wire.waypoints = waypoints;
+            state.ghost.wireCleanup = cleanup;
           } else if (
             !state.interaction.wireCreation &&
             !state.wireEditing.active &&
@@ -281,9 +289,9 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
         return;
       }
 
-      const busInfo = getBusAtPoint(world.x, world.y, busNodes);
+      const busInfo = findNearBus(world.x, world.y, busNodes, nodeMap, busMap);
       if (busInfo) {
-        showContextMenu(wireCtxMenu, clientX, clientY, { type: "bus", source: busInfo });
+        showContextMenu(wireCtxMenu, clientX, clientY, { type: "bus", source: busInfo.busNode });
         return;
       }
     }
@@ -506,18 +514,13 @@ function findNearOutput(mx, my, renderNodes) {
   for (let i = 0; i < renderNodes.length; i++) {
     const gate = renderNodes[i].gate;
     if (gate.category === GATE_CATEGORIES.PRIMITIVE && gate.type === "output") continue;
-    if (gate.category === GATE_CATEGORIES.COMPOSITE) {
-      for (let j = 0; j < gate.outputCount; j++) {
-        const port = renderNodes[i].getOutputPortPositionByIndex(j, gate.outputCount);
-        if (isNearPoint(mx, my, port, PORT_DETECTION_THRESHOLD)) {
-          return { fromNode: renderNodes[i], fromOutputIndex: j };
-        }
-      }
-    }
-    const port = renderNodes[i].getOutputPortPosition();
-    if (isNearPoint(mx, my, port, PORT_DETECTION_THRESHOLD)) {
-      return { fromNode: renderNodes[i], fromOutputIndex: null };
-    }
+    const hit = findClosestPort(
+      mx, my,
+      gate.outputCount,
+      (j, n) => renderNodes[i].getOutputPortPositionByIndex(j, n),
+      PORT_DETECTION_THRESHOLD,
+    );
+    if (hit) return { fromNode: renderNodes[i], fromOutputIndex: hit.index };
   }
   return null;
 }
@@ -526,19 +529,18 @@ function findNearInput(mx, my, renderNodes) {
   for (let i = 0; i < renderNodes.length; i++) {
     const gate = renderNodes[i].gate;
     if (gate.category === GATE_CATEGORIES.PRIMITIVE && gate.type === "input") continue;
-    const totalInputs = gate.inputCount;
-
-    for (let j = 0; j < totalInputs; j++) {
-      const port = renderNodes[i].getInputPortPositionByIndex(j, totalInputs);
-      if (isNearPoint(mx, my, port, PORT_DETECTION_THRESHOLD)) {
-        return { toNode: renderNodes[i], index: j };
-      }
-    }
+    const hit = findClosestPort(
+      mx, my,
+      gate.inputCount,
+      (j, n) => renderNodes[i].getInputPortPositionByIndex(j, n),
+      PORT_DETECTION_THRESHOLD,
+    );
+    if (hit) return { toNode: renderNodes[i], index: hit.index };
   }
   return null;
 }
 
-function findNearBus(mx, my, busNodes, nodeMap, busMap) {
+export function findNearBus(mx, my, busNodes, nodeMap, busMap) {
   for (let i = 0; i < busNodes.length; i++) {
     const { start, waypoints, end } = busNodes[i].getPoints();
     const points = [start, ...waypoints, end];
@@ -555,46 +557,43 @@ function findNearBus(mx, my, busNodes, nodeMap, busMap) {
   return null;
 }
 
-function findWireOrigin(mx, my, renderNodes, busNodes, wires, nodeMap, busMap) {
-  const nodeConn = findNearOutput(mx, my, renderNodes);
-  const busConn = findNearBus(mx, my, busNodes, nodeMap, busMap);
-  const wireConn = getWireAtPoint(mx, my, wires, nodeMap, busMap);
+function findWireEndpoint(mx, my, renderNodes, busNodes, wires, nodeMap, busMap, need = ROLE.ANY) {
+  const canSource = need !== ROLE.SINK;
+  const canSink   = need !== ROLE.SOURCE;
   
-  if (nodeConn) {
-    return {
-      originType: "gate",
-      origin: nodeConn,
-    }
-  } else if (busConn) {
-    return {
-      originType: "bus",
-      origin: busConn,
-    }
-  } else if (wireConn) {
-    return {
-      originType: "wire",
-      origin: wireConn,
-    }
+  if (canSink) {
+    const inp = findNearInput(mx, my, renderNodes);
+    if (inp) return { kind: "gate", role: ROLE.SINK, entity: inp };
   }
+  if (canSource) {
+    const out = findNearOutput(mx, my, renderNodes);
+    if (out) return { kind: "gate", role: ROLE.SOURCE, entity: out };
+
+    const wire = getWireAtPoint(mx, my, wires, nodeMap, busMap);
+    if (wire) return { kind: "wire", role: ROLE.SOURCE, entity: wire };
+  }
+  const bus = findNearBus(mx, my, busNodes, nodeMap, busMap);
+  if (bus) return { kind: "bus", role: ROLE.ANY, entity: bus };
   return null;
 }
 
-function findWireDestination(mx, my, renderNodes, busNodes, nodeMap, busMap) {
-  const nodeConn = findNearInput(mx, my, renderNodes);
-  const busConn = findNearBus(mx, my, busNodes, nodeMap, busMap);
+function neededRole(firstEndpoint) {
+  if (!firstEndpoint) return ROLE.ANY;
+  return firstEndpoint.role === ROLE.SOURCE
+    ? ROLE.SINK
+    : firstEndpoint.role ===  ROLE.SINK
+    ? ROLE.SOURCE
+    : ROLE.ANY;
+}
 
-  if (nodeConn) {
-    return {
-      destinationType: "gate",
-      destination: nodeConn,
-    }
-  } else if (busConn) {
-    return {
-      destinationType: "bus",
-      destination: busConn,
-    }
-  }
-  return null;
+// a = first click, b = second click
+export function resolveConnection(a, b) {
+  const swap = a.role === ROLE.SINK || b.role === ROLE.SOURCE;
+  const [ from, to ] = swap ? [ b, a ] : [ a, b ];
+  return {
+    originInfo: { originType: from.kind, origin: from.entity },
+    destinationInfo: { destinationType: to.kind, destination: to.entity },
+  };
 }
 
 function isOnLineSegment(A, B, O, threshold) {
@@ -607,7 +606,7 @@ export function getWireAtPoint(mx, my, wires, nodeMap, busMap) {
     const { start, waypoints, end } = conn.getPoints(nodeMap, busMap);
     const points = [ start, ...waypoints, end ];
     for (let i = 0; i < points.length - 1; i++) {
-      if (isOnLineSegment(points[i], points[i + 1], { x: mx, y: my }, 15)) {
+      if (isOnLineSegment(points[i], points[i + 1], { x: mx, y: my }, WIRE_DETECTION_THRESHOLD)) {
         return {
           conn: conn,
           tapRef: getPointRefFromElement(conn, mx, my, nodeMap, busMap), 
@@ -618,24 +617,11 @@ export function getWireAtPoint(mx, my, wires, nodeMap, busMap) {
   return null;
 }
 
-export function getBusAtPoint(mx, my, busNodes) {
-  for (const busNode of busNodes) {
-    const { start, waypoints, end } = busNode.getPoints();
-    const points = [ start, ...waypoints, end ];
-    for (let i = 0; i < points.length - 1; i++) {
-      if (isOnLineSegment(points[i], points[i + 1], { x: mx, y: my }, 15)) {
-        return busNode;
-      }
-    }
-  }
-  return null;
-}
-
 function findNearWaypoint(mx, my, wires, busNodes) {
   for (let i = 0; i < wires.length; i++) {
     const waypointCount = wires[i].waypoints.length;
     for (let j = 0; j < waypointCount; j++) {
-      if (isNearPoint(mx, my, wires[i].waypoints[j], PORT_DETECTION_THRESHOLD)) {
+      if (isNearPoint(mx, my, wires[i].waypoints[j], WAYPOINT_DETECTION_THRESHOLD)) {
         return { source: wires[i], waypointIndex: j };
       }
     }
@@ -644,7 +630,7 @@ function findNearWaypoint(mx, my, wires, busNodes) {
   for (let i = 0; i < busNodes.length; i++) {
     const waypointCount = busNodes[i].waypoints.length;
     for (let j = 0; j < waypointCount; j++) {
-      if (isNearPoint(mx, my, busNodes[i].waypoints[j], PORT_DETECTION_THRESHOLD)) {
+      if (isNearPoint(mx, my, busNodes[i].waypoints[j], WAYPOINT_DETECTION_THRESHOLD)) {
         return { source: busNodes[i], waypointIndex: j };
       }
     }
@@ -654,54 +640,71 @@ function findNearWaypoint(mx, my, wires, busNodes) {
 
 export function getEffectiveMousePosition(
   mouse,
-  wireOrigin,
+  wireCreation,
   ghostWire,
   circuit,
   renderNodes,
   busNodes,
+  wires,
   nodeMap,
   busMap,
   p
 ) {
   let effectiveMousePosition = mouse;
-  if (wireOrigin) {
+  if (wireCreation) {
     const useSnap = p.keyIsDown(p.SHIFT);
-    const startPoint = getGhostWireStartPoint(
-      wireOrigin.originType,
-      wireOrigin.origin,
-      nodeMap,
-      busMap,
-    );
 
     effectiveMousePosition = getGhostWireEndPoint(
       mouse,
-      startPoint,
-      ghostWire,
+      ghostWire.startPoint,
+      ghostWire.waypoints,
       useSnap,
     );
 
-    const hoveredDestination = findWireDestination(
+    const hoveredEndPointInfo = findWireEndpoint(
       effectiveMousePosition.x,
       effectiveMousePosition.y,
       renderNodes,
       busNodes,
+      wires,
       nodeMap,
       busMap,
+      neededRole(wireCreation),
     );
-    const validDestination = canWireConnectToTarget(circuit, wireOrigin, hoveredDestination);
+    if (hoveredEndPointInfo) {
+      const { originInfo, destinationInfo } = resolveConnection(
+        wireCreation,
+        hoveredEndPointInfo,
+      );
+      const validDestination = isConnectionPossible(circuit, originInfo, destinationInfo);
 
-    if (validDestination) {
-      if (hoveredDestination.destinationType === "gate") {
-        const inputIndex = hoveredDestination.destination.index;
-        const toNode = hoveredDestination.destination.toNode;
-        const totalInputs = toNode.gate.inputCount;
+      if (validDestination) {
+        if (hoveredEndPointInfo.role === ROLE.SINK) {
+          const { destinationType, destination } = destinationInfo;
+          if (destinationType === "gate") {
+            const inputIndex = destination.index;
+            const toNode = destination.toNode;
+            const totalInputs = toNode.gate.inputCount;
 
-        effectiveMousePosition = toNode.getInputPortPositionByIndex(inputIndex, totalInputs);
-      } else if (hoveredDestination.destinationType === "bus") {
-        const busNode = hoveredDestination.destination.busNode;
-        const tapRef = hoveredDestination.destination.tapRef;
+            effectiveMousePosition = toNode.getInputPortPositionByIndex(inputIndex, totalInputs);
+          }
+        } else if (hoveredEndPointInfo.role === ROLE.SOURCE) {
+          const { originType, origin } = originInfo;
+          if (originType === "gate") {
+            const outputIndex = origin.fromOutputIndex;
+            const fromNode = origin.fromNode;
+            const totalOutputs = fromNode.gate.outputCount;
 
-        effectiveMousePosition = getTapPointFromElement(busNode, tapRef, nodeMap, busMap);
+            effectiveMousePosition = fromNode.getOutputPortPositionByIndex(outputIndex, totalOutputs);
+          } else if (originType === "wire") {            
+            effectiveMousePosition = getTapPointFromElement(origin.conn, origin.tapRef, nodeMap, busMap);
+          }
+        } else if (hoveredEndPointInfo.role === ROLE.ANY) {
+          const busNode = hoveredEndPointInfo.entity.busNode;
+          const tapRef = hoveredEndPointInfo.entity.tapRef;
+
+          effectiveMousePosition = getTapPointFromElement(busNode, tapRef, nodeMap, busMap);
+        }
       }
     }
   }
