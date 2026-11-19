@@ -20,6 +20,9 @@ export function isConnectionPossible(circuit, originInfo, destinationInfo) {
   const { destinationType, destination } = destinationInfo;
   let from, to, fromOutputIndex = null, toInputIndex = null;
 
+  if (!isValidOrigin(originType, origin)) return false;
+  if (!isValidDestination(destinationType, destination)) return false;
+
   if (originType === "gate") {
     from = origin.fromNode.gate;
     fromOutputIndex = origin.fromOutputIndex;
@@ -40,4 +43,57 @@ export function isConnectionPossible(circuit, originInfo, destinationInfo) {
   }
 
   return circuit.canConnect(from, to, fromOutputIndex, toInputIndex);
+}
+
+function isValidOrigin(type, origin) {
+  if (!origin) return false;
+
+  switch (type) {
+    case "gate":
+      return (
+        Object.hasOwn(origin, "fromNode") &&
+        Object.hasOwn(origin, "fromOutputIndex") &&
+        Object.hasOwn(origin.fromNode, "gate")
+      );
+
+    case "wire":
+      return (
+        Object.hasOwn(origin, "conn") &&
+        Object.hasOwn(origin.conn, "wire") &&
+        Object.hasOwn(origin.conn.wire, "from") &&
+        Object.hasOwn(origin.conn.wire, "fromOutputIndex")
+      );
+
+    case "bus":
+      return (
+        Object.hasOwn(origin, "busNode") &&
+        Object.hasOwn(origin.busNode, "bus")
+      );
+
+    default:
+      return false;
+  }
+}
+
+
+function isValidDestination(type, destination) {
+  if (!destination) return false;
+
+  switch (type) {
+    case "gate":
+      return (
+        Object.hasOwn(destination, "toNode") &&
+        Object.hasOwn(destination, "index") &&
+        Object.hasOwn(destination.toNode, "gate")
+      );
+
+    case "bus":
+      return (
+        Object.hasOwn(destination, "busNode") &&
+        Object.hasOwn(destination.busNode, "bus")
+      );
+    
+    default:
+      return false;
+  }
 }
