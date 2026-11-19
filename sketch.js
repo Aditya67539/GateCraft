@@ -81,10 +81,7 @@ const sketch = (p) => {
     const hoveredBus = findNearBus(mouse.x, mouse.y, busNodes, nodeMap, busMap);
     let validConnection = false;
     if (hoveredBus) {
-      if (
-        state.interaction.wireCreation &&
-        state.interaction.wireCreation.kind !== "bus"
-      ) {
+      if (state.interaction.wireCreation) {
         const hoveredBusInfo = { kind: "bus", role: ROLE.ANY, entity: hoveredBus };
         const { originInfo, destinationInfo } = resolveConnection(
           state.interaction.wireCreation,
