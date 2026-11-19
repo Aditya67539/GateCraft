@@ -300,3 +300,9 @@ function getInputPoint(entity) {
 
   return entity.toNode.getInputPortPositionByIndex(inputIndex, totalInputs);
 }
+
+// a = first click, b = second click, waypoints = state.ghost.wire.waypoints
+export function normalizeWaypointDirection(a, b, waypoints) {
+  const reverse = a.role === ROLE.SINK || b.role === ROLE.SOURCE;
+  return reverse ? waypoints.reverse() : waypoints;
+}

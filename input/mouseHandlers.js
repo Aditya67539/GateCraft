@@ -1,6 +1,6 @@
 import { state, screenToWorld, worldToScreen } from "../state.js";
 import { CLOCK_TIMER, FREQUENCY, GATE_CATEGORIES, GRID_SIZE, MAX_ZOOM, MIN_ZOOM, PORT_DETECTION_THRESHOLD, SIGNAL, WAYPOINT_DETECTION_THRESHOLD, WIRE_DETECTION_THRESHOLD, ROLE } from "../constants.js";
-import { setCustomWaypoints, getPointRefFromElement, projectPointOntoSegment, dist, getTapPointFromElement, getGhostWireStartPoint, getGhostWireEndPoint } from "../render/wireGeometry.js";
+import { setCustomWaypoints, getPointRefFromElement, projectPointOntoSegment, dist, getTapPointFromElement, getGhostWireStartPoint, getGhostWireEndPoint, normalizeWaypointDirection } from "../render/wireGeometry.js";
 import { createPrimitiveNode, createCompositeNode, snapPointToGrid, wouldOverlap, wouldBusOverlap } from "../render/RenderNode.js";
 import { showToast } from "../ui/toast.js";
 import { MoveNodeCommand, PlaceGateCommand, RemoveGateCommand, RemoveWireCommand, ChangeWaypointCommand, PlaceBusCommand, RemoveBusCommand, AddWaypointCommand, CompositeCommand, buildConnectionCommand } from "../history/commands.js";
@@ -69,6 +69,11 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
             const { originInfo, destinationInfo } = resolveConnection(
               state.interaction.wireCreation,
               endPointInfo,
+            );
+            state.ghost.wire.waypoints = normalizeWaypointDirection(
+              state.interaction.wireCreation,
+              endPointInfo,
+              state.ghost.wire.waypoints,
             );
             const connectionCommand = buildConnectionCommand(
               originInfo,
