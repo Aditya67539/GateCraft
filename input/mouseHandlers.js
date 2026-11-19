@@ -696,6 +696,8 @@ export function getEffectiveMousePosition(
             const totalOutputs = fromNode.gate.outputCount;
 
             effectiveMousePosition = fromNode.getOutputPortPositionByIndex(outputIndex, totalOutputs);
+          } else if (originType === "wire") {            
+            effectiveMousePosition = getTapPointFromElement(origin.conn, origin.tapRef, nodeMap, busMap);
           }
         } else if (hoveredEndPointInfo.role === ROLE.ANY) {
           const busNode = hoveredEndPointInfo.entity.busNode;
