@@ -145,7 +145,8 @@ export function drawGate(node, p, theme, options = {}) {
     node.gate.category === GATE_CATEGORIES.PRIMITIVE &&
     node.gate.type === "seven-seg"
   ) {
-    drawDisplay(node, p, highlightedSegmentIndex);
+    const segmentIndex = interactionBlocked ? null : highlightedSegmentIndex
+    drawDisplay(node, p, segmentIndex);
     if (highlightedPort.type === "input" && !interactionBlocked) {
       drawInputPort(node, theme, p, highlightedPort.index);
     } else {
