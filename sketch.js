@@ -131,12 +131,12 @@ const sketch = (p) => {
         state.wireEditing.target.source.bus.id === busNode.bus.id;
       const isHovered = hoveredBus?.busNode.bus.id === busNode.bus.id;
       const highlighted = isContextTarget || (
-        !state.ui.contextMenuTarget && !state.isInteractionBlocked() &&
+        !state.ui.contextMenuTarget &&
         (state.wireEditing.active ? isEditorTarget : isHovered) &&
         (
           !state.interaction.wireCreation || 
           validConnection
-        )
+        ) && !state.ui.isAnyModalOpen && !state.ui.labelEditing
       );
       drawBus(busNode, p, highlighted);
     }
@@ -212,12 +212,13 @@ const sketch = (p) => {
       const highlighted = isContextTarget || (
         !state.ui.tooltip.active &&
         !state.ui.contextMenuTarget &&
-        !state.isInteractionBlocked() &&
         (state.wireEditing.active ? isEditorTarget : isHovered) &&
         (
           !state.interaction.wireCreation ||
           validConnection
-        )
+        ) &&
+        !state.ui.isAnyModalOpen &&
+        !state.ui.labelEditing
       );
       drawWire(conn, nodeMap, busMap, p, highlighted);
     }
