@@ -2,6 +2,7 @@ import { state } from "../state.js";
 
 export const wireCtxMenu = document.getElementById("wire-context-menu");
 export const gateCtxMenu = document.getElementById("gate-context-menu");
+export const folderCtxMenu = document.getElementById("folder-context-menu");
 
 export function showContextMenu(contextMenu, clientX, clientY, target) {
   if (target.type === "gate") {
@@ -14,17 +15,7 @@ export function showContextMenu(contextMenu, clientX, clientY, target) {
   }
 
   state.ui.contextMenuTarget = target;
-  contextMenu.classList.add("open");
-  contextMenu.style.left = `${clientX}px`;
-  contextMenu.style.top  = `${clientY}px`;
-
-  const rect = contextMenu.getBoundingClientRect();
-  if (rect.bottom > window.innerHeight) {
-    contextMenu.style.top = `${Math.max(0, clientY - rect.height)}px`;
-  }
-  if (rect.right > window.innerWidth) {
-    contextMenu.style.left = `${Math.max(0, clientX - rect.width)}px`;
-  }
+  positionMenu(contextMenu, clientX, clientY);
   state.ui.isAnyModalOpen = true;
 }
 
@@ -54,4 +45,18 @@ export function registerContextMenuListeners() {
   document.addEventListener("contextmenu", (e) => {
     e.preventDefault();
   });
+}
+
+function positionMenu(menu, startX, startY) {
+  menu.classList.add("open");
+  menu.style.left = `${startX}px`;
+  menu.style.top  = `${startY}px`;
+
+  const rect = menu.getBoundingClientRect();
+  if (rect.bottom > window.innerHeight) {
+    menu.style.top = `${Math.max(0, startY - rect.height)}px`;
+  }
+  if (rect.right > window.innerWidth) {
+    menu.style.left = `${Math.max(0, startX - rect.width)}px`;
+  }
 }
