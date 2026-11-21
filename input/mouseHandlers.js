@@ -312,6 +312,10 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
 
     else if (p.mouseButton.right) {
       if (state.mode !== "edit" || state.ui.labelEditing) return;
+      if (state.ui.isAnyModalOpen) {
+        hideAllContextMenus();
+        return;
+      }
       
       const rect = canvas.getBoundingClientRect();
       const clientX = rect.left + (p.mouseX / p.width) * rect.width;
