@@ -40,6 +40,7 @@ import { drawMinimap } from "./render/minimap.js";
 import { getGhostWireEndPoint, projectPointOntoSegment } from "./render/wireGeometry.js";
 import { isConnectionPossible } from "./logic/wire.js";
 import { detectHoveredPort, shouldHighlightPort } from "./interaction/portInteraction.js";
+import { registerContextMenuListeners } from "./ui/contextMenu.js";
 
 applyTheme(getActiveTheme());
 
@@ -61,11 +62,7 @@ const sketch = (p) => {
     cnv.parent(canvasHost);
     const toolbarActions = initToolbar(p, circuit, renderNodes, wires, busNodes);
 
-    canvasHost.addEventListener("contextmenu", (e) => { 
-      e.preventDefault();
-      e.stopPropagation();
-    });
-
+    registerContextMenuListeners();
     registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, wireDependents);
     registerKeyboardHandlers(p, circuit, renderNodes, wires, toolbarActions);
     
