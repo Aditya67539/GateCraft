@@ -1,44 +1,55 @@
 import { state } from "../state.js";
 
-export const wireCtxMenu = document.getElementById("wire-context-menu");
-export const gateCtxMenu = document.getElementById("gate-context-menu");
-export const folderCtxMenu = document.getElementById("folder-context-menu");
+const menus = new Map();
 
-export function showContextMenu(contextMenu, clientX, clientY, target) {
-  if (target.type === "gate") {
-    const labelBtnDiv = document.getElementById("label-btn-div");
-    if (target.source.gate.label) {
-      labelBtnDiv.innerHTML = "Edit Label";
-    } else {
-      labelBtnDiv.innerHTML = "Add Label";
-    }
-  }
+function registerMenu(id, options = {}) {
+  const element = document.getElementById(id);
+  menus.set(id, { element, target: null, ...options });
+}
 
-  state.ui.contextMenuTarget = target;
-  positionMenu(contextMenu, clientX, clientY);
+registerMenu("wire-context-menu");
+registerMenu("gate-context-menu");
+registerMenu("folder-context-menu");
+
+
+export function showMenu(menuId, clientX, clientY, target, options = {}) {
+  hideAllMenus();
+
+  // Run any menu-specific pre-show logic
+  const entry = menus.get(menuId);
+  if (options.onBeforeShow) options.onBeforeShow(target);
+
+  entry.target = target;
+  positionMenu(entry.element, clientX, clientY);
   state.ui.isAnyModalOpen = true;
 }
 
-export function hideContextMenu(contextMenu) {
-  if (!contextMenu.classList.contains("open")) return;
-  contextMenu.classList.remove("open");
-  state.ui.contextMenuTarget = null;
+export function hideMenu(menuId) {
+  const entry = menus.get(menuId);
+  if (!entry.element.classList.contains("open")) return;
+  entry.element.classList.remove("open");
+  entry.target = null;
   state.ui.isAnyModalOpen = false;
 }
 
-export function hideAllContextMenus() {
-  hideContextMenu(wireCtxMenu);
-  hideContextMenu(gateCtxMenu);
+export function hideAllMenus() {
+  for (const [id] of menus) {
+    hideMenu(id);
+  }
+}
+
+export function getMenuTarget(menuId) {
+  return menus.get(menuId)?.target ?? null;
 }
 
 export function registerContextMenuListeners() {
   document.addEventListener("click", () => {
-    hideAllContextMenus();
+    hideAllMenus();
   });
   
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
-      hideAllContextMenus();
+      hideAllMenus();
     }
   });
 

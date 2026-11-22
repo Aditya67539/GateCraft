@@ -29,6 +29,7 @@ import {
   getEffectiveMousePosition,
   resolveConnection,
   findNearBus,
+  openLabelEditor,
 } from "./input/mouseHandlers.js";
 import { initToolbar } from "./ui/toolbar.js";
 import { getActiveTheme, applyTheme } from "./render/theme.js";
@@ -40,6 +41,7 @@ import { getGhostWireEndPoint, projectPointOntoSegment, isNearPoint } from "./re
 import { isConnectionPossible } from "./logic/wire.js";
 import { detectHoveredPort, shouldHighlightPort } from "./interaction/portInteraction.js";
 import { registerContextMenuListeners } from "./ui/contextMenu.js";
+import { registerContextMenuActions } from "./ui/contextMenuActions.js";
 
 applyTheme(getActiveTheme());
 
@@ -64,6 +66,11 @@ const sketch = (p) => {
     registerContextMenuListeners();
     registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, wireDependents);
     registerKeyboardHandlers(p, circuit, renderNodes, wires, toolbarActions);
+    registerContextMenuActions({
+      circuit, renderNodes, wires, busNodes,
+      nodeMap, busMap, wireDependents,
+      openLabelEditor: (renderNode) => openLabelEditor(renderNode, p),
+    });
     
     gridBuffer = p.createGraphics(
       WIDTH + MAX_ZOOM * GRID_SIZE * 2,
