@@ -24,8 +24,6 @@ import {
   PIN_THICK_AT_PORT,
   PIN_TENSION_BASE_FACTOR,
   PIN_TENSION_PORT_FACTOR,
-  GRID_MIN_SPACING,
-  GRID_DOT_SIZE,
   TOOLTIP_FONT_SIZE,
   TOOLTIP_PADDING_X,
   TOOLTIP_PADDING_Y,
@@ -147,7 +145,8 @@ export function drawGate(node, p, theme, options = {}) {
     node.gate.category === GATE_CATEGORIES.PRIMITIVE &&
     node.gate.type === "seven-seg"
   ) {
-    drawDisplay(node, p, highlightedSegmentIndex);
+    const segmentIndex = interactionBlocked ? null : highlightedSegmentIndex
+    drawDisplay(node, p, segmentIndex);
     if (highlightedPort.type === "input" && !interactionBlocked) {
       drawInputPort(node, theme, p, highlightedPort.index);
     } else {

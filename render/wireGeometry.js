@@ -1,5 +1,4 @@
 import { GATE_CATEGORIES, ROLE, WAYPOINT_DETECTION_THRESHOLD } from "../constants.js";
-import { isNearPoint } from "../input/mouseHandlers.js";
 import { screenToWorld } from "../state.js";
 import { BusNode } from "./BusNode.js";
 
@@ -249,6 +248,11 @@ function getTapPoint(points, tapRef) {
 
 export function dist(x1, y1, x2, y2) {
   return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+}
+
+export function isNearPoint(mx, my, point, threshold) {
+  const d = dist(mx, my, point.x, point.y);
+  return d <= threshold;
 }
 
 

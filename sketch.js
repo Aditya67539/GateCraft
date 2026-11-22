@@ -1,17 +1,45 @@
 import p5 from "p5";
 import { state, screenToWorld } from "./state.js";
-import { drawGate, drawWaypoint, drawWire, drawPortTooltip, setFont, drawGhostPath, drawBus, drawGhostBus, drawGhostWaypoint } from "./render/draw.js";
-import { registerMouseHandlers, isNearPoint, busMap, nodeMap, getWireAtPoint, getEffectiveMousePosition, resolveConnection, findNearBus } from "./input/mouseHandlers.js";
+import {
+  GATE_CATEGORIES,
+  WAYPOINT_DETECTION_THRESHOLD,
+  WAYPOINT_INSERTION_THRESHOLD_SQ,
+  GRID_DOT_SIZE,
+  GRID_SIZE,
+  GRID_OFFSET,
+  MAX_ZOOM,
+  ROLE,
+} from "./constants.js";
+import {
+  drawGate,
+  drawWaypoint,
+  drawWire,
+  drawPortTooltip,
+  setFont,
+  drawGhostPath,
+  drawBus,
+  drawGhostBus,
+  drawGhostWaypoint,
+} from "./render/draw.js";
+import {
+  registerMouseHandlers,
+  busMap,
+  nodeMap,
+  getWireAtPoint,
+  getEffectiveMousePosition,
+  resolveConnection,
+  findNearBus,
+} from "./input/mouseHandlers.js";
 import { initToolbar } from "./ui/toolbar.js";
 import { getActiveTheme, applyTheme } from "./render/theme.js";
 import { CircuitBuilder } from "./logic/CircuitBuilder.js";
 import { snapPointToGrid, wouldBusOverlap, wouldOverlap } from "./render/RenderNode.js";
 import { registerKeyboardHandlers } from "./input/keyboardHandlers.js";
 import { drawMinimap } from "./render/minimap.js";
-import { getGhostWireEndPoint, projectPointOntoSegment } from "./render/wireGeometry.js";
+import { getGhostWireEndPoint, projectPointOntoSegment, isNearPoint } from "./render/wireGeometry.js";
 import { isConnectionPossible } from "./logic/wire.js";
-import { GATE_CATEGORIES, WAYPOINT_DETECTION_THRESHOLD, WAYPOINT_INSERTION_THRESHOLD_SQ, GRID_SIZE, GRID_OFFSET, MAX_ZOOM, GRID_DOT_SIZE, ROLE } from "./constants.js";
 import { detectHoveredPort, shouldHighlightPort } from "./interaction/portInteraction.js";
+import { registerContextMenuListeners } from "./ui/contextMenu.js";
 
 applyTheme(getActiveTheme());
 
@@ -33,11 +61,7 @@ const sketch = (p) => {
     cnv.parent(canvasHost);
     const toolbarActions = initToolbar(p, circuit, renderNodes, wires, busNodes);
 
-    canvasHost.addEventListener("contextmenu", (e) => { 
-      e.preventDefault();
-      e.stopPropagation();
-    });
-
+    registerContextMenuListeners();
     registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, wireDependents);
     registerKeyboardHandlers(p, circuit, renderNodes, wires, toolbarActions);
     
@@ -103,12 +127,12 @@ const sketch = (p) => {
         state.wireEditing.target.source.bus.id === busNode.bus.id;
       const isHovered = hoveredBus?.busNode.bus.id === busNode.bus.id;
       const highlighted = isContextTarget || (
-        !state.ui.contextMenuTarget && !state.isInteractionBlocked() &&
+        !state.ui.contextMenuTarget &&
         (state.wireEditing.active ? isEditorTarget : isHovered) &&
         (
           !state.interaction.wireCreation || 
           validConnection
-        )
+        ) && !state.ui.isAnyModalOpen && !state.ui.labelEditing
       );
       drawBus(busNode, p, highlighted);
     }
@@ -184,12 +208,13 @@ const sketch = (p) => {
       const highlighted = isContextTarget || (
         !state.ui.tooltip.active &&
         !state.ui.contextMenuTarget &&
-        !state.isInteractionBlocked() &&
         (state.wireEditing.active ? isEditorTarget : isHovered) &&
         (
           !state.interaction.wireCreation ||
           validConnection
-        )
+        ) &&
+        !state.ui.isAnyModalOpen &&
+        !state.ui.labelEditing
       );
       drawWire(conn, nodeMap, busMap, p, highlighted);
     }
@@ -217,7 +242,7 @@ const sketch = (p) => {
           const nextHovered = isNearPoint(mouse.x, mouse.y, points[i + 1], WAYPOINT_DETECTION_THRESHOLD);
           const { point: nearestPoint, distSq } = projectPointOntoSegment(A, B, mouse);
           if (i !== 0) drawWaypoint(signal, points[i], p, hovered);
-          if (!hovered && !nextHovered && !hoveredPortPosition && distSq <= WAYPOINT_INSERTION_THRESHOLD_SQ) {
+          if (!hovered && !nextHovered && distSq <= WAYPOINT_INSERTION_THRESHOLD_SQ) {
             if (!bestGhost || distSq < bestGhost.distSq) {
               bestGhost = { point: nearestPoint, distSq };
               state.wireEditing.waypoint.insert.index = i;

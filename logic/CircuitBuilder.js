@@ -1,5 +1,19 @@
-import { settleCircuit, createAccumulator, flatten, buildTypedArrays, clearAccumulator, evaluateWasm } from "./evaluate.js";
-import { Bus, CompositeGate, createPrimitiveGate, createCompositeGate, Gate, Output } from "./gates.js";
+import {
+  settleCircuit,
+  createAccumulator,
+  flatten,
+  buildTypedArrays,
+  clearAccumulator,
+  evaluateWasm,
+} from "./evaluate.js";
+import {
+  Bus,
+  CompositeGate,
+  createPrimitiveGate,
+  createCompositeGate,
+  Gate,
+  Output,
+} from "./gates.js";
 import { Wire } from "./wire.js";
 import { initWasm } from "#wasmLoader";
 import { GATE_CATEGORIES } from "../constants.js";

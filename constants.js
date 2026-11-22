@@ -106,7 +106,7 @@ export const LABEL_BG_ALPHA = 0.15;
 export const LABEL_OFFSET_Y = GRID_SIZE;
 
 // Click and hover detection threshold
-export const PORT_DETECTION_THRESHOLD = 20;
+export const PORT_DETECTION_THRESHOLD = 16;
 export const WAYPOINT_DETECTION_THRESHOLD = 10;
 export const WAYPOINT_INSERTION_THRESHOLD_SQ = 60;
 export const WIRE_DETECTION_THRESHOLD = 10;
