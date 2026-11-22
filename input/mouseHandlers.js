@@ -15,7 +15,7 @@ import {
   setCustomWaypoints,
   getPointRefFromElement,
   projectPointOntoSegment,
-  dist,
+  isNearPoint,
   getTapPointFromElement,
   getGhostWireStartPoint,
   getGhostWireEndPoint,
@@ -503,11 +503,6 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
     if (!target || target.type !== "gate") return;
     openLabelEditor(target.source, p);
   });
-}
-
-export function isNearPoint(mx, my, point, threshold) {
-  const d = dist(mx, my, point.x, point.y);
-  return d <= threshold;
 }
 
 function findNearOutput(mx, my, renderNodes) {

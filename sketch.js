@@ -23,7 +23,6 @@ import {
 } from "./render/draw.js";
 import {
   registerMouseHandlers,
-  isNearPoint,
   busMap,
   nodeMap,
   getWireAtPoint,
@@ -37,7 +36,7 @@ import { CircuitBuilder } from "./logic/CircuitBuilder.js";
 import { snapPointToGrid, wouldBusOverlap, wouldOverlap } from "./render/RenderNode.js";
 import { registerKeyboardHandlers } from "./input/keyboardHandlers.js";
 import { drawMinimap } from "./render/minimap.js";
-import { getGhostWireEndPoint, projectPointOntoSegment } from "./render/wireGeometry.js";
+import { getGhostWireEndPoint, projectPointOntoSegment, isNearPoint } from "./render/wireGeometry.js";
 import { isConnectionPossible } from "./logic/wire.js";
 import { detectHoveredPort, shouldHighlightPort } from "./interaction/portInteraction.js";
 import { registerContextMenuListeners } from "./ui/contextMenu.js";
