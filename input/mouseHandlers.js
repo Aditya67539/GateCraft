@@ -31,11 +31,8 @@ import {
 import {
   MoveNodeCommand,
   PlaceGateCommand,
-  RemoveGateCommand,
-  RemoveWireCommand,
   ChangeWaypointCommand,
   PlaceBusCommand,
-  RemoveBusCommand,
   AddWaypointCommand,
   CompositeCommand,
   buildConnectionCommand,
@@ -446,64 +443,6 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
     return false; 
   }
 
-  // Wire and Bus edit button
-  document.getElementById("ctx-wire-edit").addEventListener("click", () => {
-    state.wireEditing.target = state.ui.contextMenuTarget;
-    hideContextMenu(wireCtxMenu);
-    if (!state.wireEditing.target) return;
-    state.wireEditing.active = true;
-  });
-
-  // Delete button
-  document.querySelectorAll(".ctx-delete-target").forEach(element => {
-    element.addEventListener("click", () => {
-      hideAllContextMenus();
-      const target = state.ui.contextMenuTarget;
-      if (!target) return;
-
-      if (target.type === "wire") {
-        const removeWireCommand = new RemoveWireCommand(
-          circuit,
-          wires,
-          target.source,
-          wireDependents,
-          nodeMap,
-          busMap,
-        );
-        performCommand(removeWireCommand);
-      } else if (target.type === "bus") {
-        const removeBusCommand = new RemoveBusCommand(
-          busNodes,
-          wires,
-          circuit,
-          target.source,
-          nodeMap,
-          busMap,
-          wireDependents,
-        );
-        performCommand(removeBusCommand);
-      } else if (target.type === "gate") {
-        const removeGateCommand = new RemoveGateCommand(
-          renderNodes,
-          wires,
-          circuit,
-          target.source,
-          nodeMap,
-          busMap,
-          wireDependents,
-        );
-        performCommand(removeGateCommand);
-      }
-    });
-  });
-
-  // Label button for gates
-  document.getElementById("ctx-gate-edit").addEventListener("click", () => {
-    const target = state.ui.contextMenuTarget;
-    if (!target || target.type !== "gate") return;
-    openLabelEditor(target.source, p);
-  });
-}
 
 function findNearOutput(mx, my, renderNodes) {
   for (let i = 0; i < renderNodes.length; i++) {
