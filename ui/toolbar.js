@@ -569,7 +569,11 @@ export function refreshCompositeSection(p = null) {
 
         // Right-click: show context menu
         btn.addEventListener("contextmenu", (e) => {
-          showMenu("composite-context-menu", e.clientX, e.clientY, name);
+          showMenu("composite-context-menu", e.clientX, e.clientY, name, {
+            onBeforeShow: () => {
+              populateFolderSubmenu(name);
+            }
+          });
         })
 
         // Custom tooltip on hover (only if text is truncated)
