@@ -41,7 +41,7 @@ import { getGhostWireEndPoint, projectPointOntoSegment, isNearPoint } from "./re
 import { isConnectionPossible } from "./logic/wire.js";
 import { detectHoveredPort, shouldHighlightPort } from "./interaction/portInteraction.js";
 import { registerContextMenuListeners } from "./ui/contextMenu.js";
-import { registerContextMenuActions } from "./ui/contextMenuActions.js";
+import { registerContextMenuActions, registerSidebarMenuActions } from "./ui/contextMenuActions.js";
 
 applyTheme(getActiveTheme());
 
@@ -71,6 +71,7 @@ const sketch = (p) => {
       nodeMap, busMap, wireDependents,
       openLabelEditor: (renderNode) => openLabelEditor(renderNode, p),
     });
+    registerSidebarMenuActions();
     
     gridBuffer = p.createGraphics(
       WIDTH + MAX_ZOOM * GRID_SIZE * 2,

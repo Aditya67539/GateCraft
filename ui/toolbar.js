@@ -27,6 +27,7 @@ import {
 } from "../render/theme.js";
 import { createModal } from "./modal.js";
 import { spawnBusNode } from "../render/BusNode.js";
+import { showMenu } from "./contextMenu.js";
 
 
 
@@ -429,7 +430,7 @@ document.addEventListener("click", (e) => {
 });
 document.addEventListener("contextmenu", (e) => {
   if (ctxMenu.classList.contains("open") && !ctxMenu.contains(e.target)) {
-    hideContextMenu();
+    // hideContextMenu();
   }
   if (folderCtxMenu.classList.contains("open") && !folderCtxMenu.contains(e.target)) {
     hideFolderContextMenu();
@@ -526,7 +527,7 @@ function hideTooltip() {
   }, 50);
 }
 
-function refreshCompositeSection(p = null) {
+export function refreshCompositeSection(p = null) {
   compositeFoldersContainer.innerHTML = "";
 
   const folders = listCompositeFolders();
@@ -602,7 +603,9 @@ function refreshCompositeSection(p = null) {
         });
 
         // Right-click: show context menu
-        btn.addEventListener("contextmenu", (e) => showContextMenu(e, name));
+        btn.addEventListener("contextmenu", (e) => {
+          showMenu("composite-context-menu", e.clientX, e.clientY, name);
+        })
 
         // Custom tooltip on hover (only if text is truncated)
         btn.addEventListener("mouseenter", (e) => {
