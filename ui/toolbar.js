@@ -252,32 +252,6 @@ function positionMenu(menu, startX, startY) {
   menu.style.top = `${y}px`;
 }
 
-function showContextMenu(e, name) {
-  e.preventDefault();
-  e.stopPropagation();
-  _ctxTargetName = name;
-
-  // Populate folder submenu
-  populateFolderSubmenu(name);
-  ctxFolderSubmenu.classList.remove("open");
-
-  // Position the menu near the cursor, clamped to viewport
-  positionMenu(ctxMenu, e.clientX, e.clientY);
-
-  state.ui.isAnyModalOpen = true;
-}
-
-function hideContextMenu() {
-  // Only modify state if the context menu is actually open
-  if (!ctxMenu.classList.contains("open")) return;
-
-  ctxMenu.classList.remove("open");
-  ctxFolderSubmenu.classList.remove("open");
-  _ctxTargetName = null;
-
-  state.ui.isAnyModalOpen = false;
-}
-
 // ─── Folder context menu ────────────────────────────────────────
 const folderCtxMenu = document.getElementById("folder-context-menu");
 let _ctxTargetFolder = null;
@@ -286,9 +260,6 @@ function showFolderContextMenu(e, folderName) {
   e.preventDefault();
   e.stopPropagation();
   _ctxTargetFolder = folderName;
-
-  // Hide the gate context menu if open
-  hideContextMenu();
 
   positionMenu(folderCtxMenu, e.clientX, e.clientY);
 
@@ -421,19 +392,15 @@ document.getElementById("ctx-folder-delete").addEventListener("click", () => {
 
 // Close context menus on any click or Escape
 document.addEventListener("click", (e) => {
-  hideContextMenu();
   hideFolderContextMenu();
 });
 document.addEventListener("contextmenu", (e) => {
-  if (ctxMenu.classList.contains("open") && !ctxMenu.contains(e.target)) {
-    // hideContextMenu();
-  }
   if (folderCtxMenu.classList.contains("open") && !folderCtxMenu.contains(e.target)) {
     hideFolderContextMenu();
   }
 });
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") { hideContextMenu(); hideFolderContextMenu(); }
+  if (e.key === "Escape") hideFolderContextMenu();
   if (e.key === "Tab") e.preventDefault();
 });
 
