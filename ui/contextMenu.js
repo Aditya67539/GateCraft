@@ -1,5 +1,6 @@
 import { state } from "../state.js";
 import { listCompositeFolders, getGateFolder, setGateFolder } from "../persistence.js";
+import { refreshCompositeSection } from "./toolbar.js";
 
 const menus = new Map();
 
