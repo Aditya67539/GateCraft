@@ -440,64 +440,6 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Tab") e.preventDefault();
 });
 
-// Context menu actions
-document.getElementById("ctx-rename").addEventListener("click", () => {
-  const name = _ctxTargetName;
-  hideContextMenu();
-  if (!name) return;
-
-  // Reuse the save modal for rename
-  const renameModal = document.getElementById("rename-gate-modal");
-  const renameInput = document.getElementById("rename-gate-input");
-  const renameSave = document.getElementById("rename-save-btn");
-  const renameCancel = document.getElementById("rename-cancel-btn");
-
-  renameInput.value = name;
-  renameModal.classList.add("open");
-  renameInput.focus();
-  renameInput.select();
-
-  const doRename = () => {
-    const newName = renameInput.value.trim();
-    if (!newName || newName === name) {
-      renameModal.classList.remove("open");
-      cleanup();
-      return;
-    }
-    if (renameCompositeGate(name, newName)) {
-      refreshCompositeSection();
-    }
-    renameModal.classList.remove("open");
-    cleanup();
-  };
-
-  const doCancel = () => {
-    renameModal.classList.remove("open");
-    cleanup();
-  };
-
-  const onKey = (e) => {
-    if (e.key === "Enter") doRename();
-    if (e.key === "Escape") doCancel();
-  };
-
-  const onOverlay = (e) => {
-    if (e.target === renameModal) doCancel();
-  };
-
-  function cleanup() {
-    renameSave.removeEventListener("click", doRename);
-    renameCancel.removeEventListener("click", doCancel);
-    renameInput.removeEventListener("keydown", onKey);
-    renameModal.removeEventListener("click", onOverlay);
-  }
-
-  renameSave.addEventListener("click", doRename);
-  renameCancel.addEventListener("click", doCancel);
-  renameInput.addEventListener("keydown", onKey);
-  renameModal.addEventListener("click", onOverlay);
-});
-
 document.getElementById("ctx-delete").addEventListener("click", () => {
   const name = _ctxTargetName;
   hideContextMenu();
