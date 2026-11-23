@@ -441,14 +441,6 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Tab") e.preventDefault();
 });
 
-document.getElementById("ctx-delete").addEventListener("click", () => {
-  const name = _ctxTargetName;
-  hideContextMenu();
-  if (!name) return;
-  deleteCompositeGate(name);
-  refreshCompositeSection();
-});
-
 // ─── Move to Folder submenu ─────────────────────────────────────
 const ctxMoveToFolder = document.getElementById("ctx-move-to-folder");
 const ctxFolderSubmenu = document.getElementById("ctx-folder-submenu");

@@ -2,7 +2,7 @@ import { getMenuTarget, hideAllMenus } from "./contextMenu.js";
 import { state } from "../state.js";
 import { RemoveBusCommand, RemoveGateCommand, RemoveWireCommand } from "../history/commands";
 import { performCommand } from "../history/history.js";
-import { renameCompositeGate } from "../persistence.js";
+import { deleteCompositeGate, renameCompositeGate } from "../persistence.js";
 import { refreshCompositeSection } from "./toolbar.js";
 
 export function registerContextMenuActions({
@@ -82,7 +82,6 @@ export function registerSidebarMenuActions() {
   document.getElementById("ctx-rename").addEventListener("click", () => {
     const name = getMenuTarget("composite-context-menu");
     hideAllMenus();
-    console.log(name);
     if (!name) return;
 
     const renameModal  = document.getElementById("rename-gate-modal");
@@ -133,5 +132,13 @@ export function registerSidebarMenuActions() {
     renameCancel.addEventListener("click", doCancel);
     renameInput.addEventListener("keydown", onKey);
     renameModal.addEventListener("click", onOverlay);
+  });
+
+  document.getElementById("ctx-delete").addEventListener("click", () => {
+    const name = getMenuTarget("composite-context-menu");
+    hideAllMenus();
+    if (!name) return;
+    deleteCompositeGate(name);
+    refreshCompositeSection();
   });
 }
