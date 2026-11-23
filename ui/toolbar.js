@@ -437,37 +437,6 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Tab") e.preventDefault();
 });
 
-// ─── Move to Folder submenu ─────────────────────────────────────
-const ctxMoveToFolder = document.getElementById("ctx-move-to-folder");
-const ctxFolderSubmenu = document.getElementById("ctx-folder-submenu");
-
-ctxMoveToFolder.addEventListener("click", (e) => {
-  e.stopPropagation();
-  if (ctxFolderSubmenu.classList.contains("open")) {
-    ctxFolderSubmenu.classList.remove("open");
-  } else {
-    // Position submenu to the right of the trigger item
-    const triggerRect = ctxMoveToFolder.getBoundingClientRect();
-    
-    ctxFolderSubmenu.classList.add("open");
-    // Temporarily position to get width
-    ctxFolderSubmenu.style.left = `${triggerRect.right}px`;
-    ctxFolderSubmenu.style.top = `${triggerRect.top}px`;
-    
-    const submenuRect = ctxFolderSubmenu.getBoundingClientRect();
-    let x = triggerRect.right;
-    let y = triggerRect.top;
-    
-    // If it overflows bottom, adjust upwards
-    if (submenuRect.bottom > window.innerHeight) {
-      y = Math.max(0, triggerRect.bottom - submenuRect.height);
-    }
-    
-    ctxFolderSubmenu.style.left = `${x}px`;
-    ctxFolderSubmenu.style.top = `${y}px`;
-  }
-});
-
 // ─── Custom tooltip ───────────────────────────────────────────
 const tooltip = document.getElementById("sidebar-tooltip");
 let _tooltipTimeout = null;

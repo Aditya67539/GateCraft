@@ -141,4 +141,28 @@ export function registerSidebarMenuActions() {
     deleteCompositeGate(name);
     refreshCompositeSection();
   });
+
+  const ctxMoveToFolder  = document.getElementById("ctx-move-to-folder");
+  const ctxFolderSubmenu = document.getElementById("ctx-folder-submenu");
+
+  ctxMoveToFolder.addEventListener("click", (e) => {
+    e.stopPropagation();
+
+    if (ctxFolderSubmenu.classList.contains("open")) {
+      ctxFolderSubmenu.classList.remove("open");
+    } else {
+      // Position submenu to the right of the trigger item
+      const triggerRect = ctxMoveToFolder.getBoundingClientRect();
+
+      ctxFolderSubmenu.classList.add("open");
+      ctxFolderSubmenu.style.left = `${triggerRect.right}px`;
+      ctxFolderSubmenu.style.top  = `${triggerRect.top}px`;
+
+      const subMenuRect = ctxFolderSubmenu.getBoundingClientRect();
+
+      if (subMenuRect.bottom > window.innerHeight) {
+        ctxFolderSubmenu.style.top = `${Math.max(0, triggerRect.bottom - subMenuRect.height)}px`;
+      }
+    }
+  });
 }
