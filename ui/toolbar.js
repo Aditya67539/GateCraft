@@ -4,15 +4,11 @@ import {
   saveCompositeGate,
   loadCompositeGate,
   listCompositeGates,
-  deleteCompositeGate,
-  renameCompositeGate,
   buildCircuitFromData,
   listCompositeFolders,
   createCompositeFolder,
   deleteCompositeFolder,
   renameCompositeFolder,
-  getGateFolder,
-  setGateFolder,
   listGatesInFolder,
   DEFAULT_FOLDER,
 } from "../persistence.js";
@@ -27,7 +23,7 @@ import {
 } from "../render/theme.js";
 import { createModal } from "./modal.js";
 import { spawnBusNode } from "../render/BusNode.js";
-import { showMenu } from "./contextMenu.js";
+import { showMenu, populateFolderSubmenu } from "./contextMenu.js";
 
 
 
@@ -471,29 +467,6 @@ ctxMoveToFolder.addEventListener("click", (e) => {
     ctxFolderSubmenu.style.top = `${y}px`;
   }
 });
-
-function populateFolderSubmenu(gateName) {
-  ctxFolderSubmenu.innerHTML = "";
-  const folders = listCompositeFolders();
-  const currentFolder = getGateFolder(gateName);
-
-  const folderIconSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`;
-
-  folders.forEach(folder => {
-    const btn = document.createElement("button");
-    btn.className = `ctx-submenu-item${folder === currentFolder ? " active" : ""}`;
-    btn.innerHTML = `<span class="folder-icon">${folderIconSvg}</span>${folder}`;
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (folder !== currentFolder) {
-        setGateFolder(gateName, folder);
-        refreshCompositeSection();
-      }
-      hideContextMenu();
-    });
-    ctxFolderSubmenu.appendChild(btn);
-  });
-}
 
 // ─── Custom tooltip ───────────────────────────────────────────
 const tooltip = document.getElementById("sidebar-tooltip");

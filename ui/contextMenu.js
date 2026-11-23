@@ -1,4 +1,5 @@
 import { state } from "../state.js";
+import { listCompositeFolders, getGateFolder, setGateFolder } from "../persistence.js";
 
 const menus = new Map();
 
@@ -80,4 +81,30 @@ function positionMenu(menu, startX, startY) {
   if (rect.right > window.innerWidth) {
     menu.style.left = `${Math.max(0, startX - rect.width)}px`;
   }
+}
+
+
+export function populateFolderSubmenu(gateName) {
+  const ctxFolderSubmenu = document.getElementById("ctx-folder-submenu");
+  ctxFolderSubmenu.innerHTML = "";
+
+  const folders = listCompositeFolders();
+  const currentFolder = getGateFolder(gateName);
+
+  const folderIconSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`;
+
+  folders.forEach(folder => {
+    const btn = document.createElement("button");
+    btn.className = `ctx-submenu-item${folder === currentFolder ? " active" : ""}`;
+    btn.innerHTML = `<span class="folder-icon">${folderIconSvg}</span>${folder}`;
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (folder !== currentFolder) {
+        setGateFolder(gateName, folder);
+        refreshCompositeSection();
+      }
+      hideAllMenus();
+    });
+    ctxFolderSubmenu.appendChild(btn);
+  });
 }
