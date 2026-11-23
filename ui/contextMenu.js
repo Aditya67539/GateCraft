@@ -27,6 +27,12 @@ export function showMenu(menuId, clientX, clientY, target, options = {}) {
   state.ui.isAnyModalOpen = true;
 }
 
+export function showSubmenu(menuId, anchorRect) {
+  const entry = menus.get(menuId);
+  positionSubmenu(entry.element, anchorRect);
+  state.ui.isAnyModalOpen = true;
+}
+
 export function hideMenu(menuId) {
   const entry = menus.get(menuId);
   if (!entry.element.classList.contains("open")) return;
@@ -82,6 +88,26 @@ function positionMenu(menu, startX, startY) {
   if (rect.right > window.innerWidth) {
     menu.style.left = `${Math.max(0, startX - rect.width)}px`;
   }
+}
+
+function positionSubmenu(menu, anchorRect, gap = 6) {
+  menu.classList.add("open");
+  const { width, height } = menu.getBoundingClientRect();
+
+  // Prefer opening to the right of the parent, flip if no room
+  let left = anchorRect.right + gap;
+  if (left + width > window.innerWidth) {
+    left = Math.max(0, anchorRect.left - width - gap);
+  }
+
+  // Align with the parent top, shift up if it overflows the bottom
+  let top = anchorRect.top;
+  if (top + height > window.innerHeight) {
+    top = Math.max(0, window.innerHeight - height - (gap * 3));
+  }
+
+  menu.style.left = `${left}px`;
+  menu.style.top  = `${top}px`;
 }
 
 
