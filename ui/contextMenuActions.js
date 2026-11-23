@@ -1,4 +1,4 @@
-import { getMenuTarget, hideAllMenus } from "./contextMenu.js";
+import { getMenuTarget, hideAllMenus, hideMenu, showSubmenu } from "./contextMenu.js";
 import { state } from "../state.js";
 import { RemoveBusCommand, RemoveGateCommand, RemoveWireCommand } from "../history/commands";
 import { performCommand } from "../history/history.js";
@@ -149,20 +149,10 @@ export function registerSidebarMenuActions() {
     e.stopPropagation();
 
     if (ctxFolderSubmenu.classList.contains("open")) {
-      ctxFolderSubmenu.classList.remove("open");
+      hideMenu("ctx-folder-submenu");
     } else {
-      // Position submenu to the right of the trigger item
-      const triggerRect = ctxMoveToFolder.getBoundingClientRect();
-
-      ctxFolderSubmenu.classList.add("open");
-      ctxFolderSubmenu.style.left = `${triggerRect.right}px`;
-      ctxFolderSubmenu.style.top  = `${triggerRect.top}px`;
-
-      const subMenuRect = ctxFolderSubmenu.getBoundingClientRect();
-
-      if (subMenuRect.bottom > window.innerHeight) {
-        ctxFolderSubmenu.style.top = `${Math.max(0, triggerRect.bottom - subMenuRect.height)}px`;
-      }
+      const anchorRect = ctxMoveToFolder.getBoundingClientRect();
+      showSubmenu("ctx-folder-submenu", anchorRect);
     }
   });
 }
