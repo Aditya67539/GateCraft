@@ -10,7 +10,8 @@ function registerMenu(id, options = {}) {
 registerMenu("wire-context-menu");
 registerMenu("gate-context-menu");
 registerMenu("folder-context-menu");
-
+registerMenu("composite-context-menu");
+registerMenu("ctx-folder-submenu");
 
 export function showMenu(menuId, clientX, clientY, target, options = {}) {
   hideAllMenus();
@@ -29,6 +30,15 @@ export function hideMenu(menuId) {
   if (!entry.element.classList.contains("open")) return;
   entry.element.classList.remove("open");
   entry.target = null;
+
+  if (menuId === "composite-context-menu") {
+    const submenu = menus.get("ctx-folder-submenu");
+    if (submenu) {
+      submenu.element.classList.remove("open");
+      submenu.target = null;
+    }
+  }
+
   state.ui.isAnyModalOpen = false;
 }
 
