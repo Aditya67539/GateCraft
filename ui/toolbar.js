@@ -7,7 +7,6 @@ import {
   buildCircuitFromData,
   listCompositeFolders,
   createCompositeFolder,
-  renameCompositeFolder,
   listGatesInFolder,
   DEFAULT_FOLDER,
 } from "../persistence.js";
@@ -272,72 +271,6 @@ function hideFolderContextMenu() {
   _ctxTargetFolder = null;
 
   state.ui.isAnyModalOpen = false;
-}
-
-// Folder context menu actions
-document.getElementById("ctx-folder-rename").addEventListener("click", () => {
-  const folderName = _ctxTargetFolder;
-  hideFolderContextMenu();
-  if (!folderName || folderName === DEFAULT_FOLDER) return;
-
-  const renameFolderModal = document.getElementById("rename-folder-modal");
-  const renameFolderInput = document.getElementById("rename-folder-input");
-  const renameFolderSave = document.getElementById("rename-folder-save-btn");
-  const renameFolderCancel = document.getElementById("rename-folder-cancel-btn");
-
-  renameFolderInput.value = folderName;
-  renameFolderModal.classList.add("open");
-  renameFolderInput.focus();
-  renameFolderInput.select();
-  state.ui.isAnyModalOpen = true;
-
-  const doRename = () => {
-    const newName = renameFolderInput.value.trim();
-    if (!newName || newName === folderName) {
-      renameFolderModal.classList.remove("open");
-      state.ui.isAnyModalOpen = false;
-      cleanup();
-      return;
-    }
-    if (renameCompositeFolder(folderName, newName)) {
-      // Preserve collapsed state under the new name
-      if (_collapsedFolders.has(folderName)) {
-        _collapsedFolders.delete(folderName);
-        _collapsedFolders.add(newName);
-      }
-      refreshCompositeSection();
-    }
-    renameFolderModal.classList.remove("open");
-    state.ui.isAnyModalOpen = false;
-    cleanup();
-  };
-
-  const doCancel = () => {
-    renameFolderModal.classList.remove("open");
-    state.ui.isAnyModalOpen = false;
-    cleanup();
-  };
-
-  const onKey = (e) => {
-    if (e.key === "Enter") doRename();
-    if (e.key === "Escape") doCancel();
-  };
-
-  const onOverlay = (e) => {
-    if (e.target === renameFolderModal) doCancel();
-  };
-
-  function cleanup() {
-    renameFolderSave.removeEventListener("click", doRename);
-    renameFolderCancel.removeEventListener("click", doCancel);
-    renameFolderInput.removeEventListener("keydown", onKey);
-    renameFolderModal.removeEventListener("click", onOverlay);
-  }
-
-  renameFolderSave.addEventListener("click", doRename);
-  renameFolderCancel.addEventListener("click", doCancel);
-  renameFolderInput.addEventListener("keydown", onKey);
-  renameFolderModal.addEventListener("click", onOverlay);
 });
 
 // Close context menus on any click or Escape

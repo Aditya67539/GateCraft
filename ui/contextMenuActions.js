@@ -7,6 +7,7 @@ import {
   DEFAULT_FOLDER,
   deleteCompositeFolder,
   deleteCompositeGate,
+  renameCompositeFolder,
   renameCompositeGate,
 } from "../persistence.js";
 import { getMenuTarget, hideAllMenus, hideMenu, showSubmenu } from "./contextMenu.js";
@@ -174,7 +175,6 @@ export function registerSidebarMenuActions() {
 
   document.getElementById("ctx-folder-delete").addEventListener("click", () => {
     const folderName = getMenuTarget("folder-context-menu");
-    console.log(folderName);
     hideAllMenus();
     if (!folderName || folderName === DEFAULT_FOLDER) return;
 
@@ -220,5 +220,71 @@ export function registerSidebarMenuActions() {
     cancelBtn.addEventListener("click", doCancel);
     document.addEventListener("keydown", onKey);
     deleteModal.addEventListener("click", onOverlay);
+  });
+
+  document.getElementById("ctx-folder-rename").addEventListener("click", () => {
+    const folderName = getMenuTarget("folder-context-menu");
+    hideAllMenus();
+    console.log(folderName);
+    if (!folderName || folderName === DEFAULT_FOLDER) return;
+
+    const renameFolderModal  = document.getElementById("rename-folder-modal");
+    const renameFolderInput  = document.getElementById("rename-folder-input");
+    const renameFolderSave   = document.getElementById("rename-folder-save-btn");
+    const renameFolderCancel = document.getElementById("rename-folder-cancel-btn");
+    
+    renameFolderInput.value = folderName;
+    renameFolderModal.classList.add("open");
+    renameFolderInput.focus();
+    renameFolderInput.select();
+    state.ui.isAnyModalOpen = true;
+
+    const doRename = () => {
+      const newName = renameFolderInput.value.trim();
+      if (!newName || newName === folderName) {
+        renameFolderModal.classList.remove("open");
+        state.ui.isAnyModalOpen = false;
+        cleanup();
+        return;
+      }
+      if (renameCompositeFolder(folderName, newName)) {
+        // Preserve collapsed state under the new name
+        if (_collapsedFolders.has(folderName)) {
+          _collapsedFolders.delete(folderName);
+          _collapsedFolders.add(newName);
+        }
+        refreshCompositeSection();
+      }
+      renameFolderModal.classList.remove("open");
+      state.ui.isAnyModalOpen = false;
+      cleanup();
+    };
+
+    const doCancel = () => {
+      renameFolderModal.classList.remove("open");
+      state.ui.isAnyModalOpen = false;
+      cleanup();
+    };
+
+    const onKey = (e) => {
+      if (e.key === "Enter")  doRename();
+      if (e.key === "Escape") doCancel();
+    };
+
+    const onOverlay = (e) => {
+      if (e.target === renameFolderModal) doCancel();
+    };
+
+    const cleanup = () => {
+      renameFolderSave.removeEventListener("click", doRename);
+      renameFolderCancel.removeEventListener("click", doCancel);
+      renameFolderInput.removeEventListener("keydown", onKey);
+      renameFolderModal.removeEventListener("click", onOverlay);
+    };
+
+    renameFolderSave.addEventListener("click", doRename);
+    renameFolderCancel.addEventListener("click", doCancel);
+    renameFolderInput.addEventListener("keydown", onKey);
+    renameFolderModal.addEventListener("click", onOverlay);
   });
 }
