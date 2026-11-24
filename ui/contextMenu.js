@@ -1,45 +1,73 @@
 import { state } from "../state.js";
+import { listCompositeFolders, getGateFolder, setGateFolder } from "../persistence.js";
+import { refreshCompositeSection } from "./toolbar.js";
 
-export const wireCtxMenu = document.getElementById("wire-context-menu");
-export const gateCtxMenu = document.getElementById("gate-context-menu");
-export const folderCtxMenu = document.getElementById("folder-context-menu");
+const menus = new Map();
 
-export function showContextMenu(contextMenu, clientX, clientY, target) {
-  if (target.type === "gate") {
-    const labelBtnDiv = document.getElementById("label-btn-div");
-    if (target.source.gate.label) {
-      labelBtnDiv.innerHTML = "Edit Label";
-    } else {
-      labelBtnDiv.innerHTML = "Add Label";
-    }
-  }
+function registerMenu(id, options = {}) {
+  const element = document.getElementById(id);
+  menus.set(id, { element, target: null, ...options });
+}
 
-  state.ui.contextMenuTarget = target;
-  positionMenu(contextMenu, clientX, clientY);
+registerMenu("wire-context-menu");
+registerMenu("gate-context-menu");
+registerMenu("folder-context-menu");
+registerMenu("composite-context-menu");
+registerMenu("ctx-folder-submenu");
+
+export function showMenu(menuId, clientX, clientY, target, options = {}) {
+  hideAllMenus();
+
+  // Run any menu-specific pre-show logic
+  const entry = menus.get(menuId);
+  if (options.onBeforeShow) options.onBeforeShow(target);
+
+  entry.target = target;
+  positionMenu(entry.element, clientX, clientY);
   state.ui.isAnyModalOpen = true;
 }
 
-export function hideContextMenu(contextMenu) {
-  if (!contextMenu.classList.contains("open")) return;
-  contextMenu.classList.remove("open");
-  state.ui.contextMenuTarget = null;
+export function showSubmenu(menuId, anchorRect) {
+  const entry = menus.get(menuId);
+  positionSubmenu(entry.element, anchorRect);
+  state.ui.isAnyModalOpen = true;
+}
+
+export function hideMenu(menuId) {
+  const entry = menus.get(menuId);
+  if (!entry.element.classList.contains("open")) return;
+  entry.element.classList.remove("open");
+  entry.target = null;
+
+  if (menuId === "composite-context-menu") {
+    const submenu = menus.get("ctx-folder-submenu");
+    if (submenu) {
+      submenu.element.classList.remove("open");
+      submenu.target = null;
+    }
+  }
+
   state.ui.isAnyModalOpen = false;
 }
 
-export function hideAllContextMenus() {
-  hideContextMenu(wireCtxMenu);
-  hideContextMenu(gateCtxMenu);
+export function hideAllMenus() {
+  for (const [id] of menus) {
+    hideMenu(id);
+  }
+}
+
+export function getMenuTarget(menuId) {
+  return menus.get(menuId)?.target ?? null;
 }
 
 export function registerContextMenuListeners() {
   document.addEventListener("click", () => {
-    hideAllContextMenus();
+    hideAllMenus();
   });
   
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") {
-      hideAllContextMenus();
-    }
+    if (e.key === "Escape") hideAllMenus();
+    if (e.key === "Tab") e.preventDefault();
   });
 
   document.addEventListener("contextmenu", (e) => {
@@ -59,4 +87,50 @@ function positionMenu(menu, startX, startY) {
   if (rect.right > window.innerWidth) {
     menu.style.left = `${Math.max(0, startX - rect.width)}px`;
   }
+}
+
+function positionSubmenu(menu, anchorRect, gap = 6) {
+  menu.classList.add("open");
+  const { width, height } = menu.getBoundingClientRect();
+
+  // Prefer opening to the right of the parent, flip if no room
+  let left = anchorRect.right + gap;
+  if (left + width > window.innerWidth) {
+    left = Math.max(0, anchorRect.left - width - gap);
+  }
+
+  // Align with the parent top, shift up if it overflows the bottom
+  let top = anchorRect.top;
+  if (top + height > window.innerHeight) {
+    top = Math.max(0, window.innerHeight - height - (gap * 3));
+  }
+
+  menu.style.left = `${left}px`;
+  menu.style.top  = `${top}px`;
+}
+
+
+export function populateFolderSubmenu(gateName) {
+  const ctxFolderSubmenu = document.getElementById("ctx-folder-submenu");
+  ctxFolderSubmenu.innerHTML = "";
+
+  const folders = listCompositeFolders();
+  const currentFolder = getGateFolder(gateName);
+
+  const folderIconSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`;
+
+  folders.forEach(folder => {
+    const btn = document.createElement("button");
+    btn.className = `ctx-submenu-item${folder === currentFolder ? " active" : ""}`;
+    btn.innerHTML = `<span class="folder-icon">${folderIconSvg}</span>${folder}`;
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (folder !== currentFolder) {
+        setGateFolder(gateName, folder);
+        refreshCompositeSection();
+      }
+      hideAllMenus();
+    });
+    ctxFolderSubmenu.appendChild(btn);
+  });
 }

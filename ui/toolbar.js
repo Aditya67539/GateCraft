@@ -4,15 +4,9 @@ import {
   saveCompositeGate,
   loadCompositeGate,
   listCompositeGates,
-  deleteCompositeGate,
-  renameCompositeGate,
   buildCircuitFromData,
   listCompositeFolders,
   createCompositeFolder,
-  deleteCompositeFolder,
-  renameCompositeFolder,
-  getGateFolder,
-  setGateFolder,
   listGatesInFolder,
   DEFAULT_FOLDER,
 } from "../persistence.js";
@@ -27,6 +21,7 @@ import {
 } from "../render/theme.js";
 import { createModal } from "./modal.js";
 import { spawnBusNode } from "../render/BusNode.js";
+import { showMenu, populateFolderSubmenu } from "./contextMenu.js";
 
 
 
@@ -231,335 +226,6 @@ document.querySelectorAll(".sidebar-section-header").forEach(header => {
 const compositeSection = document.getElementById("composite-section");
 const compositeFoldersContainer = document.getElementById("composite-folders-container");
 
-// Track collapsed state of folders across refreshes
-const _collapsedFolders = new Set();
-
-// ─── Custom context menu ───────────────────────────────────────
-const ctxMenu = document.getElementById("composite-context-menu");
-let _ctxTargetName = null;
-
-function positionMenu(menu, startX, startY) {
-  menu.classList.add("open");
-  menu.style.left = `${startX}px`;
-  menu.style.top = `${startY}px`;
-
-  const rect = menu.getBoundingClientRect();
-  let x = startX;
-  let y = startY;
-
-  if (rect.bottom > window.innerHeight) {
-    y = Math.max(0, startY - rect.height);
-  }
-
-  menu.style.left = `${x}px`;
-  menu.style.top = `${y}px`;
-}
-
-function showContextMenu(e, name) {
-  e.preventDefault();
-  e.stopPropagation();
-  _ctxTargetName = name;
-
-  // Populate folder submenu
-  populateFolderSubmenu(name);
-  ctxFolderSubmenu.classList.remove("open");
-
-  // Position the menu near the cursor, clamped to viewport
-  positionMenu(ctxMenu, e.clientX, e.clientY);
-
-  state.ui.isAnyModalOpen = true;
-}
-
-function hideContextMenu() {
-  // Only modify state if the context menu is actually open
-  if (!ctxMenu.classList.contains("open")) return;
-
-  ctxMenu.classList.remove("open");
-  ctxFolderSubmenu.classList.remove("open");
-  _ctxTargetName = null;
-
-  state.ui.isAnyModalOpen = false;
-}
-
-// ─── Folder context menu ────────────────────────────────────────
-const folderCtxMenu = document.getElementById("folder-context-menu");
-let _ctxTargetFolder = null;
-
-function showFolderContextMenu(e, folderName) {
-  e.preventDefault();
-  e.stopPropagation();
-  _ctxTargetFolder = folderName;
-
-  // Hide the gate context menu if open
-  hideContextMenu();
-
-  positionMenu(folderCtxMenu, e.clientX, e.clientY);
-
-  state.ui.isAnyModalOpen = true;
-}
-
-function hideFolderContextMenu() {
-  if (!folderCtxMenu.classList.contains("open")) return;
-
-  folderCtxMenu.classList.remove("open");
-  _ctxTargetFolder = null;
-
-  state.ui.isAnyModalOpen = false;
-}
-
-// Folder context menu actions
-document.getElementById("ctx-folder-rename").addEventListener("click", () => {
-  const folderName = _ctxTargetFolder;
-  hideFolderContextMenu();
-  if (!folderName || folderName === DEFAULT_FOLDER) return;
-
-  const renameFolderModal = document.getElementById("rename-folder-modal");
-  const renameFolderInput = document.getElementById("rename-folder-input");
-  const renameFolderSave = document.getElementById("rename-folder-save-btn");
-  const renameFolderCancel = document.getElementById("rename-folder-cancel-btn");
-
-  renameFolderInput.value = folderName;
-  renameFolderModal.classList.add("open");
-  renameFolderInput.focus();
-  renameFolderInput.select();
-  state.ui.isAnyModalOpen = true;
-
-  const doRename = () => {
-    const newName = renameFolderInput.value.trim();
-    if (!newName || newName === folderName) {
-      renameFolderModal.classList.remove("open");
-      state.ui.isAnyModalOpen = false;
-      cleanup();
-      return;
-    }
-    if (renameCompositeFolder(folderName, newName)) {
-      // Preserve collapsed state under the new name
-      if (_collapsedFolders.has(folderName)) {
-        _collapsedFolders.delete(folderName);
-        _collapsedFolders.add(newName);
-      }
-      refreshCompositeSection();
-    }
-    renameFolderModal.classList.remove("open");
-    state.ui.isAnyModalOpen = false;
-    cleanup();
-  };
-
-  const doCancel = () => {
-    renameFolderModal.classList.remove("open");
-    state.ui.isAnyModalOpen = false;
-    cleanup();
-  };
-
-  const onKey = (e) => {
-    if (e.key === "Enter") doRename();
-    if (e.key === "Escape") doCancel();
-  };
-
-  const onOverlay = (e) => {
-    if (e.target === renameFolderModal) doCancel();
-  };
-
-  function cleanup() {
-    renameFolderSave.removeEventListener("click", doRename);
-    renameFolderCancel.removeEventListener("click", doCancel);
-    renameFolderInput.removeEventListener("keydown", onKey);
-    renameFolderModal.removeEventListener("click", onOverlay);
-  }
-
-  renameFolderSave.addEventListener("click", doRename);
-  renameFolderCancel.addEventListener("click", doCancel);
-  renameFolderInput.addEventListener("keydown", onKey);
-  renameFolderModal.addEventListener("click", onOverlay);
-});
-
-document.getElementById("ctx-folder-delete").addEventListener("click", () => {
-  const folderName = _ctxTargetFolder;
-  hideFolderContextMenu();
-  if (!folderName || folderName === DEFAULT_FOLDER) return;
-
-  const deleteModal = document.getElementById("delete-folder-warning-modal");
-  const cancelBtn = document.getElementById("delete-folder-cancel-btn");
-  const confirmBtn = document.getElementById("delete-folder-confirm-btn");
-
-  deleteModal.classList.add("open");
-  state.ui.isAnyModalOpen = true;
-
-  const doDelete = () => {
-    _collapsedFolders.delete(folderName);
-    deleteCompositeFolder(folderName);
-    refreshCompositeSection();
-    deleteModal.classList.remove("open");
-    state.ui.isAnyModalOpen = false;
-    cleanup();
-  };
-
-  const doCancel = () => {
-    deleteModal.classList.remove("open");
-    state.ui.isAnyModalOpen = false;
-    cleanup();
-  };
-  
-  const onKey = (e) => {
-    if (e.key === "Enter") doDelete();
-    if (e.key === "Escape") doCancel();
-  };
-
-  const onOverlay = (e) => {
-    if (e.target === deleteModal) doCancel();
-  };
-
-  function cleanup() {
-    confirmBtn.removeEventListener("click", doDelete);
-    cancelBtn.removeEventListener("click", doCancel);
-    document.removeEventListener("keydown", onKey);
-    deleteModal.removeEventListener("click", onOverlay);
-  }
-
-  confirmBtn.addEventListener("click", doDelete);
-  cancelBtn.addEventListener("click", doCancel);
-  document.addEventListener("keydown", onKey);
-  deleteModal.addEventListener("click", onOverlay);
-});
-
-// Close context menus on any click or Escape
-document.addEventListener("click", (e) => {
-  hideContextMenu();
-  hideFolderContextMenu();
-});
-document.addEventListener("contextmenu", (e) => {
-  if (ctxMenu.classList.contains("open") && !ctxMenu.contains(e.target)) {
-    hideContextMenu();
-  }
-  if (folderCtxMenu.classList.contains("open") && !folderCtxMenu.contains(e.target)) {
-    hideFolderContextMenu();
-  }
-});
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") { hideContextMenu(); hideFolderContextMenu(); }
-  if (e.key === "Tab") e.preventDefault();
-});
-
-// Context menu actions
-document.getElementById("ctx-rename").addEventListener("click", () => {
-  const name = _ctxTargetName;
-  hideContextMenu();
-  if (!name) return;
-
-  // Reuse the save modal for rename
-  const renameModal = document.getElementById("rename-gate-modal");
-  const renameInput = document.getElementById("rename-gate-input");
-  const renameSave = document.getElementById("rename-save-btn");
-  const renameCancel = document.getElementById("rename-cancel-btn");
-
-  renameInput.value = name;
-  renameModal.classList.add("open");
-  renameInput.focus();
-  renameInput.select();
-
-  const doRename = () => {
-    const newName = renameInput.value.trim();
-    if (!newName || newName === name) {
-      renameModal.classList.remove("open");
-      cleanup();
-      return;
-    }
-    if (renameCompositeGate(name, newName)) {
-      refreshCompositeSection();
-    }
-    renameModal.classList.remove("open");
-    cleanup();
-  };
-
-  const doCancel = () => {
-    renameModal.classList.remove("open");
-    cleanup();
-  };
-
-  const onKey = (e) => {
-    if (e.key === "Enter") doRename();
-    if (e.key === "Escape") doCancel();
-  };
-
-  const onOverlay = (e) => {
-    if (e.target === renameModal) doCancel();
-  };
-
-  function cleanup() {
-    renameSave.removeEventListener("click", doRename);
-    renameCancel.removeEventListener("click", doCancel);
-    renameInput.removeEventListener("keydown", onKey);
-    renameModal.removeEventListener("click", onOverlay);
-  }
-
-  renameSave.addEventListener("click", doRename);
-  renameCancel.addEventListener("click", doCancel);
-  renameInput.addEventListener("keydown", onKey);
-  renameModal.addEventListener("click", onOverlay);
-});
-
-document.getElementById("ctx-delete").addEventListener("click", () => {
-  const name = _ctxTargetName;
-  hideContextMenu();
-  if (!name) return;
-  deleteCompositeGate(name);
-  refreshCompositeSection();
-});
-
-// ─── Move to Folder submenu ─────────────────────────────────────
-const ctxMoveToFolder = document.getElementById("ctx-move-to-folder");
-const ctxFolderSubmenu = document.getElementById("ctx-folder-submenu");
-
-ctxMoveToFolder.addEventListener("click", (e) => {
-  e.stopPropagation();
-  if (ctxFolderSubmenu.classList.contains("open")) {
-    ctxFolderSubmenu.classList.remove("open");
-  } else {
-    // Position submenu to the right of the trigger item
-    const triggerRect = ctxMoveToFolder.getBoundingClientRect();
-    
-    ctxFolderSubmenu.classList.add("open");
-    // Temporarily position to get width
-    ctxFolderSubmenu.style.left = `${triggerRect.right}px`;
-    ctxFolderSubmenu.style.top = `${triggerRect.top}px`;
-    
-    const submenuRect = ctxFolderSubmenu.getBoundingClientRect();
-    let x = triggerRect.right;
-    let y = triggerRect.top;
-    
-    // If it overflows bottom, adjust upwards
-    if (submenuRect.bottom > window.innerHeight) {
-      y = Math.max(0, triggerRect.bottom - submenuRect.height);
-    }
-    
-    ctxFolderSubmenu.style.left = `${x}px`;
-    ctxFolderSubmenu.style.top = `${y}px`;
-  }
-});
-
-function populateFolderSubmenu(gateName) {
-  ctxFolderSubmenu.innerHTML = "";
-  const folders = listCompositeFolders();
-  const currentFolder = getGateFolder(gateName);
-
-  const folderIconSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`;
-
-  folders.forEach(folder => {
-    const btn = document.createElement("button");
-    btn.className = `ctx-submenu-item${folder === currentFolder ? " active" : ""}`;
-    btn.innerHTML = `<span class="folder-icon">${folderIconSvg}</span>${folder}`;
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (folder !== currentFolder) {
-        setGateFolder(gateName, folder);
-        refreshCompositeSection();
-      }
-      hideContextMenu();
-    });
-    ctxFolderSubmenu.appendChild(btn);
-  });
-}
-
 // ─── Custom tooltip ───────────────────────────────────────────
 const tooltip = document.getElementById("sidebar-tooltip");
 let _tooltipTimeout = null;
@@ -584,7 +250,9 @@ function hideTooltip() {
   }, 50);
 }
 
-function refreshCompositeSection(p = null) {
+export const collapsedFolders = new Set();
+
+export function refreshCompositeSection(p = null) {
   compositeFoldersContainer.innerHTML = "";
 
   const folders = listCompositeFolders();
@@ -606,7 +274,7 @@ function refreshCompositeSection(p = null) {
 
     const folderEl = document.createElement("div");
     folderEl.className = "composite-folder";
-    if (_collapsedFolders.has(folderName)) {
+    if (collapsedFolders.has(folderName)) {
       folderEl.classList.add("collapsed");
     }
 
@@ -621,14 +289,16 @@ function refreshCompositeSection(p = null) {
     header.addEventListener("click", () => {
       folderEl.classList.toggle("collapsed");
       if (folderEl.classList.contains("collapsed")) {
-        _collapsedFolders.add(folderName);
+        collapsedFolders.add(folderName);
       } else {
-        _collapsedFolders.delete(folderName);
+        collapsedFolders.delete(folderName);
       }
     });
     // Right-click: show folder context menu
     if (folderName !== DEFAULT_FOLDER) {
-      header.addEventListener("contextmenu", (e) => showFolderContextMenu(e, folderName));
+      header.addEventListener("contextmenu", (e) => {
+        showMenu("folder-context-menu", e.clientX, e.clientY, folderName);
+      });
     }
     folderEl.appendChild(header);
 
@@ -660,7 +330,13 @@ function refreshCompositeSection(p = null) {
         });
 
         // Right-click: show context menu
-        btn.addEventListener("contextmenu", (e) => showContextMenu(e, name));
+        btn.addEventListener("contextmenu", (e) => {
+          showMenu("composite-context-menu", e.clientX, e.clientY, name, {
+            onBeforeShow: () => {
+              populateFolderSubmenu(name);
+            }
+          });
+        })
 
         // Custom tooltip on hover (only if text is truncated)
         btn.addEventListener("mouseenter", (e) => {

@@ -31,21 +31,15 @@ import {
 import {
   MoveNodeCommand,
   PlaceGateCommand,
-  RemoveGateCommand,
-  RemoveWireCommand,
   ChangeWaypointCommand,
   PlaceBusCommand,
-  RemoveBusCommand,
   AddWaypointCommand,
   CompositeCommand,
   buildConnectionCommand,
 } from "../history/commands.js";
 import {
-  wireCtxMenu,
-  gateCtxMenu,
-  showContextMenu,
-  hideContextMenu,
-  hideAllContextMenus,
+  hideAllMenus,
+  showMenu,
 } from "../ui/contextMenu.js";
 import { state, screenToWorld, worldToScreen } from "../state.js";
 import { showToast } from "../ui/toast.js";
@@ -313,7 +307,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
     else if (p.mouseButton.right) {
       if (state.mode !== "edit" || state.ui.labelEditing) return;
       if (state.ui.isAnyModalOpen) {
-        hideAllContextMenus();
+        hideAllMenus();
         return;
       }
       
@@ -324,20 +318,25 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
       // 1. Check for input/output gates
       const target = renderNodes.find(n => n.containsPoint(world.x, world.y));
       if (target) {
-        showContextMenu(gateCtxMenu, clientX, clientY, { type: "gate", source: target });
+        showMenu("gate-context-menu", clientX, clientY, { type: "gate", source: target }, {
+          onBeforeShow: (t) => {
+            const labelBtnDiv = document.getElementById("label-btn-div");
+            labelBtnDiv.innerHTML = t.source.gate.label ? "Edit Label" : "Add Label";
+          }
+        });
         return;
       }
 
       // 2. Check for wires and buses
       const wireInfo = getWireAtPoint(world.x, world.y, wires, nodeMap, busMap);
       if (wireInfo) {
-        showContextMenu(wireCtxMenu, clientX, clientY, { type: "wire", source: wireInfo.conn });
+        showMenu("wire-context-menu", clientX, clientY, { type: "wire", source: wireInfo.conn });
         return;
       }
 
       const busInfo = findNearBus(world.x, world.y, busNodes, nodeMap, busMap);
       if (busInfo) {
-        showContextMenu(wireCtxMenu, clientX, clientY, { type: "bus", source: busInfo.busNode });
+        showMenu("wire-context-menu", clientX, clientY, { type: "bus", source: busInfo.busNode });
         return;
       }
     }
@@ -445,64 +444,6 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
     // Return false to prevent the entire web page from scrolling
     return false; 
   }
-
-  // Wire and Bus edit button
-  document.getElementById("ctx-wire-edit").addEventListener("click", () => {
-    state.wireEditing.target = state.ui.contextMenuTarget;
-    hideContextMenu(wireCtxMenu);
-    if (!state.wireEditing.target) return;
-    state.wireEditing.active = true;
-  });
-
-  // Delete button
-  document.querySelectorAll(".ctx-delete-target").forEach(element => {
-    element.addEventListener("click", () => {
-      hideAllContextMenus();
-      const target = state.ui.contextMenuTarget;
-      if (!target) return;
-
-      if (target.type === "wire") {
-        const removeWireCommand = new RemoveWireCommand(
-          circuit,
-          wires,
-          target.source,
-          wireDependents,
-          nodeMap,
-          busMap,
-        );
-        performCommand(removeWireCommand);
-      } else if (target.type === "bus") {
-        const removeBusCommand = new RemoveBusCommand(
-          busNodes,
-          wires,
-          circuit,
-          target.source,
-          nodeMap,
-          busMap,
-          wireDependents,
-        );
-        performCommand(removeBusCommand);
-      } else if (target.type === "gate") {
-        const removeGateCommand = new RemoveGateCommand(
-          renderNodes,
-          wires,
-          circuit,
-          target.source,
-          nodeMap,
-          busMap,
-          wireDependents,
-        );
-        performCommand(removeGateCommand);
-      }
-    });
-  });
-
-  // Label button for gates
-  document.getElementById("ctx-gate-edit").addEventListener("click", () => {
-    const target = state.ui.contextMenuTarget;
-    if (!target || target.type !== "gate") return;
-    openLabelEditor(target.source, p);
-  });
 }
 
 function findNearOutput(mx, my, renderNodes) {
@@ -717,7 +658,7 @@ function bringToFront(renderNodes, node) {
  * Spawn a floating HTML <input> over the gate for label editing.
  * Commits on Enter or blur; cancels on Escape.
  */
-function openLabelEditor(renderNode, p) {
+export function openLabelEditor(renderNode, p) {
   if (state.camera.zoom < 0.6) {
     showToast("Zoom in to edit label", { type: "warning" });
     return;
