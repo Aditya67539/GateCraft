@@ -13,7 +13,6 @@ import {
 import { getMenuTarget, hideAllMenus, hideMenu, showSubmenu } from "./contextMenu.js";
 import { state } from "../state.js";
 import { performCommand } from "../history/history.js";
-import { refreshCompositeSection } from "./toolbar.js";
 
 export function registerContextMenuActions({
   circuit,
@@ -74,7 +73,6 @@ export function registerContextMenuActions({
           busMap,
           wireDependents,
         );
-        console.log(removeGateCommand);
         performCommand(removeGateCommand);
       }
     });
@@ -88,7 +86,10 @@ export function registerContextMenuActions({
   })
 }
 
-export function registerSidebarMenuActions() {
+export function registerSidebarMenuActions({
+  collapsedFolders,
+  refreshCompositeSection,
+}) {
   /** Composite gate button context menu actions */
   document.getElementById("ctx-rename").addEventListener("click", () => {
     const name = getMenuTarget("composite-context-menu");
@@ -169,10 +170,6 @@ export function registerSidebarMenuActions() {
 
 
   /** Folder header context menu actions */
-
-  // Track collapsed state of folders across refreshes
-  const _collapsedFolders = new Set();
-
   document.getElementById("ctx-folder-delete").addEventListener("click", () => {
     const folderName = getMenuTarget("folder-context-menu");
     hideAllMenus();
@@ -186,7 +183,7 @@ export function registerSidebarMenuActions() {
     state.ui.isAnyModalOpen = true;
 
     const doDelete = () => {
-      _collapsedFolders.delete(folderName);
+      collapsedFolders.delete(folderName);
       deleteCompositeFolder(folderName);
       refreshCompositeSection();
       deleteModal.classList.remove("open");
@@ -225,7 +222,6 @@ export function registerSidebarMenuActions() {
   document.getElementById("ctx-folder-rename").addEventListener("click", () => {
     const folderName = getMenuTarget("folder-context-menu");
     hideAllMenus();
-    console.log(folderName);
     if (!folderName || folderName === DEFAULT_FOLDER) return;
 
     const renameFolderModal  = document.getElementById("rename-folder-modal");
@@ -249,9 +245,9 @@ export function registerSidebarMenuActions() {
       }
       if (renameCompositeFolder(folderName, newName)) {
         // Preserve collapsed state under the new name
-        if (_collapsedFolders.has(folderName)) {
-          _collapsedFolders.delete(folderName);
-          _collapsedFolders.add(newName);
+        if (collapsedFolders.has(folderName)) {
+          collapsedFolders.delete(folderName);
+          collapsedFolders.add(newName);
         }
         refreshCompositeSection();
       }

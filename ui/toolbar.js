@@ -226,9 +226,6 @@ document.querySelectorAll(".sidebar-section-header").forEach(header => {
 const compositeSection = document.getElementById("composite-section");
 const compositeFoldersContainer = document.getElementById("composite-folders-container");
 
-// Track collapsed state of folders across refreshes
-const _collapsedFolders = new Set();
-
 // ─── Custom tooltip ───────────────────────────────────────────
 const tooltip = document.getElementById("sidebar-tooltip");
 let _tooltipTimeout = null;
@@ -253,9 +250,8 @@ function hideTooltip() {
   }, 50);
 }
 
-// TODO: Since the folder context menu actions have been moved to the dedicated
-// context menu actions module, there are two instances of _collapsedFolders,
-// one in toolbar.js and one in contextMenuActions.js, making it incorrect.
+export const collapsedFolders = new Set();
+
 export function refreshCompositeSection(p = null) {
   compositeFoldersContainer.innerHTML = "";
 
@@ -278,7 +274,7 @@ export function refreshCompositeSection(p = null) {
 
     const folderEl = document.createElement("div");
     folderEl.className = "composite-folder";
-    if (_collapsedFolders.has(folderName)) {
+    if (collapsedFolders.has(folderName)) {
       folderEl.classList.add("collapsed");
     }
 
@@ -293,9 +289,9 @@ export function refreshCompositeSection(p = null) {
     header.addEventListener("click", () => {
       folderEl.classList.toggle("collapsed");
       if (folderEl.classList.contains("collapsed")) {
-        _collapsedFolders.add(folderName);
+        collapsedFolders.add(folderName);
       } else {
-        _collapsedFolders.delete(folderName);
+        collapsedFolders.delete(folderName);
       }
     });
     // Right-click: show folder context menu

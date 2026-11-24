@@ -31,7 +31,7 @@ import {
   findNearBus,
   openLabelEditor,
 } from "./input/mouseHandlers.js";
-import { initToolbar } from "./ui/toolbar.js";
+import { initToolbar, refreshCompositeSection, collapsedFolders } from "./ui/toolbar.js";
 import { getActiveTheme, applyTheme } from "./render/theme.js";
 import { CircuitBuilder } from "./logic/CircuitBuilder.js";
 import { snapPointToGrid, wouldBusOverlap, wouldOverlap } from "./render/RenderNode.js";
@@ -71,7 +71,10 @@ const sketch = (p) => {
       nodeMap, busMap, wireDependents,
       openLabelEditor: (renderNode) => openLabelEditor(renderNode, p),
     });
-    registerSidebarMenuActions();
+    registerSidebarMenuActions({
+      collapsedFolders,
+      refreshCompositeSection: () => refreshCompositeSection(p),
+    });
     
     gridBuffer = p.createGraphics(
       WIDTH + MAX_ZOOM * GRID_SIZE * 2,
