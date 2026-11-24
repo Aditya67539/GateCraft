@@ -229,64 +229,6 @@ const compositeFoldersContainer = document.getElementById("composite-folders-con
 // Track collapsed state of folders across refreshes
 const _collapsedFolders = new Set();
 
-// ─── Custom context menu ───────────────────────────────────────
-const ctxMenu = document.getElementById("composite-context-menu");
-let _ctxTargetName = null;
-
-function positionMenu(menu, startX, startY) {
-  menu.classList.add("open");
-  menu.style.left = `${startX}px`;
-  menu.style.top = `${startY}px`;
-
-  const rect = menu.getBoundingClientRect();
-  let x = startX;
-  let y = startY;
-
-  if (rect.bottom > window.innerHeight) {
-    y = Math.max(0, startY - rect.height);
-  }
-
-  menu.style.left = `${x}px`;
-  menu.style.top = `${y}px`;
-}
-
-// ─── Folder context menu ────────────────────────────────────────
-const folderCtxMenu = document.getElementById("folder-context-menu");
-let _ctxTargetFolder = null;
-
-function showFolderContextMenu(e, folderName) {
-  e.preventDefault();
-  e.stopPropagation();
-  _ctxTargetFolder = folderName;
-
-  positionMenu(folderCtxMenu, e.clientX, e.clientY);
-
-  state.ui.isAnyModalOpen = true;
-}
-
-function hideFolderContextMenu() {
-  if (!folderCtxMenu.classList.contains("open")) return;
-
-  folderCtxMenu.classList.remove("open");
-  _ctxTargetFolder = null;
-
-  state.ui.isAnyModalOpen = false;
-});
-
-// Close context menus on any click or Escape
-document.addEventListener("click", (e) => {
-  hideFolderContextMenu();
-});
-document.addEventListener("contextmenu", (e) => {
-  if (folderCtxMenu.classList.contains("open") && !folderCtxMenu.contains(e.target)) {
-    hideFolderContextMenu();
-  }
-});
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") hideFolderContextMenu();
-  if (e.key === "Tab") e.preventDefault();
-});
-
 // ─── Custom tooltip ───────────────────────────────────────────
 const tooltip = document.getElementById("sidebar-tooltip");
 let _tooltipTimeout = null;
@@ -311,6 +253,9 @@ function hideTooltip() {
   }, 50);
 }
 
+// TODO: Since the folder context menu actions have been moved to the dedicated
+// context menu actions module, there are two instances of _collapsedFolders,
+// one in toolbar.js and one in contextMenuActions.js, making it incorrect.
 export function refreshCompositeSection(p = null) {
   compositeFoldersContainer.innerHTML = "";
 
@@ -355,7 +300,9 @@ export function refreshCompositeSection(p = null) {
     });
     // Right-click: show folder context menu
     if (folderName !== DEFAULT_FOLDER) {
-      header.addEventListener("contextmenu", (e) => showFolderContextMenu(e, folderName));
+      header.addEventListener("contextmenu", (e) => {
+        showMenu("folder-context-menu", e.clientX, e.clientY, folderName);
+      });
     }
     folderEl.appendChild(header);
 
