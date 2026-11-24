@@ -66,9 +66,8 @@ export function registerContextMenuListeners() {
   });
   
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") {
-      hideAllMenus();
-    }
+    if (e.key === "Escape") hideAllMenus();
+    if (e.key === "Tab") e.preventDefault();
   });
 
   document.addEventListener("contextmenu", (e) => {
