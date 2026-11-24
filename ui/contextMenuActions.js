@@ -1,8 +1,17 @@
+import {
+  RemoveBusCommand,
+  RemoveGateCommand,
+  RemoveWireCommand,
+} from "../history/commands";
+import {
+  DEFAULT_FOLDER,
+  deleteCompositeFolder,
+  deleteCompositeGate,
+  renameCompositeGate,
+} from "../persistence.js";
 import { getMenuTarget, hideAllMenus, hideMenu, showSubmenu } from "./contextMenu.js";
 import { state } from "../state.js";
-import { RemoveBusCommand, RemoveGateCommand, RemoveWireCommand } from "../history/commands";
 import { performCommand } from "../history/history.js";
-import { deleteCompositeGate, renameCompositeGate } from "../persistence.js";
 import { refreshCompositeSection } from "./toolbar.js";
 
 export function registerContextMenuActions({
@@ -79,6 +88,7 @@ export function registerContextMenuActions({
 }
 
 export function registerSidebarMenuActions() {
+  /** Composite gate button context menu actions */
   document.getElementById("ctx-rename").addEventListener("click", () => {
     const name = getMenuTarget("composite-context-menu");
     hideAllMenus();
@@ -154,5 +164,61 @@ export function registerSidebarMenuActions() {
       const anchorRect = ctxMoveToFolder.getBoundingClientRect();
       showSubmenu("ctx-folder-submenu", anchorRect);
     }
+  });
+
+
+  /** Folder header context menu actions */
+
+  // Track collapsed state of folders across refreshes
+  const _collapsedFolders = new Set();
+
+  document.getElementById("ctx-folder-delete").addEventListener("click", () => {
+    const folderName = getMenuTarget("folder-context-menu");
+    console.log(folderName);
+    hideAllMenus();
+    if (!folderName || folderName === DEFAULT_FOLDER) return;
+
+    const deleteModal = document.getElementById("delete-folder-warning-modal");
+    const cancelBtn   = document.getElementById("delete-folder-cancel-btn");
+    const confirmBtn  = document.getElementById("delete-folder-confirm-btn");
+
+    deleteModal.classList.add("open");
+    state.ui.isAnyModalOpen = true;
+
+    const doDelete = () => {
+      _collapsedFolders.delete(folderName);
+      deleteCompositeFolder(folderName);
+      refreshCompositeSection();
+      deleteModal.classList.remove("open");
+      state.ui.isAnyModalOpen = false;
+      cleanup();
+    };
+
+    const doCancel = () => {
+      deleteModal.classList.remove("open");
+      state.ui.isAnyModalOpen = false;
+      cleanup();
+    };
+
+    const onKey = (e) => {
+      if (e.key === "Enter")  doDelete();
+      if (e.key === "Escape") doCancel();
+    };
+
+    const onOverlay = (e) => {
+      if (e.target === deleteModal) doCancel();
+    };
+
+    const cleanup = () => {
+      confirmBtn.removeEventListener("click", doDelete);
+      cancelBtn.removeEventListener("click", doCancel);
+      document.removeEventListener("keydown", onKey);
+      deleteModal.removeEventListener("click", onOverlay);
+    };
+
+    confirmBtn.addEventListener("click", doDelete);
+    cancelBtn.addEventListener("click", doCancel);
+    document.addEventListener("keydown", onKey);
+    deleteModal.addEventListener("click", onOverlay);
   });
 }

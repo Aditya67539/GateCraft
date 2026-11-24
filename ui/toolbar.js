@@ -7,7 +7,6 @@ import {
   buildCircuitFromData,
   listCompositeFolders,
   createCompositeFolder,
-  deleteCompositeFolder,
   renameCompositeFolder,
   listGatesInFolder,
   DEFAULT_FOLDER,
@@ -339,55 +338,6 @@ document.getElementById("ctx-folder-rename").addEventListener("click", () => {
   renameFolderCancel.addEventListener("click", doCancel);
   renameFolderInput.addEventListener("keydown", onKey);
   renameFolderModal.addEventListener("click", onOverlay);
-});
-
-document.getElementById("ctx-folder-delete").addEventListener("click", () => {
-  const folderName = _ctxTargetFolder;
-  hideFolderContextMenu();
-  if (!folderName || folderName === DEFAULT_FOLDER) return;
-
-  const deleteModal = document.getElementById("delete-folder-warning-modal");
-  const cancelBtn = document.getElementById("delete-folder-cancel-btn");
-  const confirmBtn = document.getElementById("delete-folder-confirm-btn");
-
-  deleteModal.classList.add("open");
-  state.ui.isAnyModalOpen = true;
-
-  const doDelete = () => {
-    _collapsedFolders.delete(folderName);
-    deleteCompositeFolder(folderName);
-    refreshCompositeSection();
-    deleteModal.classList.remove("open");
-    state.ui.isAnyModalOpen = false;
-    cleanup();
-  };
-
-  const doCancel = () => {
-    deleteModal.classList.remove("open");
-    state.ui.isAnyModalOpen = false;
-    cleanup();
-  };
-  
-  const onKey = (e) => {
-    if (e.key === "Enter") doDelete();
-    if (e.key === "Escape") doCancel();
-  };
-
-  const onOverlay = (e) => {
-    if (e.target === deleteModal) doCancel();
-  };
-
-  function cleanup() {
-    confirmBtn.removeEventListener("click", doDelete);
-    cancelBtn.removeEventListener("click", doCancel);
-    document.removeEventListener("keydown", onKey);
-    deleteModal.removeEventListener("click", onOverlay);
-  }
-
-  confirmBtn.addEventListener("click", doDelete);
-  cancelBtn.addEventListener("click", doCancel);
-  document.addEventListener("keydown", onKey);
-  deleteModal.addEventListener("click", onOverlay);
 });
 
 // Close context menus on any click or Escape
