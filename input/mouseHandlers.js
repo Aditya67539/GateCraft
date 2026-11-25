@@ -103,10 +103,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
               }
             }
           } else {
-            state.mode = "edit";
             state.ghost.node = null;
-            document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
-            document.getElementById("btn-edit").classList.add("active");
           }
         } else if (state.ghost.bus) {
           if (!state.ghost.bus.startPointPlaced && !state.ghost.bus.endPointPlaced) {
@@ -121,10 +118,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
             const placeBusCommand = new PlaceBusCommand(circuit, busNodes, state.ghost.bus, busMap);
             performCommand(placeBusCommand);
 
-            state.mode = "edit";
             state.ghost.bus = null;
-            document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
-            document.getElementById("btn-edit").classList.add("active");
             cleanupGhostBus();
           }
         }
@@ -277,7 +271,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
 
     else if (p.mouseButton.right) {
       rightClicked = true;
-      if (state.mode !== "edit" || state.ui.labelEditing) return;
+      if (state.ui.labelEditing) return;
       if (state.ui.isAnyModalOpen) {
         hideAllMenus();
         return;
@@ -315,28 +309,26 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
   }
 
   p.mouseDragged = function () {
-    if (state.mode === "edit") {
-      const worldDrag = screenToWorld(p.mouseX, p.mouseY);
-      if (state.interaction.target) {
-        if (!state.interaction.dragging.active) {
-          state.interaction.dragging.originalPos.x = state.interaction.target.x;
-          state.interaction.dragging.originalPos.y = state.interaction.target.y;
-          state.interaction.dragging.active = true;
-        }
-        const { x, y } = snapPointToGrid(worldDrag.x, worldDrag.y);
-        state.interaction.target.x = x - state.interaction.dragging.offset.x;
-        state.interaction.target.y = y - state.interaction.dragging.offset.y;
-      } else if (state.wireEditing.isMovingWaypoint()) {
-        const source = state.wireEditing.target.source;
-        const waypointIndex = state.wireEditing.waypoint.move.index;
-
-        const originalWaypoint = source.waypoints[waypointIndex];
-        originalWaypoint.x = worldDrag.x;
-        originalWaypoint.y = worldDrag.y;
-      } else if (state.camera.isPanning) {
-        state.camera.x += (p.mouseX - p.pmouseX);
-        state.camera.y += (p.mouseY - p.pmouseY);
+    const worldDrag = screenToWorld(p.mouseX, p.mouseY);
+    if (state.interaction.target) {
+      if (!state.interaction.dragging.active) {
+        state.interaction.dragging.originalPos.x = state.interaction.target.x;
+        state.interaction.dragging.originalPos.y = state.interaction.target.y;
+        state.interaction.dragging.active = true;
       }
+      const { x, y } = snapPointToGrid(worldDrag.x, worldDrag.y);
+      state.interaction.target.x = x - state.interaction.dragging.offset.x;
+      state.interaction.target.y = y - state.interaction.dragging.offset.y;
+    } else if (state.wireEditing.isMovingWaypoint()) {
+      const source = state.wireEditing.target.source;
+      const waypointIndex = state.wireEditing.waypoint.move.index;
+
+      const originalWaypoint = source.waypoints[waypointIndex];
+      originalWaypoint.x = worldDrag.x;
+      originalWaypoint.y = worldDrag.y;
+    } else if (state.camera.isPanning) {
+      state.camera.x += (p.mouseX - p.pmouseX);
+      state.camera.y += (p.mouseY - p.pmouseY);
     }
   }
 
