@@ -83,7 +83,52 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
     bringToFront(renderNodes, state.interaction.target);
 
     if (p.mouseButton.left) {
-      if (state.mode === "edit") {
+      if (state.mode === "placing") {
+        if (state.ghost.node) {
+          if (wouldOverlap(state.ghost.node, renderNodes, busNodes, null)) return;
+          const placeGateCommand = new PlaceGateCommand(circuit, renderNodes, state.ghost.node, nodeMap);
+          performCommand(placeGateCommand);
+
+          if (event.shiftKey) {
+            const gateCategory = state.ghost.node.gate.category;
+            const gateType = state.ghost.node.gate.type;
+            const { x, y } = snapPointToGrid(world.x, world.y);
+            if (gateCategory === GATE_CATEGORIES.PRIMITIVE) {
+              state.ghost.node = createPrimitiveNode(gateType, x, y);
+            } else {
+              const saved = loadCompositeGate(gateType);
+              if (saved) {
+                const freshCircuit = buildCircuitFromData(saved.circuitData, saved.renderData);
+                state.ghost.node = createCompositeNode(gateType, freshCircuit, x, y);
+              }
+            }
+          } else {
+            state.mode = "edit";
+            state.ghost.node = null;
+            document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
+            document.getElementById("btn-edit").classList.add("active");
+          }
+        } else if (state.ghost.bus) {
+          if (!state.ghost.bus.startPointPlaced && !state.ghost.bus.endPointPlaced) {
+            if (wouldBusOverlap(state.ghost.bus, renderNodes, busNodes)) return;
+            state.ghost.bus.startPointPlaced = true;
+            const startPoint = state.ghost.bus.startPoint;
+            const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
+            state.ghost.bus.waypoints = waypoints;
+            state.ghost.busCleanup = cleanup;
+          } else if (state.ghost.bus.startPointPlaced && !state.ghost.bus.endPointPlaced) {
+            if (wouldBusOverlap(state.ghost.bus, renderNodes, busNodes)) return;
+            const placeBusCommand = new PlaceBusCommand(circuit, busNodes, state.ghost.bus, busMap);
+            performCommand(placeBusCommand);
+
+            state.mode = "edit";
+            state.ghost.bus = null;
+            document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
+            document.getElementById("btn-edit").classList.add("active");
+            cleanupGhostBus();
+          }
+        }
+      } else {
         // Check input ports
         if (state.interaction.wireCreation) {
           const useSnap = p.keyIsDown(p.SHIFT);
@@ -225,51 +270,6 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
             state.wireEditing.waypoint.move.snapshot = {
               fromWaypoint: structuredClone(fromWaypoint),
             };
-          }
-        }
-      } else if (state.mode === "placing") {
-        if (state.ghost.node) {
-          if (wouldOverlap(state.ghost.node, renderNodes, busNodes, null)) return;
-          const placeGateCommand = new PlaceGateCommand(circuit, renderNodes, state.ghost.node, nodeMap);
-          performCommand(placeGateCommand);
-
-          if (event.shiftKey) {
-            const gateCategory = state.ghost.node.gate.category;
-            const gateType = state.ghost.node.gate.type;
-            const { x, y } = snapPointToGrid(world.x, world.y);
-            if (gateCategory === GATE_CATEGORIES.PRIMITIVE) {
-              state.ghost.node = createPrimitiveNode(gateType, x, y);
-            } else {
-              const saved = loadCompositeGate(gateType);
-              if (saved) {
-                const freshCircuit = buildCircuitFromData(saved.circuitData, saved.renderData);
-                state.ghost.node = createCompositeNode(gateType, freshCircuit, x, y);
-              }
-            }
-          } else {
-            state.mode = "edit";
-            state.ghost.node = null;
-            document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
-            document.getElementById("btn-edit").classList.add("active");
-          }
-        } else if (state.ghost.bus) {
-          if (!state.ghost.bus.startPointPlaced && !state.ghost.bus.endPointPlaced) {
-            if (wouldBusOverlap(state.ghost.bus, renderNodes, busNodes)) return;
-            state.ghost.bus.startPointPlaced = true;
-            const startPoint = state.ghost.bus.startPoint;
-            const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
-            state.ghost.bus.waypoints = waypoints;
-            state.ghost.busCleanup = cleanup;
-          } else if (state.ghost.bus.startPointPlaced && !state.ghost.bus.endPointPlaced) {
-            if (wouldBusOverlap(state.ghost.bus, renderNodes, busNodes)) return;
-            const placeBusCommand = new PlaceBusCommand(circuit, busNodes, state.ghost.bus, busMap);
-            performCommand(placeBusCommand);
-
-            state.mode = "edit";
-            state.ghost.bus = null;
-            document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
-            document.getElementById("btn-edit").classList.add("active");
-            cleanupGhostBus();
           }
         }
       }
