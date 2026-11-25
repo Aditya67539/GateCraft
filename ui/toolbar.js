@@ -360,14 +360,6 @@ export function refreshCompositeSection(p = null) {
   });
 }
 
-export function changeMode(mode) {
-  state.mode = mode;
-  document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
-  const btnId = `#btn-${mode}`;
-  document.querySelector(btnId).classList.add("active");
-}
-
-
 const saveAsCompositeBtn = document.getElementById("btn-save-gate");
 const clearBtn = document.getElementById("btn-clear-canvas");
 const settingsBtn = document.getElementById("btn-settings");
@@ -499,13 +491,6 @@ export function initToolbar(p, circuit, renderNodes, wires, busNodes) {
   const settingsModal = createModal({
     overlay: settingsOverlay,
     onOpen: () => { renderThemeGrid(); },
-  });
-
-  // Segmented mode switcher
-  document.querySelectorAll(".mode-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      changeMode(btn.dataset.mode);
-    });
   });
 
   // Built-in component buttons
