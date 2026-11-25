@@ -92,7 +92,6 @@ export function createCompositeNode(name, circuitData, mouseX, mouseY) {
 
 /**
  * Spawns a basic node into the canvas
- * Sets the mode to "placing"
  * Sets the node as a ghost node for placement preview
  * 
  * @param {string} type - The type of gate to create
@@ -105,7 +104,6 @@ export function spawnPrimitiveNode(type, mouseX, mouseY) {
 
 /**
  * Spawns a composite node into the canvas
- * Sets the mode to "placing"
  * Sets the node as a ghost node for placement preview
  * 
  * @param {string} name - The label/name of the composte gate
