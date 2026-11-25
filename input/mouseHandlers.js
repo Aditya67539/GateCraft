@@ -72,8 +72,10 @@ export const busMap = new Map();
 export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, wireDependents) {
   const canvasHost = document.querySelector(".canvas-host");
   const canvas = canvasHost.querySelector("canvas");
+  let rightClicked = false; // used to prevent right click actions from triggering on mouse release
 
   p.mousePressed = function (event) {
+    rightClicked = false;
     if (state.ui.labelEditing) return;
 
     const world = screenToWorld(p.mouseX, p.mouseY);
@@ -81,7 +83,46 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
     bringToFront(renderNodes, state.interaction.target);
 
     if (p.mouseButton.left) {
-      if (state.mode === "edit") {
+      if (state.isPlacing()) {
+        if (state.ghost.node) {
+          if (wouldOverlap(state.ghost.node, renderNodes, busNodes, null)) return;
+          const placeGateCommand = new PlaceGateCommand(circuit, renderNodes, state.ghost.node, nodeMap);
+          performCommand(placeGateCommand);
+
+          if (event.shiftKey) {
+            const gateCategory = state.ghost.node.gate.category;
+            const gateType = state.ghost.node.gate.type;
+            const { x, y } = snapPointToGrid(world.x, world.y);
+            if (gateCategory === GATE_CATEGORIES.PRIMITIVE) {
+              state.ghost.node = createPrimitiveNode(gateType, x, y);
+            } else {
+              const saved = loadCompositeGate(gateType);
+              if (saved) {
+                const freshCircuit = buildCircuitFromData(saved.circuitData, saved.renderData);
+                state.ghost.node = createCompositeNode(gateType, freshCircuit, x, y);
+              }
+            }
+          } else {
+            state.ghost.node = null;
+          }
+        } else if (state.ghost.bus) {
+          if (!state.ghost.bus.startPointPlaced && !state.ghost.bus.endPointPlaced) {
+            if (wouldBusOverlap(state.ghost.bus, renderNodes, busNodes)) return;
+            state.ghost.bus.startPointPlaced = true;
+            const startPoint = state.ghost.bus.startPoint;
+            const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
+            state.ghost.bus.waypoints = waypoints;
+            state.ghost.busCleanup = cleanup;
+          } else if (state.ghost.bus.startPointPlaced && !state.ghost.bus.endPointPlaced) {
+            if (wouldBusOverlap(state.ghost.bus, renderNodes, busNodes)) return;
+            const placeBusCommand = new PlaceBusCommand(circuit, busNodes, state.ghost.bus, busMap);
+            performCommand(placeBusCommand);
+
+            state.ghost.bus = null;
+            cleanupGhostBus();
+          }
+        }
+      } else {
         // Check input ports
         if (state.interaction.wireCreation) {
           const useSnap = p.keyIsDown(p.SHIFT);
@@ -225,87 +266,12 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
             };
           }
         }
-      } else if (state.mode === "run") {
-        if (
-          state.interaction.target &&
-          state.interaction.target.gate.category === GATE_CATEGORIES.PRIMITIVE &&
-          state.interaction.target.gate.type === "input"
-        ) {
-          const signal = state.interaction.target.gate.output === LOW ? HIGH : LOW;
-          state.interaction.target.gate.setValue(signal);
-          circuit.evaluate();
-        } else if (
-          state.interaction.target &&
-          state.interaction.target.gate.category === GATE_CATEGORIES.PRIMITIVE &&
-          state.interaction.target.gate.type === "clock"
-        ) {
-          if (state.interaction.target.intervalId != null) {
-            clearInterval(state.interaction.target.intervalId);
-            state.interaction.target.intervalId = null;
-            return;
-          }
-          const clockNode = state.interaction.target;
-          const timeInterval = 1000 / (2 * FREQUENCY);
-          state.interaction.target.intervalId = setInterval(() => {
-            clockNode.gate.tick();
-            circuit.evaluate();
-          }, timeInterval);
-
-          setTimeout(() => {
-            clearInterval(state.interaction.target.intervalId);
-            state.interaction.target.intervalId = null;
-          }, CLOCK_TIMER);
-        }
-      } else if (state.mode === "placing") {
-        if (state.ghost.node) {
-          if (wouldOverlap(state.ghost.node, renderNodes, busNodes, null)) return;
-          const placeGateCommand = new PlaceGateCommand(circuit, renderNodes, state.ghost.node, nodeMap);
-          performCommand(placeGateCommand);
-
-          if (event.shiftKey) {
-            const gateCategory = state.ghost.node.gate.category;
-            const gateType = state.ghost.node.gate.type;
-            const { x, y } = snapPointToGrid(world.x, world.y);
-            if (gateCategory === GATE_CATEGORIES.PRIMITIVE) {
-              state.ghost.node = createPrimitiveNode(gateType, x, y);
-            } else {
-              const saved = loadCompositeGate(gateType);
-              if (saved) {
-                const freshCircuit = buildCircuitFromData(saved.circuitData, saved.renderData);
-                state.ghost.node = createCompositeNode(gateType, freshCircuit, x, y);
-              }
-            }
-          } else {
-            state.mode = "edit";
-            state.ghost.node = null;
-            document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
-            document.getElementById("btn-edit").classList.add("active");
-          }
-        } else if (state.ghost.bus) {
-          if (!state.ghost.bus.startPointPlaced && !state.ghost.bus.endPointPlaced) {
-            if (wouldBusOverlap(state.ghost.bus, renderNodes, busNodes)) return;
-            state.ghost.bus.startPointPlaced = true;
-            const startPoint = state.ghost.bus.startPoint;
-            const { waypoints, cleanup } = setCustomWaypoints(p, startPoint);
-            state.ghost.bus.waypoints = waypoints;
-            state.ghost.busCleanup = cleanup;
-          } else if (state.ghost.bus.startPointPlaced && !state.ghost.bus.endPointPlaced) {
-            if (wouldBusOverlap(state.ghost.bus, renderNodes, busNodes)) return;
-            const placeBusCommand = new PlaceBusCommand(circuit, busNodes, state.ghost.bus, busMap);
-            performCommand(placeBusCommand);
-
-            state.mode = "edit";
-            state.ghost.bus = null;
-            document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
-            document.getElementById("btn-edit").classList.add("active");
-            cleanupGhostBus();
-          }
-        }
       }
     }
 
     else if (p.mouseButton.right) {
-      if (state.mode !== "edit" || state.ui.labelEditing) return;
+      rightClicked = true;
+      if (state.ui.labelEditing) return;
       if (state.ui.isAnyModalOpen) {
         hideAllMenus();
         return;
@@ -343,33 +309,32 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
   }
 
   p.mouseDragged = function () {
-    if (state.mode === "edit") {
-      const worldDrag = screenToWorld(p.mouseX, p.mouseY);
-      if (state.interaction.target) {
-        if (!state.interaction.dragging.active) {
-          state.interaction.dragging.originalPos.x = state.interaction.target.x;
-          state.interaction.dragging.originalPos.y = state.interaction.target.y;
-          state.interaction.dragging.active = true;
-        }
-        const { x, y } = snapPointToGrid(worldDrag.x, worldDrag.y);
-        state.interaction.target.x = x - state.interaction.dragging.offset.x;
-        state.interaction.target.y = y - state.interaction.dragging.offset.y;
-      } else if (state.wireEditing.isMovingWaypoint()) {
-        const source = state.wireEditing.target.source;
-        const waypointIndex = state.wireEditing.waypoint.move.index;
-
-        const originalWaypoint = source.waypoints[waypointIndex];
-        originalWaypoint.x = worldDrag.x;
-        originalWaypoint.y = worldDrag.y;
-      } else if (state.camera.isPanning) {
-        state.camera.x += (p.mouseX - p.pmouseX);
-        state.camera.y += (p.mouseY - p.pmouseY);
+    const worldDrag = screenToWorld(p.mouseX, p.mouseY);
+    if (state.interaction.target) {
+      if (!state.interaction.dragging.active) {
+        state.interaction.dragging.originalPos.x = state.interaction.target.x;
+        state.interaction.dragging.originalPos.y = state.interaction.target.y;
+        state.interaction.dragging.active = true;
       }
+      const { x, y } = snapPointToGrid(worldDrag.x, worldDrag.y);
+      state.interaction.target.x = x - state.interaction.dragging.offset.x;
+      state.interaction.target.y = y - state.interaction.dragging.offset.y;
+    } else if (state.wireEditing.isMovingWaypoint()) {
+      const source = state.wireEditing.target.source;
+      const waypointIndex = state.wireEditing.waypoint.move.index;
+
+      const originalWaypoint = source.waypoints[waypointIndex];
+      originalWaypoint.x = worldDrag.x;
+      originalWaypoint.y = worldDrag.y;
+    } else if (state.camera.isPanning) {
+      state.camera.x += (p.mouseX - p.pmouseX);
+      state.camera.y += (p.mouseY - p.pmouseY);
     }
   }
 
   p.mouseReleased = function () {
-    if (state.interaction.target) {
+    if (rightClicked) return;
+    if (state.interaction.dragging.active) {
       if (
         wouldOverlap(
           state.interaction.target,
@@ -409,6 +374,37 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
         performCommand(compositeCommand, { alreadyPerformed: true });
       } else {
         performCommand(changeWaypointCommand);
+      }
+    } else {
+      if (
+        state.interaction.target &&
+        state.interaction.target.gate.category === GATE_CATEGORIES.PRIMITIVE &&
+        state.interaction.target.gate.type === "input"
+      ) {
+        const signal = state.interaction.target.gate.output === LOW ? HIGH : LOW;
+        state.interaction.target.gate.setValue(signal);
+        circuit.evaluate();
+      } else if (
+        state.interaction.target &&
+        state.interaction.target.gate.category === GATE_CATEGORIES.PRIMITIVE &&
+        state.interaction.target.gate.type === "clock"
+      ) {
+        if (state.interaction.target.intervalId != null) {
+          clearInterval(state.interaction.target.intervalId);
+          state.interaction.target.intervalId = null;
+          return;
+        }
+        const clockNode = state.interaction.target;
+        const timeInterval = 1000 / (2 * FREQUENCY);
+        clockNode.intervalId = setInterval(() => {
+          clockNode.gate.tick();
+          circuit.evaluate();
+        }, timeInterval);
+
+        setTimeout(() => {
+          clearInterval(state.interaction.target.intervalId);
+          state.interaction.target.intervalId = null;
+        }, CLOCK_TIMER);
       }
     }
     state.interaction.target = null;

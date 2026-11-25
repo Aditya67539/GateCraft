@@ -1,5 +1,5 @@
 import { state } from "../state.js";
-import { changeMode, toggleSidebar } from "../ui/toolbar.js";
+import { toggleSidebar } from "../ui/toolbar.js";
 import { undo, redo } from "../history/history.js";
 
 function buildKeyCombo(p) {
@@ -14,8 +14,6 @@ function buildKeyCombo(p) {
 export function registerKeyboardHandlers(p, circuit, renderNodes, wires, actions) {
   // 1. Canvas-specific tool shortcuts (only active when the canvas has focus)
   const shortcuts = {
-    "1": () => changeMode("edit"),
-    "2": () => changeMode("run"),
     "tab": () => toggleSidebar(),
     "control+s": () => actions.openSaveModal(),
     "control+shift+x": () => actions.openWarningModal(),

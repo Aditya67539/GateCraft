@@ -92,7 +92,6 @@ export function createCompositeNode(name, circuitData, mouseX, mouseY) {
 
 /**
  * Spawns a basic node into the canvas
- * Sets the mode to "placing"
  * Sets the node as a ghost node for placement preview
  * 
  * @param {string} type - The type of gate to create
@@ -101,12 +100,10 @@ export function createCompositeNode(name, circuitData, mouseX, mouseY) {
  */
 export function spawnPrimitiveNode(type, mouseX, mouseY) {
   state.ghost.node = createPrimitiveNode(type, mouseX, mouseY);
-  state.mode = "placing";
 }
 
 /**
  * Spawns a composite node into the canvas
- * Sets the mode to "placing"
  * Sets the node as a ghost node for placement preview
  * 
  * @param {string} name - The label/name of the composte gate
@@ -116,7 +113,6 @@ export function spawnPrimitiveNode(type, mouseX, mouseY) {
  */
 export function spawnCompositeNode(name, circuitData, mouseX, mouseY) {
   state.ghost.node = createCompositeNode(name, circuitData, mouseX, mouseY);
-  state.mode = "placing";
 }
 
 function computeSize(gate) {

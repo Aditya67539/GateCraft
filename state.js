@@ -1,5 +1,4 @@
-const _state = {
-  _mode: "edit",
+export const state = {
   camera: { x: 0, y: 0, zoom: 1, isPanning: false },
 
   interaction: {
@@ -115,21 +114,12 @@ const _state = {
       this.ui.labelEditing ||
       this.wireEditing.active
     );
-  }
-};
+  },
 
-/**
- * Global simulation state wrapped in a Proxy.
- *
- * Special behavior:
- * - `state.mode` is a virtual property backed by `_mode`
- * - Setting `state.mode` automatically updates the UI (#modeDisplay)
- *
- * This ensures `state.mode` is the single source of truth
- * for the current simulation mode and its visual representation.
- *
- * Avoid manually updating mode display elsewhere in the codebase.
- */
+  isPlacing() {
+    return this.ghost.node || this.ghost.bus;
+  },
+};
 
 /**
  * Convert screen-space coordinates to world-space (accounting for camera pan/zoom).
@@ -137,8 +127,8 @@ const _state = {
  */
 export function screenToWorld(sx, sy) {
   return {
-    x: (sx - _state.camera.x) / _state.camera.zoom,
-    y: (sy - _state.camera.y) / _state.camera.zoom,
+    x: (sx - state.camera.x) / state.camera.zoom,
+    y: (sy - state.camera.y) / state.camera.zoom,
   };
 }
 
@@ -148,35 +138,7 @@ export function screenToWorld(sx, sy) {
  */
 export function worldToScreen(wx, wy) {
   return {
-    x: wx * _state.camera.zoom + _state.camera.x,
-    y: wy * _state.camera.zoom + _state.camera.y,
+    x: wx * state.camera.zoom + state.camera.x,
+    y: wy * state.camera.zoom + state.camera.y,
   };
 }
-
-export const state = new Proxy(_state, {
-  /**
-   * Intercepts property assignments.
-   * Handles special logic for `mode` updates.
-   */
-  set(target, prop, value) {
-    if (prop === "mode") {
-      target._mode = value;
-      const modeDisplay = document.getElementById("modeDisplay");
-      if (modeDisplay) {
-        modeDisplay.textContent = `Mode: ${value.charAt(0).toUpperCase() + value.slice(1)}`;
-      }
-    } else {
-      target[prop] = value;
-    }
-    return true;
-  },
-  
-  /**
-   * Intercepts property access.
-   * Maps `mode` → `_mode`.
-   */
-  get(target, prop) {
-    if (prop === "mode") return target._mode;
-    return target[prop];
-  },
-});
