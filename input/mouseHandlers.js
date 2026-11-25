@@ -72,8 +72,10 @@ export const busMap = new Map();
 export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, wireDependents) {
   const canvasHost = document.querySelector(".canvas-host");
   const canvas = canvasHost.querySelector("canvas");
+  let rightClicked = false; // used to prevent right click actions from triggering on mouse release
 
   p.mousePressed = function (event) {
+    rightClicked = false;
     if (state.ui.labelEditing) return;
 
     const world = screenToWorld(p.mouseX, p.mouseY);
@@ -274,6 +276,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
     }
 
     else if (p.mouseButton.right) {
+      rightClicked = true;
       if (state.mode !== "edit" || state.ui.labelEditing) return;
       if (state.ui.isAnyModalOpen) {
         hideAllMenus();
@@ -338,6 +341,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
   }
 
   p.mouseReleased = function () {
+    if (rightClicked) return;
     if (state.interaction.dragging.active) {
       if (
         wouldOverlap(
