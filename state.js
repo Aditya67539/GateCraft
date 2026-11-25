@@ -115,7 +115,11 @@ const _state = {
       this.ui.labelEditing ||
       this.wireEditing.active
     );
-  }
+  },
+
+  isPlacing() {
+    return this.ghost.node || this.ghost.bus;
+  },
 };
 
 /**

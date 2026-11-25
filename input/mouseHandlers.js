@@ -83,7 +83,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
     bringToFront(renderNodes, state.interaction.target);
 
     if (p.mouseButton.left) {
-      if (state.mode === "placing") {
+      if (state.isPlacing()) {
         if (state.ghost.node) {
           if (wouldOverlap(state.ghost.node, renderNodes, busNodes, null)) return;
           const placeGateCommand = new PlaceGateCommand(circuit, renderNodes, state.ghost.node, nodeMap);

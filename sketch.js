@@ -277,14 +277,14 @@ const sketch = (p) => {
           interactionBlocked: state.isInteractionBlocked(),
         }
       );
-      if (state.mode === "placing") {
+      if (state.isPlacing()) {
         const { x, y } = snapPointToGrid(mouse.x, mouse.y);
         state.ghost.node.x = x;
         state.ghost.node.y = y;
       }
     }
     if (state.ghost.bus) {
-      if (state.mode === "placing") {
+      if (state.isPlacing()) {
         const { x, y } = snapPointToGrid(mouse.x, mouse.y);
         if (!state.ghost.bus.startPointPlaced && !state.ghost.bus.endPointPlaced) {
           state.ghost.bus.startPoint.x = state.ghost.bus.endPoint.x = x;

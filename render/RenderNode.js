@@ -101,7 +101,6 @@ export function createCompositeNode(name, circuitData, mouseX, mouseY) {
  */
 export function spawnPrimitiveNode(type, mouseX, mouseY) {
   state.ghost.node = createPrimitiveNode(type, mouseX, mouseY);
-  state.mode = "placing";
 }
 
 /**
@@ -116,7 +115,6 @@ export function spawnPrimitiveNode(type, mouseX, mouseY) {
  */
 export function spawnCompositeNode(name, circuitData, mouseX, mouseY) {
   state.ghost.node = createCompositeNode(name, circuitData, mouseX, mouseY);
-  state.mode = "placing";
 }
 
 function computeSize(gate) {
