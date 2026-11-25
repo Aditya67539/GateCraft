@@ -225,37 +225,6 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
             };
           }
         }
-      } else if (state.mode === "run") {
-        if (
-          state.interaction.target &&
-          state.interaction.target.gate.category === GATE_CATEGORIES.PRIMITIVE &&
-          state.interaction.target.gate.type === "input"
-        ) {
-          const signal = state.interaction.target.gate.output === LOW ? HIGH : LOW;
-          state.interaction.target.gate.setValue(signal);
-          circuit.evaluate();
-        } else if (
-          state.interaction.target &&
-          state.interaction.target.gate.category === GATE_CATEGORIES.PRIMITIVE &&
-          state.interaction.target.gate.type === "clock"
-        ) {
-          if (state.interaction.target.intervalId != null) {
-            clearInterval(state.interaction.target.intervalId);
-            state.interaction.target.intervalId = null;
-            return;
-          }
-          const clockNode = state.interaction.target;
-          const timeInterval = 1000 / (2 * FREQUENCY);
-          state.interaction.target.intervalId = setInterval(() => {
-            clockNode.gate.tick();
-            circuit.evaluate();
-          }, timeInterval);
-
-          setTimeout(() => {
-            clearInterval(state.interaction.target.intervalId);
-            state.interaction.target.intervalId = null;
-          }, CLOCK_TIMER);
-        }
       } else if (state.mode === "placing") {
         if (state.ghost.node) {
           if (wouldOverlap(state.ghost.node, renderNodes, busNodes, null)) return;
@@ -369,7 +338,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
   }
 
   p.mouseReleased = function () {
-    if (state.interaction.target) {
+    if (state.interaction.dragging.active) {
       if (
         wouldOverlap(
           state.interaction.target,
@@ -409,6 +378,37 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
         performCommand(compositeCommand, { alreadyPerformed: true });
       } else {
         performCommand(changeWaypointCommand);
+      }
+    } else {
+      if (
+        state.interaction.target &&
+        state.interaction.target.gate.category === GATE_CATEGORIES.PRIMITIVE &&
+        state.interaction.target.gate.type === "input"
+      ) {
+        const signal = state.interaction.target.gate.output === LOW ? HIGH : LOW;
+        state.interaction.target.gate.setValue(signal);
+        circuit.evaluate();
+      } else if (
+        state.interaction.target &&
+        state.interaction.target.gate.category === GATE_CATEGORIES.PRIMITIVE &&
+        state.interaction.target.gate.type === "clock"
+      ) {
+        if (state.interaction.target.intervalId != null) {
+          clearInterval(state.interaction.target.intervalId);
+          state.interaction.target.intervalId = null;
+          return;
+        }
+        const clockNode = state.interaction.target;
+        const timeInterval = 1000 / (2 * FREQUENCY);
+        clockNode.intervalId = setInterval(() => {
+          clockNode.gate.tick();
+          circuit.evaluate();
+        }, timeInterval);
+
+        setTimeout(() => {
+          clearInterval(state.interaction.target.intervalId);
+          state.interaction.target.intervalId = null;
+        }, CLOCK_TIMER);
       }
     }
     state.interaction.target = null;
