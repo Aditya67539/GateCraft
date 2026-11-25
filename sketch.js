@@ -268,24 +268,23 @@ const sketch = (p) => {
       }
     }
 
-    if (state.ghost.node) {
-      let status = wouldOverlap(state.ghost.node, renderNodes, busNodes, null) ? "invalid" : "valid";
-      drawGate(
-        state.ghost.node, p, theme,
-        {
-          status,
-          interactionBlocked: state.isInteractionBlocked(),
-        }
-      );
-      if (state.isPlacing()) {
-        const { x, y } = snapPointToGrid(mouse.x, mouse.y);
+    if (state.isPlacing()) {
+      const { x, y } = snapPointToGrid(mouse.x, mouse.y);
+      if (state.ghost.node) {
         state.ghost.node.x = x;
         state.ghost.node.y = y;
-      }
-    }
-    if (state.ghost.bus) {
-      if (state.isPlacing()) {
-        const { x, y } = snapPointToGrid(mouse.x, mouse.y);
+        let status = wouldOverlap(state.ghost.node, renderNodes, busNodes)
+          ? "invalid"
+          : "valid";
+        
+        drawGate(
+          state.ghost.node, p, theme,
+          {
+            status,
+            interactionBlocked: state.isInteractionBlocked(),
+          },
+        );
+      } else if (state.ghost.bus) {
         if (!state.ghost.bus.startPointPlaced && !state.ghost.bus.endPointPlaced) {
           state.ghost.bus.startPoint.x = state.ghost.bus.endPoint.x = x;
           state.ghost.bus.startPoint.y = state.ghost.bus.endPoint.y = y;
@@ -298,9 +297,12 @@ const sketch = (p) => {
             useSnap,
           );
         }
+        let status = wouldBusOverlap(state.ghost.bus, renderNodes, busNodes)
+          ? "invalid"
+          : "valid";
+        
+        drawGhostBus(state.ghost.bus, p, status);
       }
-      let status = wouldBusOverlap(state.ghost.bus, renderNodes, busNodes) ? "invalid" : "valid";
-      drawGhostBus(state.ghost.bus, p, status);
     }
     if (state.interaction.wireCreation) {
       const useSnap = p.keyIsDown(p.SHIFT);
