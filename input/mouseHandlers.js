@@ -79,7 +79,9 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
     if (state.ui.labelEditing) return;
 
     const world = screenToWorld(p.mouseX, p.mouseY);
-    state.interaction.target = renderNodes.find(n => n.containsPoint(world.x, world.y));
+    state.interaction.target = !state.isInteractionBlocked()
+      ? renderNodes.find(n => n.containsPoint(world.x, world.y))
+      : null;
     bringToFront(renderNodes, state.interaction.target);
 
     if (p.mouseButton.left) {
@@ -188,7 +190,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
               }
               state.wireEditing.reset();
             }
-          } else {
+          } else if (!state.isInteractionBlocked() && !state.interaction.target) {
             state.interaction.wireCreation = findWireEndpoint(
               world.x,
               world.y,
@@ -271,9 +273,13 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
 
     else if (p.mouseButton.right) {
       rightClicked = true;
-      if (state.ui.labelEditing) return;
+      if (state.ui.labelEditing || state.isPlacing()) return;
       if (state.ui.isAnyModalOpen) {
         hideAllMenus();
+        return;
+      }
+      if (state.wireEditing.active) {
+        state.wireEditing.reset();
         return;
       }
       

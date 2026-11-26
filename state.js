@@ -26,7 +26,6 @@ export const state = {
   },
 
   ui: {
-    contextMenuTarget: null,
     labelEditing: false,
     isAnyModalOpen: false,
     tooltip: {
@@ -112,7 +111,8 @@ export const state = {
     return (
       this.ui.isAnyModalOpen ||
       this.ui.labelEditing ||
-      this.wireEditing.active
+      this.wireEditing.active ||
+      this.isPlacing()
     );
   },
 

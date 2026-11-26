@@ -40,7 +40,7 @@ import { drawMinimap } from "./render/minimap.js";
 import { getGhostWireEndPoint, projectPointOntoSegment, isNearPoint } from "./render/wireGeometry.js";
 import { isConnectionPossible } from "./logic/wire.js";
 import { detectHoveredPort, shouldHighlightPort } from "./interaction/portInteraction.js";
-import { registerContextMenuListeners } from "./ui/contextMenu.js";
+import { getMenuTarget, registerContextMenuListeners } from "./ui/contextMenu.js";
 import { registerContextMenuActions, registerSidebarMenuActions } from "./ui/contextMenuActions.js";
 
 applyTheme(getActiveTheme());
@@ -130,15 +130,19 @@ const sketch = (p) => {
       }
     }
 
+    const contextMenuTarget =
+      getMenuTarget("gate-context-menu") ||
+      getMenuTarget("wire-context-menu");
+
     for (let i = 0; i < busNodes.length; i++) {
       const busNode = busNodes[i];
-      const isContextTarget = state.ui.contextMenuTarget?.type === "bus" &&
-        state.ui.contextMenuTarget.source.bus.id === busNode.bus.id;
+      const isContextTarget = contextMenuTarget?.type === "bus" &&
+        contextMenuTarget.source.bus.id === busNode.bus.id;
       const isEditorTarget = state.wireEditing.target?.type === "bus" &&
         state.wireEditing.target.source.bus.id === busNode.bus.id;
       const isHovered = hoveredBus?.busNode.bus.id === busNode.bus.id;
       const highlighted = isContextTarget || (
-        !state.ui.contextMenuTarget &&
+        !contextMenuTarget &&
         (state.wireEditing.active ? isEditorTarget : isHovered) &&
         (
           !state.interaction.wireCreation || 
@@ -154,8 +158,8 @@ const sketch = (p) => {
     for (let i = 0; i < renderNodes.length; i++) {
       const node = renderNodes[i];
       let nodeStatus = null;
-      const isContextTarget = state.ui.contextMenuTarget?.type === "gate" &&
-        state.ui.contextMenuTarget.source.gate.id === node.gate.id;
+      const isContextTarget = contextMenuTarget?.type === "gate" &&
+        contextMenuTarget.source.gate.id === node.gate.id;
       if (state.interaction.target && node === state.interaction.target) {
         // Actively dragging — show overlap feedback
         nodeStatus = wouldOverlap(state.interaction.target, renderNodes, busNodes, state.interaction.target.gate.id)
@@ -211,14 +215,14 @@ const sketch = (p) => {
 
     for (let i = 0; i < wires.length; i++) {
       const conn = wires[i];
-      const isContextTarget = state.ui.contextMenuTarget?.type === "wire" &&
-        state.ui.contextMenuTarget.source.wire.id === conn.wire.id;
+      const isContextTarget = contextMenuTarget?.type === "wire" &&
+        contextMenuTarget.source.wire.id === conn.wire.id;
       const isEditorTarget = state.wireEditing.target?.type === "wire" &&
         state.wireEditing.target.source.wire.id === conn.wire.id;
       const isHovered = hoveredWire?.conn.wire.id === conn.wire.id;
       const highlighted = isContextTarget || (
         !state.ui.tooltip.active &&
-        !state.ui.contextMenuTarget &&
+        !contextMenuTarget &&
         (state.wireEditing.active ? isEditorTarget : isHovered) &&
         (
           !state.interaction.wireCreation ||
