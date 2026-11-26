@@ -276,6 +276,10 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
         hideAllMenus();
         return;
       }
+      if (state.wireEditing.active) {
+        state.wireEditing.reset();
+        return;
+      }
       
       const rect = canvas.getBoundingClientRect();
       const clientX = rect.left + (p.mouseX / p.width) * rect.width;
