@@ -79,7 +79,9 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
     if (state.ui.labelEditing) return;
 
     const world = screenToWorld(p.mouseX, p.mouseY);
-    state.interaction.target = renderNodes.find(n => n.containsPoint(world.x, world.y));
+    state.interaction.target = !state.isInteractionBlocked()
+      ? renderNodes.find(n => n.containsPoint(world.x, world.y))
+      : null;
     bringToFront(renderNodes, state.interaction.target);
 
     if (p.mouseButton.left) {
