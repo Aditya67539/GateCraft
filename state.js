@@ -26,7 +26,6 @@ export const state = {
   },
 
   ui: {
-    contextMenuTarget: null,
     labelEditing: false,
     isAnyModalOpen: false,
     tooltip: {
