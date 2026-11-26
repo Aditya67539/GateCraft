@@ -271,7 +271,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
 
     else if (p.mouseButton.right) {
       rightClicked = true;
-      if (state.ui.labelEditing) return;
+      if (state.ui.labelEditing || state.isPlacing()) return;
       if (state.ui.isAnyModalOpen) {
         hideAllMenus();
         return;
