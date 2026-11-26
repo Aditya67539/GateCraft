@@ -112,7 +112,8 @@ export const state = {
     return (
       this.ui.isAnyModalOpen ||
       this.ui.labelEditing ||
-      this.wireEditing.active
+      this.wireEditing.active ||
+      this.isPlacing()
     );
   },
 
