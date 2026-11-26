@@ -188,7 +188,7 @@ export function registerMouseHandlers(p, circuit, renderNodes, wires, busNodes, 
               }
               state.wireEditing.reset();
             }
-          } else {
+          } else if (!state.isInteractionBlocked()) {
             state.interaction.wireCreation = findWireEndpoint(
               world.x,
               world.y,
